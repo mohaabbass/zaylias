@@ -17,6 +17,7 @@ import { AuthScreen } from "@/components/auth/AuthScreen";
 import { BalanceCard } from "@/components/budget/BalanceCard";
 import { TransactionForm } from "@/components/budget/TransactionForm";
 import { TransactionList } from "@/components/budget/TransactionList";
+import { DailySpendingChart } from "@/components/budget/DailySpendingChart";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { useLocale } from "@/components/providers/LocaleProvider";
@@ -262,6 +263,11 @@ export function AppShell() {
         return (
           <div className="space-y-6">
             <BalanceCard totalBalance={totalBalance} t={t} />
+            <DailySpendingChart
+              transactions={transactions}
+              locale={locale}
+              t={t}
+            />
             <TransactionList
               transactions={transactions}
               onDelete={(id) => void deleteTransaction(id)}
@@ -380,7 +386,7 @@ export function AppShell() {
 
             <div className="rounded-xl border border-border bg-muted/50 p-3">
               <p className="mb-3 text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                Appearance
+                {t.appearance}
               </p>
               <div className="grid grid-cols-2 gap-2">
                 <button
@@ -393,7 +399,7 @@ export function AppShell() {
                   }`}
                 >
                   <SunMedium className="h-4 w-4" />
-                  <span>Light</span>
+                  <span>{t.light}</span>
                 </button>
                 <button
                   type="button"
@@ -405,7 +411,7 @@ export function AppShell() {
                   }`}
                 >
                   <MoonStar className="h-4 w-4" />
-                  <span>Dark</span>
+                  <span>{t.dark}</span>
                 </button>
               </div>
             </div>
