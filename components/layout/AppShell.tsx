@@ -1,13 +1,15 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
   BarChart3,
   Coins,
   House,
   Menu,
+  MoonStar,
   Plus,
+  SunMedium,
   X,
 } from "lucide-react";
 
@@ -29,6 +31,22 @@ import { useBudget } from "@/hooks/useBudget";
 import type { TransactionType } from "@/types/finance";
 
 export type AppView = "home" | "budget" | "add" | "locale" | "menu";
+type ThemeMode = "light" | "dark";
+
+function getInitialTheme(): ThemeMode {
+  if (typeof window === "undefined") {
+    return "dark";
+  }
+
+  const stored = window.localStorage.getItem("zaylias-theme");
+  if (stored === "light" || stored === "dark") {
+    return stored;
+  }
+
+  return window.matchMedia("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
+}
 
 export function AppShell() {
   const { t, locale, setLocale, locales, localeLabels } = useLocale();
@@ -56,6 +74,20 @@ export function AppShell() {
   const [activeView, setActiveView] = useState<AppView>("home");
   const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false);
   const [isMenuDrawerOpen, setIsMenuDrawerOpen] = useState(false);
+  const [theme, setTheme] = useState<ThemeMode>("dark");
+
+  useEffect(() => {
+    const initialTheme = getInitialTheme();
+    setTheme(initialTheme);
+    document.documentElement.classList.toggle("dark", initialTheme === "dark");
+    document.documentElement.style.colorScheme = initialTheme;
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", theme === "dark");
+    document.documentElement.style.colorScheme = theme;
+    window.localStorage.setItem("zaylias-theme", theme);
+  }, [theme]);
 
   const handleAuth = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -137,7 +169,7 @@ export function AppShell() {
 
   if (loading) {
     return (
-      <main className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
+      <main className="flex min-h-screen items-center justify-center bg-background text-foreground">
         <p>{t.loading}</p>
       </main>
     );
@@ -181,21 +213,23 @@ export function AppShell() {
         return null;
       case "locale":
         return (
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-lg">
-            <h2 className="mb-4 text-lg font-semibold">{t.statistics}</h2>
+          <div className="rounded-2xl border border-border bg-card p-5">
+            <h2 className="mb-4 text-lg font-semibold text-foreground">
+              {t.statistics}
+            </h2>
             <div className="space-y-3">
-              <div className="rounded-xl border border-slate-700 bg-slate-800 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+              <div className="rounded-xl border border-border bg-muted/50 p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
                   {t.totalBalance}
                 </p>
-                <p className="mt-2 text-2xl font-semibold text-white">
+                <p className="mt-2 text-2xl font-semibold text-foreground">
                   {totalBalance} {t.currency}
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-xl border border-slate-700 bg-slate-800 p-3">
-                  <p className="text-xs text-slate-400">{t.expense}</p>
-                  <p className="mt-2 text-lg font-semibold text-red-400">
+                <div className="rounded-xl border border-border bg-muted/50 p-3">
+                  <p className="text-xs text-muted-foreground">{t.expense}</p>
+                  <p className="mt-2 text-lg font-semibold text-red-500">
                     {transactions
                       .filter((transaction) => transaction.type === "expense")
                       .reduce(
@@ -206,9 +240,9 @@ export function AppShell() {
                     {t.currency}
                   </p>
                 </div>
-                <div className="rounded-xl border border-slate-700 bg-slate-800 p-3">
-                  <p className="text-xs text-slate-400">{t.income}</p>
-                  <p className="mt-2 text-lg font-semibold text-emerald-400">
+                <div className="rounded-xl border border-border bg-muted/50 p-3">
+                  <p className="text-xs text-muted-foreground">{t.income}</p>
+                  <p className="mt-2 text-lg font-semibold text-emerald-500">
                     {transactions
                       .filter((transaction) => transaction.type === "income")
                       .reduce(
@@ -242,7 +276,7 @@ export function AppShell() {
     <>
       <AppHeader title={t.appTitle} onLogout={() => void logout()} />
 
-      <main className="min-h-screen bg-slate-950 px-4 pb-28 pt-6 text-white sm:px-6">
+      <main className="min-h-screen bg-muted/50 px-4 pb-28 pt-6 text-foreground dark:bg-background sm:px-6">
         <div className="mx-auto max-w-md">{renderView()}</div>
       </main>
 
@@ -256,16 +290,16 @@ export function AppShell() {
           }
         }}
       >
-        <DrawerContent className="mx-auto max-w-md rounded-t-2xl border border-slate-800 bg-slate-900 p-0 text-white shadow-2xl">
-          <DrawerHeader className="border-b border-slate-800 px-4 pb-3 pt-4">
+        <DrawerContent className="mx-auto max-w-md rounded-t-2xl border border-border bg-popover p-0 text-popover-foreground shadow-2xl">
+          <DrawerHeader className="border-b border-border px-4 pb-3 pt-4">
             <div className="flex items-center justify-between gap-3">
-              <DrawerTitle className="text-lg font-semibold text-white">
+              <DrawerTitle className="text-lg font-semibold text-foreground">
                 {t.addTransaction}
               </DrawerTitle>
               <DrawerClose
                 type="button"
                 aria-label="Close"
-                className="rounded-full border border-slate-700 bg-slate-800 p-2 text-slate-300 transition hover:border-slate-500 hover:text-white"
+                className="rounded-full border border-border bg-muted p-2 text-muted-foreground transition hover:border-ring hover:text-foreground"
               >
                 <X className="h-4 w-4" strokeWidth={2} />
               </DrawerClose>
@@ -299,25 +333,25 @@ export function AppShell() {
           }
         }}
       >
-        <DrawerContent className="mx-auto max-w-md rounded-t-2xl border border-slate-800 bg-slate-900 p-0 text-white shadow-2xl">
-          <DrawerHeader className="border-b border-slate-800 px-4 pb-3 pt-4">
+        <DrawerContent className="mx-auto max-w-md rounded-t-2xl border border-border bg-popover p-0 text-popover-foreground shadow-2xl">
+          <DrawerHeader className="border-b border-border px-4 pb-3 pt-4">
             <div className="flex items-center justify-between gap-3">
-              <DrawerTitle className="text-lg font-semibold text-white">
+              <DrawerTitle className="text-lg font-semibold text-foreground">
                 {t.menu}
               </DrawerTitle>
               <DrawerClose
                 type="button"
                 aria-label="Close"
-                className="rounded-full border border-slate-700 bg-slate-800 p-2 text-slate-300 transition hover:border-slate-500 hover:text-white"
+                className="rounded-full border border-border bg-muted p-2 text-muted-foreground transition hover:border-ring hover:text-foreground"
               >
                 <X className="h-4 w-4" strokeWidth={2} />
               </DrawerClose>
             </div>
           </DrawerHeader>
 
-          <div className="space-y-4 px-4 pb-6 pt-4 text-sm text-slate-300">
-            <div className="rounded-xl border border-slate-700 bg-slate-800 p-3">
-              <p className="mb-3 text-xs uppercase tracking-[0.2em] text-slate-400">
+          <div className="space-y-4 px-4 pb-6 pt-4 text-sm text-foreground">
+            <div className="rounded-xl border border-border bg-muted/50 p-3">
+              <p className="mb-3 text-xs uppercase tracking-[0.2em] text-muted-foreground">
                 {t.language}
               </p>
               <div className="space-y-2">
@@ -331,12 +365,12 @@ export function AppShell() {
                     }}
                     className={`flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left transition ${
                       locale === option
-                        ? "border-emerald-500 bg-emerald-500/10 text-emerald-300"
-                        : "border-slate-700 bg-slate-800 text-slate-200 hover:border-slate-500"
+                        ? "border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300"
+                        : "border-border bg-background text-foreground hover:border-ring"
                     }`}
                   >
                     <span>{localeLabels[option]}</span>
-                    <span className="text-xs uppercase tracking-wide text-slate-400">
+                    <span className="text-xs uppercase tracking-wide text-muted-foreground">
                       {option}
                     </span>
                   </button>
@@ -344,13 +378,48 @@ export function AppShell() {
               </div>
             </div>
 
+            <div className="rounded-xl border border-border bg-muted/50 p-3">
+              <p className="mb-3 text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                Appearance
+              </p>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setTheme("light")}
+                  className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 transition ${
+                    theme === "light"
+                      ? "border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300"
+                      : "border-border bg-background text-foreground hover:border-ring"
+                  }`}
+                >
+                  <SunMedium className="h-4 w-4" />
+                  <span>Light</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTheme("dark")}
+                  className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 transition ${
+                    theme === "dark"
+                      ? "border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300"
+                      : "border-border bg-background text-foreground hover:border-ring"
+                  }`}
+                >
+                  <MoonStar className="h-4 w-4" />
+                  <span>Dark</span>
+                </button>
+              </div>
+            </div>
+
             <button
               type="button"
               onClick={() => void logout()}
-              className="flex w-full items-center justify-between rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-red-300"
+              className="flex w-full items-center justify-between rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-red-500 dark:text-red-300"
             >
               <span>{t.logout}</span>
-              <ArrowRight className="h-4 w-4 text-red-300" strokeWidth={2} />
+              <ArrowRight
+                className="h-4 w-4 text-red-500 dark:text-red-300"
+                strokeWidth={2}
+              />
             </button>
           </div>
         </DrawerContent>

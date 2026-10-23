@@ -14,7 +14,7 @@ type BottomNavProps = {
 
 export function BottomNav({ items }: BottomNavProps) {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-slate-800 bg-slate-950/90 px-3 pb-4 pt-2 backdrop-blur-sm">
+    <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-background/90 px-3 pb-4 pt-2 backdrop-blur-sm">
       <div className="mx-auto flex max-w-md items-center justify-between gap-2">
         {items.map((item) => {
           const Icon = item.icon;
@@ -26,8 +26,8 @@ export function BottomNav({ items }: BottomNavProps) {
               onClick={item.onClick}
               className={`flex min-w-0 flex-1 flex-col items-center justify-center rounded-xl px-2 py-2 text-center transition ${
                 item.active
-                  ? "bg-emerald-500/15 text-emerald-400"
-                  : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                  ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
             >
               <Icon className="h-5 w-5 leading-none" strokeWidth={2} />

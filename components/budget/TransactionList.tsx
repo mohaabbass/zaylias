@@ -13,29 +13,35 @@ export function TransactionList({
   t,
 }: TransactionListProps) {
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg">
-      <h2 className="text-lg font-semibold mb-3">{t.history}</h2>
+    <div className="rounded-xl border border-border bg-card p-5">
+      <h2 className="mb-3 text-lg font-semibold text-foreground">
+        {t.history}
+      </h2>
 
       {transactions.length === 0 ? (
-        <p className="text-sm text-slate-500">{t.emptyHistory}</p>
+        <p className="text-sm text-muted-foreground">{t.emptyHistory}</p>
       ) : (
         <ul className="space-y-2">
           {transactions.map((transaction) => (
             <li
               key={transaction.id}
-              className="flex justify-between items-center p-3 bg-slate-800/50 rounded-lg border border-slate-800"
+              className="flex items-center justify-between rounded-lg border border-border bg-muted/60 p-3"
             >
               <div>
-                <p className="font-medium text-sm">{transaction.title}</p>
-                <p className="text-xs text-slate-400">{transaction.category}</p>
+                <p className="text-sm font-medium text-foreground">
+                  {transaction.title}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {transaction.category}
+                </p>
               </div>
 
               <div className="flex items-center gap-3">
                 <span
-                  className={`font-semibold text-sm ${
+                  className={`text-sm font-semibold ${
                     transaction.type === "income"
-                      ? "text-emerald-400"
-                      : "text-red-400"
+                      ? "text-emerald-600 dark:text-emerald-400"
+                      : "text-red-500"
                   }`}
                 >
                   {transaction.type === "income" ? "+" : "-"}
@@ -44,7 +50,7 @@ export function TransactionList({
                 <button
                   type="button"
                   onClick={() => onDelete(transaction.id)}
-                  className="text-slate-500 hover:text-red-400 transition text-sm px-1"
+                  className="px-1 text-sm text-muted-foreground transition hover:text-red-500"
                   title={t.deleteTitle}
                 >
                   ✕

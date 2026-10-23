@@ -7,11 +7,15 @@ type BalanceCardProps = {
 
 export function BalanceCard({ totalBalance, t }: BalanceCardProps) {
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg">
-      <p className="text-sm text-slate-400 font-medium">{t.totalBalance}</p>
+    <div className="rounded-xl border border-border bg-card p-5">
+      <p className="text-sm font-medium text-muted-foreground">
+        {t.totalBalance}
+      </p>
       <p
-        className={`text-3xl font-bold mt-1 ${
-          totalBalance < 0 ? "text-red-400" : "text-emerald-400"
+        className={`mt-1 text-3xl font-bold ${
+          totalBalance < 0
+            ? "text-red-500"
+            : "text-emerald-600 dark:text-emerald-400"
         }`}
       >
         {totalBalance.toFixed(2)} {t.currency}

@@ -24,9 +24,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="sv"
+      suppressHydrationWarning
       className={`${inter.variable} ${cairo.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-slate-950 text-white">
+      <body className="min-h-full flex flex-col bg-background text-foreground">
         <LocaleProvider>{children}</LocaleProvider>
       </body>
     </html>

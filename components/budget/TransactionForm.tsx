@@ -29,18 +29,20 @@ export function TransactionForm({
   return (
     <form
       onSubmit={onSubmit}
-      className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg space-y-4"
+      className="space-y-4 rounded-xl border border-border bg-card p-5"
     >
-      <h2 className="text-lg font-semibold">{t.addTransaction}</h2>
+      <h2 className="text-lg font-semibold text-foreground">
+        {t.addTransaction}
+      </h2>
 
-      <div className="grid grid-cols-2 gap-2 p-1 bg-slate-800 rounded-lg">
+      <div className="grid grid-cols-2 gap-2 rounded-lg bg-muted p-1">
         <button
           type="button"
           onClick={() => onTypeChange("expense")}
-          className={`py-2 text-sm font-medium rounded-md transition ${
+          className={`rounded-md py-2 text-sm font-medium transition ${
             type === "expense"
-              ? "bg-red-600 text-white"
-              : "text-slate-400 hover:text-white"
+              ? "bg-red-500 text-white"
+              : "text-muted-foreground hover:text-foreground"
           }`}
         >
           {t.expense}
@@ -48,10 +50,10 @@ export function TransactionForm({
         <button
           type="button"
           onClick={() => onTypeChange("income")}
-          className={`py-2 text-sm font-medium rounded-md transition ${
+          className={`rounded-md py-2 text-sm font-medium transition ${
             type === "income"
-              ? "bg-emerald-600 text-white"
-              : "text-slate-400 hover:text-white"
+              ? "bg-emerald-500 text-white"
+              : "text-muted-foreground hover:text-foreground"
           }`}
         >
           {t.income}
@@ -59,7 +61,7 @@ export function TransactionForm({
       </div>
 
       <div>
-        <label className="block text-xs text-slate-400 mb-1">
+        <label className="mb-1 block text-xs text-muted-foreground">
           {t.titleLabel}
         </label>
         <input
@@ -67,13 +69,13 @@ export function TransactionForm({
           value={title}
           onChange={(event) => onTitleChange(event.target.value)}
           placeholder={t.titlePlaceholder}
-          className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:border-emerald-500"
+          className="w-full rounded-lg border border-border bg-background p-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-emerald-500 focus:outline-none"
         />
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs text-slate-400 mb-1">
+          <label className="mb-1 block text-xs text-muted-foreground">
             {t.amountLabel}
           </label>
           <input
@@ -82,18 +84,18 @@ export function TransactionForm({
             value={amount}
             onChange={(event) => onAmountChange(event.target.value)}
             placeholder={t.amountPlaceholder}
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:border-emerald-500"
+            className="w-full rounded-lg border border-border bg-background p-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-emerald-500 focus:outline-none"
           />
         </div>
 
         <div>
-          <label className="block text-xs text-slate-400 mb-1">
+          <label className="mb-1 block text-xs text-muted-foreground">
             {t.categoryLabel}
           </label>
           <select
             value={category}
             onChange={(event) => onCategoryChange(event.target.value)}
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:border-emerald-500"
+            className="w-full rounded-lg border border-border bg-background p-2.5 text-sm text-foreground focus:border-emerald-500 focus:outline-none"
           >
             {t.categoryOptions.map((option) => (
               <option key={option.value} value={option.value}>
@@ -106,7 +108,7 @@ export function TransactionForm({
 
       <button
         type="submit"
-        className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2.5 rounded-lg transition"
+        className="w-full rounded-lg bg-emerald-600 py-2.5 font-medium text-white transition hover:bg-emerald-500"
       >
         {t.saveTransaction}
       </button>

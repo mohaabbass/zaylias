@@ -21,23 +21,20 @@ type LocaleContextValue = {
 
 const LocaleContext = createContext<LocaleContextValue | undefined>(undefined);
 
-function getInitialLocale(): Locale {
-  if (typeof window === "undefined") {
-    return "sv";
-  }
-
-  const savedLocale = window.localStorage.getItem(
-    "zaylias-locale",
-  ) as Locale | null;
-  if (savedLocale && locales.includes(savedLocale)) {
-    return savedLocale;
-  }
-
-  return "sv";
-}
-
 export function LocaleProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocale] = useState<Locale>(getInitialLocale);
+  const [locale, setLocale] = useState<Locale>("sv");
+
+  useEffect(() => {
+    const savedLocale = window.localStorage.getItem(
+      "zaylias-locale",
+    ) as Locale | null;
+    if (savedLocale && locales.includes(savedLocale)) {
+      setLocale(savedLocale);
+      return;
+    }
+
+    setLocale("sv");
+  }, []);
 
   useEffect(() => {
     window.localStorage.setItem("zaylias-locale", locale);
