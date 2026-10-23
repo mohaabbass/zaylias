@@ -1,3 +1,5 @@
+import { LogOut, Wallet } from "lucide-react";
+
 type AppHeaderProps = {
   title: string;
   onLogout: () => void;
@@ -9,7 +11,7 @@ export function AppHeader({ title, onLogout }: AppHeaderProps) {
       <div className="mx-auto flex max-w-md items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15 text-lg font-bold text-emerald-400 ring-1 ring-emerald-500/30">
-            Z
+            <Wallet className="h-5 w-5" strokeWidth={2.2} />
           </div>
 
           <div>
@@ -20,9 +22,10 @@ export function AppHeader({ title, onLogout }: AppHeaderProps) {
         <button
           type="button"
           onClick={onLogout}
-          className="rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-200 transition hover:border-slate-500 hover:bg-slate-700"
+          className="inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-200 transition hover:border-slate-500 hover:bg-slate-700"
         >
-          Logga ut
+          <LogOut className="h-3.5 w-3.5" strokeWidth={2.2} />
+          <span>Logga ut</span>
         </button>
       </div>
     </header>
