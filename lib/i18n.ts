@@ -15,7 +15,7 @@ export type CategoryOption = {
 
 export const translations = {
   sv: {
-    appTitle: "Zaylias Ekonomi",
+    appTitle: "Zaylias",
     loading: "Laddar...",
     login: "Logga in",
     createAccount: "Skapa konto",
@@ -61,12 +61,14 @@ export const translations = {
       { value: "Boende", label: "Boende" },
       { value: "Transport", label: "Transport" },
       { value: "Nöje", label: "Nöje" },
+      { value: "Kläder", label: "Kläder" },
+      { value: "Räkningar", label: "Räkningar" },
       { value: "Lön", label: "Lön" },
       { value: "Övrigt", label: "Övrigt" },
     ] as CategoryOption[],
   },
   en: {
-    appTitle: "Zaylias Finance",
+    appTitle: "Zaylias",
     loading: "Loading...",
     login: "Log in",
     createAccount: "Create account",
@@ -112,12 +114,14 @@ export const translations = {
       { value: "Housing", label: "Housing" },
       { value: "Transport", label: "Transport" },
       { value: "Entertainment", label: "Entertainment" },
+      { value: "Clothes", label: "Clothes" },
+      { value: "Bills", label: "Bills" },
       { value: "Salary", label: "Salary" },
       { value: "Other", label: "Other" },
     ] as CategoryOption[],
   },
   ar: {
-    appTitle: "مالية زايليا",
+    appTitle: "Zaylias",
     loading: "جارٍ التحميل...",
     login: "تسجيل الدخول",
     createAccount: "إنشاء حساب",
@@ -160,9 +164,11 @@ export const translations = {
     noSpendData: "لا توجد مبيعات في آخر 7 أيام.",
     categoryOptions: [
       { value: "طعام", label: "طعام" },
-      { value: "سكن", label: "سكن" },
+      { value: "إيجار", label: "إيجار" },
       { value: "نقل", label: "نقل" },
       { value: "ترفيه", label: "ترفيه" },
+      { value: "ملابس", label: "ملابس" },
+      { value: "فواتير", label: "فواتير" },
       { value: "راتب", label: "راتب" },
       { value: "أخرى", label: "أخرى" },
     ] as CategoryOption[],
