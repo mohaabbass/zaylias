@@ -1,3 +1,4 @@
+import type { Translation } from "@/lib/i18n";
 import type { TransactionType } from "@/types/finance";
 
 type TransactionFormProps = {
@@ -10,6 +11,7 @@ type TransactionFormProps = {
   onCategoryChange: (value: string) => void;
   onTypeChange: (value: TransactionType) => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
+  t: Translation;
 };
 
 export function TransactionForm({
@@ -22,13 +24,14 @@ export function TransactionForm({
   onCategoryChange,
   onTypeChange,
   onSubmit,
+  t,
 }: TransactionFormProps) {
   return (
     <form
       onSubmit={onSubmit}
       className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg space-y-4"
     >
-      <h2 className="text-lg font-semibold">Lägg till transaktion</h2>
+      <h2 className="text-lg font-semibold">{t.addTransaction}</h2>
 
       <div className="grid grid-cols-2 gap-2 p-1 bg-slate-800 rounded-lg">
         <button
@@ -40,7 +43,7 @@ export function TransactionForm({
               : "text-slate-400 hover:text-white"
           }`}
         >
-          Utgift
+          {t.expense}
         </button>
         <button
           type="button"
@@ -51,19 +54,19 @@ export function TransactionForm({
               : "text-slate-400 hover:text-white"
           }`}
         >
-          Inkomst
+          {t.income}
         </button>
       </div>
 
       <div>
         <label className="block text-xs text-slate-400 mb-1">
-          Titel / Vad köpte du?
+          {t.titleLabel}
         </label>
         <input
           type="text"
           value={title}
           onChange={(event) => onTitleChange(event.target.value)}
-          placeholder="T.ex. ICA Kvantum, Lön..."
+          placeholder={t.titlePlaceholder}
           className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:border-emerald-500"
         />
       </div>
@@ -71,31 +74,32 @@ export function TransactionForm({
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-xs text-slate-400 mb-1">
-            Belopp (kr)
+            {t.amountLabel}
           </label>
           <input
             type="number"
             step="0.01"
             value={amount}
             onChange={(event) => onAmountChange(event.target.value)}
-            placeholder="150"
+            placeholder={t.amountPlaceholder}
             className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:border-emerald-500"
           />
         </div>
 
         <div>
-          <label className="block text-xs text-slate-400 mb-1">Kategori</label>
+          <label className="block text-xs text-slate-400 mb-1">
+            {t.categoryLabel}
+          </label>
           <select
             value={category}
             onChange={(event) => onCategoryChange(event.target.value)}
             className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2.5 text-sm focus:outline-none focus:border-emerald-500"
           >
-            <option value="Mat">Mat</option>
-            <option value="Boende">Boende</option>
-            <option value="Transport">Transport</option>
-            <option value="Nöje">Nöje</option>
-            <option value="Lön">Lön</option>
-            <option value="Övrigt">Övrigt</option>
+            {t.categoryOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
           </select>
         </div>
       </div>
@@ -104,7 +108,7 @@ export function TransactionForm({
         type="submit"
         className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2.5 rounded-lg transition"
       >
-        Spara köp
+        {t.saveTransaction}
       </button>
     </form>
   );

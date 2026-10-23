@@ -1,22 +1,23 @@
+import type { Translation } from "@/lib/i18n";
 import type { Transaction } from "@/types/finance";
 
 type TransactionListProps = {
   transactions: Transaction[];
   onDelete: (id: string) => void;
+  t: Translation;
 };
 
 export function TransactionList({
   transactions,
   onDelete,
+  t,
 }: TransactionListProps) {
   return (
     <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg">
-      <h2 className="text-lg font-semibold mb-3">Historik</h2>
+      <h2 className="text-lg font-semibold mb-3">{t.history}</h2>
 
       {transactions.length === 0 ? (
-        <p className="text-sm text-slate-500">
-          Inga transaktioner tillagda ännu.
-        </p>
+        <p className="text-sm text-slate-500">{t.emptyHistory}</p>
       ) : (
         <ul className="space-y-2">
           {transactions.map((transaction) => (
@@ -38,13 +39,13 @@ export function TransactionList({
                   }`}
                 >
                   {transaction.type === "income" ? "+" : "-"}
-                  {transaction.amount} kr
+                  {transaction.amount} {t.currency}
                 </span>
                 <button
                   type="button"
                   onClick={() => onDelete(transaction.id)}
                   className="text-slate-500 hover:text-red-400 transition text-sm px-1"
-                  title="Radera"
+                  title={t.deleteTitle}
                 >
                   ✕
                 </button>

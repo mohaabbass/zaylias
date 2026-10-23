@@ -6,10 +6,12 @@ import { AuthScreen } from "@/components/auth/AuthScreen";
 import { BalanceCard } from "@/components/budget/BalanceCard";
 import { TransactionForm } from "@/components/budget/TransactionForm";
 import { TransactionList } from "@/components/budget/TransactionList";
+import { useLocale } from "@/components/providers/LocaleProvider";
 import { useBudget } from "@/hooks/useBudget";
 import type { TransactionType } from "@/types/finance";
 
 export default function Home() {
+  const { t } = useLocale();
   const {
     session,
     loading,
@@ -70,7 +72,7 @@ export default function Home() {
   if (loading) {
     return (
       <main className="min-h-screen bg-slate-950 text-white flex items-center justify-center">
-        <p>Laddar...</p>
+        <p>{t.loading}</p>
       </main>
     );
   }
@@ -89,6 +91,7 @@ export default function Home() {
           setIsSignUp((current) => !current);
         }}
         onSubmit={handleAuth}
+        t={t}
       />
     );
   }
@@ -97,19 +100,17 @@ export default function Home() {
     <main className="min-h-screen bg-slate-950 text-white p-4 sm:p-8 flex justify-center">
       <div className="w-full max-w-md space-y-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-bold text-emerald-400">
-            Zaylias Ekonomi
-          </h1>
+          <h1 className="text-2xl font-bold text-emerald-400">{t.appTitle}</h1>
           <button
             type="button"
             onClick={() => void logout()}
             className="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg transition"
           >
-            Logga ut
+            {t.logout}
           </button>
         </div>
 
-        <BalanceCard totalBalance={totalBalance} />
+        <BalanceCard totalBalance={totalBalance} t={t} />
 
         <TransactionForm
           title={title}
@@ -121,11 +122,13 @@ export default function Home() {
           onCategoryChange={setCategory}
           onTypeChange={setType}
           onSubmit={handleAddTransaction}
+          t={t}
         />
 
         <TransactionList
           transactions={transactions}
           onDelete={(id) => void deleteTransaction(id)}
+          t={t}
         />
       </div>
     </main>
