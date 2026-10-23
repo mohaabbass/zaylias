@@ -56,25 +56,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <LocaleContext.Provider value={value}>
-      <div className="fixed top-3 right-3 z-10 rounded-lg border border-slate-700 bg-slate-900 p-2 shadow-lg">
-        <label className="mb-1 block text-[10px] uppercase tracking-wide text-slate-400">
-          {translations[locale].language}
-        </label>
-        <select
-          value={locale}
-          onChange={(event) => setLocale(event.target.value as Locale)}
-          className="rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-sm text-white outline-none"
-        >
-          {locales.map((option) => (
-            <option key={option} value={option}>
-              {localeLabels[option]}
-            </option>
-          ))}
-        </select>
-      </div>
-      {children}
-    </LocaleContext.Provider>
+    <LocaleContext.Provider value={value}>{children}</LocaleContext.Provider>
   );
 }
 
