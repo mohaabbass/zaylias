@@ -123,7 +123,7 @@ export const translations = {
     expense: "مصروف",
     income: "دخل",
     titleLabel: "العنوان / ماذا اشتريت؟",
-    titlePlaceholder: "مثل: ICA Kvantum، راتب...",
+    titlePlaceholder: "مثل: اسم المحل ،راتب...",
     amountLabel: "المبلغ (كر)",
     amountPlaceholder: "150",
     categoryLabel: "الفئة",

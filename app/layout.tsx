@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Cairo, Inter } from "next/font/google";
 
 import "./globals.css";
 import { LocaleProvider } from "@/components/providers/LocaleProvider";
@@ -9,6 +9,12 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
+const cairo = Cairo({
+  variable: "--font-cairo",
+  subsets: ["arabic"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+});
+
 export const metadata: Metadata = {
   title: "Zaylias",
   description: "Budget app with multilingual support",
@@ -16,7 +22,10 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="sv" className={`${inter.variable} h-full antialiased`}>
+    <html
+      lang="sv"
+      className={`${inter.variable} ${cairo.variable} h-full antialiased`}
+    >
       <body className="min-h-full flex flex-col bg-slate-950 text-white">
         <LocaleProvider>{children}</LocaleProvider>
       </body>
