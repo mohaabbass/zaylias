@@ -135,13 +135,18 @@ export function TransactionList({
             return (
               <li
                 key={transaction.id}
-                className="relative"
+                className="relative select-none"
                 data-transaction-row
                 onMouseDown={() => startLongPress(transaction.id)}
                 onMouseUp={clearLongPress}
                 onMouseLeave={clearLongPress}
-                onTouchStart={() => startLongPress(transaction.id)}
+                onTouchStart={(event) => {
+                  event.preventDefault();
+                  startLongPress(transaction.id);
+                }}
+                onTouchMove={clearLongPress}
                 onTouchEnd={clearLongPress}
+                onContextMenu={(event) => event.preventDefault()}
               >
                 <div className="flex items-center justify-between rounded-lg border border-border bg-muted/60 p-3">
                   <div>
