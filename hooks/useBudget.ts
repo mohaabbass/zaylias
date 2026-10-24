@@ -129,6 +129,41 @@ export function useBudget() {
     [session],
   );
 
+  const addExpenseTransaction = useCallback(
+    async (input: {
+      title: string;
+      amount: string;
+      category: string;
+      type: "expense";
+    }) => {
+      if (!session || !input.title || !input.amount) {
+        return null;
+      }
+
+      const { data, error } = await supabase
+        .from("expenses")
+        .insert({
+          title: input.title,
+          amount: Number.parseFloat(input.amount),
+          category: input.category,
+          type: input.type,
+          user_id: session.user.id,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error("Failed to record paid payment as expense:", error);
+        return null;
+      }
+
+      const transaction = data as Transaction;
+      setTransactions((current) => [transaction, ...current]);
+      return transaction;
+    },
+    [session],
+  );
+
   const updateTransaction = useCallback(
     async (
       id: string,
@@ -219,6 +254,7 @@ export function useBudget() {
     signUp,
     logout,
     addTransaction,
+    addExpenseTransaction,
     updateTransaction,
     deleteTransaction,
     setAuthError,

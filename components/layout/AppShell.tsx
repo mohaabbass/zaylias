@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
   BarChart3,
+  CreditCard,
   HandCoins,
   House,
   Menu,
@@ -19,6 +20,7 @@ import { DailySpendingChart } from "@/components/budget/DailySpendingChart";
 import { StatisticsChart } from "@/components/budget/StatisticsChart";
 import { StatisticsCategoryChart } from "@/components/budget/StatisticsCategoryChart";
 import { TransactionList } from "@/components/budget/TransactionList";
+import { PaymentsView } from "@/components/budget/PaymentsView";
 import { LoansView } from "@/components/loans/LoansView";
 import { AuthScreen } from "@/components/auth/AuthScreen";
 import { AppHeader } from "@/components/layout/AppHeader";
@@ -33,11 +35,19 @@ import {
 } from "@/components/ui/drawer";
 import { formatCurrency } from "@/lib/utils";
 import { normalizeCategoryValue } from "@/lib/i18n";
+import { supabase } from "@/lib/supabase";
 import { useBudget } from "@/hooks/useBudget";
 import type { TransactionType } from "@/types/finance";
 
-export type AppView = "home" | "loans" | "add" | "locale" | "menu";
+export type AppView =
+  | "home"
+  | "payments"
+  | "loans"
+  | "add"
+  | "locale"
+  | "menu";
 type ThemeMode = "light" | "dark";
+type AddMode = "expense" | "payment";
 
 export function AppShell() {
   const { t, locale, setLocale, locales, localeLabels } = useLocale();
@@ -51,6 +61,7 @@ export function AppShell() {
     signUp,
     logout,
     addTransaction,
+    addExpenseTransaction,
     updateTransaction,
     deleteTransaction,
     setAuthError,
@@ -65,6 +76,10 @@ export function AppShell() {
     normalizeCategoryValue(t.expenseCategories[0]?.value ?? "food"),
   );
   const [type, setType] = useState<TransactionType>("expense");
+  const [addMode, setAddMode] = useState<AddMode>("expense");
+  const [paymentDueDate, setPaymentDueDate] = useState("");
+  const [paymentError, setPaymentError] = useState("");
+  const [isSavingPayment, setIsSavingPayment] = useState(false);
   const [activeView, setActiveView] = useState<AppView>("home");
   const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false);
   const [isMenuDrawerOpen, setIsMenuDrawerOpen] = useState(false);
@@ -107,6 +122,17 @@ export function AppShell() {
     [t, type],
   );
 
+  const resetAddForm = useCallback(() => {
+    setTitle("");
+    setAmount("");
+    setCategory(getDefaultCategory("expense"));
+    setType("expense");
+    setAddMode("expense");
+    setPaymentDueDate("");
+    setPaymentError("");
+    setEditingTransactionId(null);
+  }, [getDefaultCategory]);
+
   const handleAuth = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -128,6 +154,7 @@ export function AppShell() {
   };
 
   const openEditDrawer = (transaction: (typeof transactions)[number]) => {
+    setAddMode("expense");
     setEditingTransactionId(transaction.id);
     setTitle(transaction.title);
     setAmount(String(transaction.amount));
@@ -152,11 +179,7 @@ export function AppShell() {
       });
 
       if (success) {
-        setTitle("");
-        setAmount("");
-        setCategory(getDefaultCategory("expense"));
-        setType("expense");
-        setEditingTransactionId(null);
+        resetAddForm();
         setIsAddDrawerOpen(false);
         setActiveView("home");
       }
@@ -171,13 +194,49 @@ export function AppShell() {
     });
 
     if (success) {
-      setTitle("");
-      setAmount("");
-      setCategory(getDefaultCategory("expense"));
-      setType("expense");
+      resetAddForm();
       setIsAddDrawerOpen(false);
       setActiveView("home");
     }
+  };
+
+  const handleAddPayment = async (
+    event: React.FormEvent<HTMLFormElement>,
+  ) => {
+    event.preventDefault();
+    setPaymentError("");
+
+    const parsedAmount = Number(amount);
+    if (
+      !title.trim() ||
+      !Number.isFinite(parsedAmount) ||
+      parsedAmount <= 0 ||
+      !paymentDueDate ||
+      !category
+    ) {
+      setPaymentError(t.paymentValidationError);
+      return;
+    }
+
+    setIsSavingPayment(true);
+    const { error } = await supabase.from("payments").insert({
+      title: title.trim(),
+      amount: parsedAmount,
+      category,
+      due_date: paymentDueDate,
+      user_id: session?.user.id,
+    });
+    setIsSavingPayment(false);
+
+    if (error) {
+      console.error("Failed to create payment:", error);
+      setPaymentError(error.message);
+      return;
+    }
+
+    resetAddForm();
+    setIsAddDrawerOpen(false);
+    setActiveView("payments");
   };
 
   const recentTransactionTitles = useMemo(() => {
@@ -207,16 +266,17 @@ export function AppShell() {
         onClick: () => setActiveView("home"),
       },
       {
-        id: "loans",
-        label: t.loans,
-        icon: HandCoins,
-        onClick: () => setActiveView("loans"),
+        id: "payments",
+        label: t.payments,
+        icon: CreditCard,
+        onClick: () => setActiveView("payments"),
       },
       {
         id: "add",
         label: t.add,
         icon: Plus,
         onClick: () => {
+          resetAddForm();
           setActiveView("add");
           setIsAddDrawerOpen(true);
         },
@@ -236,7 +296,7 @@ export function AppShell() {
         },
       },
     ],
-    [t],
+    [resetAddForm, t],
   );
 
   if (loading) {
@@ -268,6 +328,19 @@ export function AppShell() {
 
   const renderView = () => {
     switch (activeView) {
+      case "payments":
+        return (
+          <PaymentsView
+            userId={session.user.id}
+            onAddExpense={async (payment) => {
+              const transaction = await addExpenseTransaction(payment);
+              return transaction?.id ?? null;
+            }}
+            onDeleteExpense={deleteTransaction}
+            locale={locale}
+            t={t}
+          />
+        );
       case "loans":
         return <LoansView userId={session.user.id} locale={locale} t={t} />;
       case "add":
@@ -387,7 +460,9 @@ export function AppShell() {
 
   const drawerTitle = editingTransactionId
     ? t.editTransaction
-    : t.addTransaction;
+    : addMode === "payment"
+      ? t.newPayment
+      : t.addTransaction;
 
   return (
     <>
@@ -403,12 +478,10 @@ export function AppShell() {
         onOpenChange={(open) => {
           setIsAddDrawerOpen(open);
           if (!open) {
-            setTitle("");
-            setAmount("");
-            setCategory(getDefaultCategory("expense"));
-            setType("expense");
-            setEditingTransactionId(null);
-            setActiveView("home");
+            resetAddForm();
+            setActiveView((current) =>
+              current === "payments" ? current : "home",
+            );
           }
         }}
       >
@@ -428,20 +501,136 @@ export function AppShell() {
             </div>
           </DrawerHeader>
 
-          <div className="px-4 pb-6 pt-4">
-            <TransactionForm
-              title={title}
-              amount={amount}
-              category={category}
-              type={type}
-              titleSuggestions={recentTransactionTitles}
-              onTitleChange={setTitle}
-              onAmountChange={setAmount}
-              onCategoryChange={setCategory}
-              onTypeChange={handleTypeChange}
-              onSubmit={handleAddTransaction}
-              t={t}
-            />
+          <div className="space-y-4 px-4 pb-6 pt-4">
+            {!editingTransactionId ? (
+              <div
+                role="group"
+                aria-label={t.add}
+                className="grid grid-cols-2 gap-2 rounded-lg bg-muted p-1"
+              >
+                <button
+                  type="button"
+                  aria-pressed={addMode === "expense"}
+                  onClick={() => {
+                    setAddMode("expense");
+                    setPaymentError("");
+                  }}
+                  className={`rounded-md py-2 text-sm font-medium transition ${
+                    addMode === "expense"
+                      ? "bg-emerald-600 text-white"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {t.expense}
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={addMode === "payment"}
+                  onClick={() => {
+                    setAddMode("payment");
+                    setType("expense");
+                    setCategory(
+                      t.expenseCategories.find(
+                        (option) => option.value === "bills",
+                      )?.value ?? getDefaultCategory("expense"),
+                    );
+                    setPaymentError("");
+                  }}
+                  className={`rounded-md py-2 text-sm font-medium transition ${
+                    addMode === "payment"
+                      ? "bg-emerald-600 text-white"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {t.payments}
+                </button>
+              </div>
+            ) : null}
+
+            {addMode === "payment" && !editingTransactionId ? (
+              <form
+                onSubmit={(event) => void handleAddPayment(event)}
+                className="space-y-4 rounded-xl border border-border bg-card p-5"
+              >
+                <h2 className="text-lg font-semibold text-foreground">
+                  {t.newPayment}
+                </h2>
+                <label className="block text-xs text-muted-foreground">
+                  {t.paymentTitle}
+                  <input
+                    required
+                    value={title}
+                    onChange={(event) => setTitle(event.target.value)}
+                    className="mt-1 w-full rounded-lg border border-border bg-background p-2.5 text-sm text-foreground focus:border-emerald-500 focus:outline-none"
+                  />
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="block text-xs text-muted-foreground">
+                    {t.amountLabel}
+                    <input
+                      required
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      value={amount}
+                      onChange={(event) => setAmount(event.target.value)}
+                      className="mt-1 w-full rounded-lg border border-border bg-background p-2.5 text-sm text-foreground focus:border-emerald-500 focus:outline-none"
+                    />
+                  </label>
+                  <label className="block text-xs text-muted-foreground">
+                    {t.categoryLabel}
+                    <select
+                      required
+                      value={category}
+                      onChange={(event) => setCategory(event.target.value)}
+                      className="mt-1 w-full rounded-lg border border-border bg-background p-2.5 text-sm text-foreground focus:border-emerald-500 focus:outline-none"
+                    >
+                      {t.expenseCategories.map((option) => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+                <label className="block text-xs text-muted-foreground">
+                  {t.dueDate}
+                  <input
+                    required
+                    type="date"
+                    value={paymentDueDate}
+                    onChange={(event) => setPaymentDueDate(event.target.value)}
+                    className="mt-1 w-full rounded-lg border border-border bg-background p-2.5 text-sm text-foreground focus:border-emerald-500 focus:outline-none"
+                  />
+                </label>
+                {paymentError ? (
+                  <p role="alert" className="text-sm text-red-600 dark:text-red-300">
+                    {paymentError}
+                  </p>
+                ) : null}
+                <button
+                  type="submit"
+                  disabled={isSavingPayment}
+                  className="w-full rounded-lg bg-emerald-600 py-2.5 font-medium text-white transition hover:bg-emerald-500 disabled:opacity-50"
+                >
+                  {isSavingPayment ? t.loading : t.savePayment}
+                </button>
+              </form>
+            ) : (
+              <TransactionForm
+                title={title}
+                amount={amount}
+                category={category}
+                type={type}
+                titleSuggestions={recentTransactionTitles}
+                onTitleChange={setTitle}
+                onAmountChange={setAmount}
+                onCategoryChange={setCategory}
+                onTypeChange={handleTypeChange}
+                onSubmit={handleAddTransaction}
+                t={t}
+              />
+            )}
           </div>
         </DrawerContent>
       </Drawer>
@@ -451,9 +640,6 @@ export function AppShell() {
         modal={true}
         onOpenChange={(open) => {
           setIsMenuDrawerOpen(open);
-          if (!open) {
-            setActiveView("home");
-          }
         }}
       >
         <DrawerContent className="mx-auto max-w-md rounded-t-2xl border border-border bg-popover p-0 text-popover-foreground shadow-2xl">
@@ -473,6 +659,18 @@ export function AppShell() {
           </DrawerHeader>
 
           <div className="space-y-4 px-4 pb-6 pt-4 text-sm text-foreground">
+            <button
+              type="button"
+              onClick={() => {
+                setActiveView("loans");
+                setIsMenuDrawerOpen(false);
+              }}
+              className="flex w-full items-center gap-3 rounded-xl border border-border bg-muted/50 p-3 text-left font-medium transition hover:border-ring hover:bg-muted"
+            >
+              <HandCoins className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+              <span>{t.loans}</span>
+            </button>
+
             <div className="rounded-xl border border-border bg-muted/50 p-3">
               <p className="mb-3 text-xs uppercase tracking-[0.2em] text-muted-foreground">
                 {t.language}
