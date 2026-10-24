@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
-  ArrowLeft,
   BarChart3,
   CreditCard,
   House,
@@ -48,7 +47,6 @@ export type AppView =
   | "home"
   | "payments"
   | "loans"
-  | "cashflow"
   | "add"
   | "locale"
   | "menu";
@@ -88,6 +86,7 @@ export function AppShell() {
   const [isSavingPayment, setIsSavingPayment] = useState(false);
   const [activeView, setActiveView] = useState<AppView>("home");
   const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false);
+  const [isCashFlowDrawerOpen, setIsCashFlowDrawerOpen] = useState(false);
   const [paymentsRefreshToken, setPaymentsRefreshToken] = useState(0);
   const [forecastPayments, setForecastPayments] = useState<
     ScheduledForecastPayment[]
@@ -405,28 +404,6 @@ export function AppShell() {
         );
       case "loans":
         return <LoansView userId={session.user.id} locale={locale} t={t} />;
-      case "cashflow":
-        return (
-          <div className="space-y-4">
-            <button
-              type="button"
-              onClick={() => setActiveView("home")}
-              className="inline-flex items-center gap-2 rounded-lg px-2 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
-            >
-              <ArrowLeft aria-hidden="true" className="h-4 w-4" />
-              {t.home}
-            </button>
-            <CashFlowForecast
-              transactions={transactions}
-              payments={forecastPayments}
-              totalBalance={totalBalance}
-              loading={forecastPaymentsLoading}
-              error={forecastPaymentsError}
-              locale={locale}
-              t={t}
-            />
-          </div>
-        );
       case "add":
         return null;
       case "menu":
@@ -524,7 +501,7 @@ export function AppShell() {
               transactions={transactions}
               locale={locale}
               t={t}
-              onOpenCashFlow={() => setActiveView("cashflow")}
+              onOpenCashFlow={() => setIsCashFlowDrawerOpen(true)}
             />
             <DailySpendingChart
               transactions={transactions}
@@ -725,6 +702,40 @@ export function AppShell() {
                 t={t}
               />
             )}
+          </div>
+        </DrawerContent>
+      </Drawer>
+
+      <Drawer
+        open={isCashFlowDrawerOpen}
+        modal={true}
+        onOpenChange={setIsCashFlowDrawerOpen}
+      >
+        <DrawerContent className="mx-auto max-h-[90dvh] max-w-md overflow-y-auto rounded-t-2xl border border-border bg-popover p-0 text-popover-foreground shadow-2xl">
+          <DrawerHeader className="border-b border-border px-4 pb-3 pt-4">
+            <div className="flex items-center justify-between gap-3">
+              <DrawerTitle className="text-lg font-semibold text-foreground">
+                {t.monthlyCashFlowForecast}
+              </DrawerTitle>
+              <DrawerClose
+                type="button"
+                aria-label={t.close}
+                className="rounded-full border border-border bg-muted p-2 text-muted-foreground transition hover:border-ring hover:text-foreground"
+              >
+                <X className="h-4 w-4" strokeWidth={2} />
+              </DrawerClose>
+            </div>
+          </DrawerHeader>
+          <div className="px-4 pb-6 pt-4">
+            <CashFlowForecast
+              transactions={transactions}
+              payments={forecastPayments}
+              totalBalance={totalBalance}
+              loading={forecastPaymentsLoading}
+              error={forecastPaymentsError}
+              locale={locale}
+              t={t}
+            />
           </div>
         </DrawerContent>
       </Drawer>
