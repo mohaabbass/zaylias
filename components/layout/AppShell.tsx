@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
   BarChart3,
-  Coins,
+  HandCoins,
   House,
   Menu,
   MoonStar,
@@ -18,6 +18,7 @@ import { BalanceCard } from "@/components/budget/BalanceCard";
 import { DailySpendingChart } from "@/components/budget/DailySpendingChart";
 import { StatisticsChart } from "@/components/budget/StatisticsChart";
 import { TransactionList } from "@/components/budget/TransactionList";
+import { LoansView } from "@/components/loans/LoansView";
 import { AuthScreen } from "@/components/auth/AuthScreen";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { BottomNav } from "@/components/layout/BottomNav";
@@ -34,7 +35,7 @@ import { normalizeCategoryValue } from "@/lib/i18n";
 import { useBudget } from "@/hooks/useBudget";
 import type { TransactionType } from "@/types/finance";
 
-export type AppView = "home" | "budget" | "add" | "locale" | "menu";
+export type AppView = "home" | "loans" | "add" | "locale" | "menu";
 type ThemeMode = "light" | "dark";
 
 export function AppShell() {
@@ -205,10 +206,10 @@ export function AppShell() {
         onClick: () => setActiveView("home"),
       },
       {
-        id: "budget",
-        label: t.budget,
-        icon: Coins,
-        onClick: () => setActiveView("budget"),
+        id: "loans",
+        label: t.loans,
+        icon: HandCoins,
+        onClick: () => setActiveView("loans"),
       },
       {
         id: "add",
@@ -266,24 +267,8 @@ export function AppShell() {
 
   const renderView = () => {
     switch (activeView) {
-      case "budget":
-        return (
-          <div className="space-y-6">
-            <BalanceCard
-              totalBalance={totalBalance}
-              transactions={transactions}
-              locale={locale}
-              t={t}
-            />
-            <TransactionList
-              transactions={transactions}
-              onDelete={(id) => void deleteTransaction(id)}
-              onEdit={openEditDrawer}
-              locale={locale}
-              t={t}
-            />
-          </div>
-        );
+      case "loans":
+        return <LoansView userId={session.user.id} locale={locale} t={t} />;
       case "add":
         return null;
       case "menu":
