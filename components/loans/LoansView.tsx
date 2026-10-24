@@ -341,7 +341,7 @@ export function LoansView({ userId, locale, t }: LoansViewProps) {
   } else {
     loansContent = (
       <>
-        <section className="rounded-2xl border border-border bg-background p-5">
+        <section className="rounded-2xl border border-border bg-linear-to-br from-card via-card to-emerald-500/5 p-5">
           <h2 className="text-sm font-medium text-muted-foreground">
             {t.loanOverview}
           </h2>

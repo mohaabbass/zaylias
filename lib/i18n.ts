@@ -124,6 +124,7 @@ export const translations = {
     statisticsChartTitle: "Inkomster och utgifter",
     statisticsChartDescription:
       "Räkningar och prenumerationer ingår i de totala utgifterna.",
+    expensesByCategory: "Utgifter per kategori",
     home: "Hem",
     budget: "Budget",
     loans: "Lån",
@@ -226,6 +227,7 @@ export const translations = {
     statisticsChartTitle: "Income and expenses",
     statisticsChartDescription:
       "Bills and subscriptions are included in total expenses.",
+    expensesByCategory: "Expenses by category",
     home: "Home",
     budget: "Budget",
     loans: "Loans",
@@ -326,6 +328,7 @@ export const translations = {
     statistics: "الإحصائيات",
     statisticsChartTitle: "الدخل والمصروفات",
     statisticsChartDescription: "الفواتير والاشتراكات مشمولة ضمن إجمالي المصروفات.",
+    expensesByCategory: "المصروفات حسب الفئة",
     home: "الرئيسية",
     budget: "الميزانية",
     loans: "القروض",

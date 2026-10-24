@@ -17,6 +17,7 @@ import { TransactionForm } from "@/components/budget/TransactionForm";
 import { BalanceCard } from "@/components/budget/BalanceCard";
 import { DailySpendingChart } from "@/components/budget/DailySpendingChart";
 import { StatisticsChart } from "@/components/budget/StatisticsChart";
+import { StatisticsCategoryChart } from "@/components/budget/StatisticsCategoryChart";
 import { TransactionList } from "@/components/budget/TransactionList";
 import { LoansView } from "@/components/loans/LoansView";
 import { AuthScreen } from "@/components/auth/AuthScreen";
@@ -345,7 +346,16 @@ export function AppShell() {
                 </div>
               </div>
             </section>
-            <StatisticsChart transactions={transactions} locale={locale} t={t} />
+            <StatisticsChart
+              transactions={transactions}
+              locale={locale}
+              t={t}
+            />
+            <StatisticsCategoryChart
+              transactions={transactions}
+              locale={locale}
+              t={t}
+            />
           </div>
         );
       case "home":

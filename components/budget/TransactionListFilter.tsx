@@ -181,10 +181,7 @@ export function TransactionListFilter({
   );
 
   return (
-    <div
-      dir={locale === "ar" ? "rtl" : "ltr"}
-      className="relative"
-    >
+    <div dir={locale === "ar" ? "rtl" : "ltr"} className="relative">
       <button
         type="button"
         aria-expanded={isOpen}
@@ -222,7 +219,6 @@ export function TransactionListFilter({
               >
                 <div className="flex shrink-0 items-center justify-between border-b border-border px-5 py-4">
                   <div>
-                    <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-muted-foreground/30" />
                     <h2
                       id="mobile-transaction-filter-title"
                       className="text-base font-semibold text-foreground"
