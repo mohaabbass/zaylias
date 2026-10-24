@@ -5,8 +5,8 @@ import {
   ArrowRight,
   BarChart3,
   CreditCard,
-  HandCoins,
   House,
+  Landmark,
   Menu,
   MoonStar,
   Plus,
@@ -39,13 +39,7 @@ import { supabase } from "@/lib/supabase";
 import { useBudget } from "@/hooks/useBudget";
 import type { TransactionType } from "@/types/finance";
 
-export type AppView =
-  | "home"
-  | "payments"
-  | "loans"
-  | "add"
-  | "locale"
-  | "menu";
+export type AppView = "home" | "payments" | "loans" | "add" | "locale" | "menu";
 type ThemeMode = "light" | "dark";
 type AddMode = "expense" | "payment";
 
@@ -201,9 +195,7 @@ export function AppShell() {
     }
   };
 
-  const handleAddPayment = async (
-    event: React.FormEvent<HTMLFormElement>,
-  ) => {
+  const handleAddPayment = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setPaymentError("");
 
@@ -615,7 +607,10 @@ export function AppShell() {
                   />
                 </label>
                 {paymentError ? (
-                  <p role="alert" className="text-sm text-red-600 dark:text-red-300">
+                  <p
+                    role="alert"
+                    className="text-sm text-red-600 dark:text-red-300"
+                  >
                     {paymentError}
                   </p>
                 ) : null}
@@ -678,7 +673,7 @@ export function AppShell() {
               }}
               className="flex w-full items-center gap-3 rounded-xl border border-border bg-muted/50 p-3 text-left font-medium transition hover:border-ring hover:bg-muted"
             >
-              <HandCoins className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+              <Landmark className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
               <span>{t.loans}</span>
             </button>
 

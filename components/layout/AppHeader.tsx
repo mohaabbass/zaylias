@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import {
   Bell,
   CalendarDays,
-  ChartNoAxesColumn,
   CircleAlert,
   Frame,
   LogOut,
@@ -17,6 +16,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
+import { BrandMark } from "@/components/ui/BrandMark";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import { formatCurrency } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
@@ -118,7 +118,7 @@ export function AppHeader({
     <header className="sticky top-0 z-20 border-b border-border bg-background/90 px-4 pb-3 pt-4 backdrop-blur-sm">
       <div className="mx-auto flex max-w-md items-center justify-between">
         <div className="flex items-center gap-3">
-          <ChartNoAxesColumn className="h-5 w-5 text-emerald-600" />
+          <BrandMark />
 
           <div>
             <h1 className="text-base font-semibold text-foreground">{title}</h1>
