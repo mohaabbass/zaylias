@@ -6,6 +6,7 @@ type TransactionFormProps = {
   amount: string;
   category: string;
   type: TransactionType;
+  titleSuggestions?: string[];
   onTitleChange: (value: string) => void;
   onAmountChange: (value: string) => void;
   onCategoryChange: (value: string) => void;
@@ -19,6 +20,7 @@ export function TransactionForm({
   amount,
   category,
   type,
+  titleSuggestions = [],
   onTitleChange,
   onAmountChange,
   onCategoryChange,
@@ -26,6 +28,8 @@ export function TransactionForm({
   onSubmit,
   t,
 }: TransactionFormProps) {
+  const suggestionListId = "transaction-title-suggestions";
+
   return (
     <form
       onSubmit={onSubmit}
@@ -66,11 +70,19 @@ export function TransactionForm({
         </label>
         <input
           type="text"
+          list={titleSuggestions.length > 0 ? suggestionListId : undefined}
           value={title}
           onChange={(event) => onTitleChange(event.target.value)}
           placeholder={t.titlePlaceholder}
           className="w-full rounded-lg border border-border bg-background p-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-emerald-500 focus:outline-none"
         />
+        {titleSuggestions.length > 0 ? (
+          <datalist id={suggestionListId}>
+            {titleSuggestions.map((suggestion) => (
+              <option key={suggestion} value={suggestion} />
+            ))}
+          </datalist>
+        ) : null}
       </div>
 
       <div className="grid grid-cols-2 gap-3">

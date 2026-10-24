@@ -127,6 +127,24 @@ export function AppShell() {
     }
   };
 
+  const recentTransactionTitles = useMemo(() => {
+    const counts = new Map<string, number>();
+
+    for (const transaction of transactions) {
+      const title = transaction.title.trim();
+
+      if (!title) {
+        continue;
+      }
+
+      counts.set(title, (counts.get(title) ?? 0) + 1);
+    }
+
+    return [...counts.entries()]
+      .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+      .map(([title]) => title);
+  }, [transactions]);
+
   const navItems = useMemo(
     () => [
       {
@@ -318,6 +336,7 @@ export function AppShell() {
               amount={amount}
               category={category}
               type={type}
+              titleSuggestions={recentTransactionTitles}
               onTitleChange={setTitle}
               onAmountChange={setAmount}
               onCategoryChange={setCategory}
