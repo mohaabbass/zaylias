@@ -269,7 +269,12 @@ export function AppShell() {
       case "budget":
         return (
           <div className="space-y-6">
-            <BalanceCard totalBalance={totalBalance} locale={locale} t={t} />
+            <BalanceCard
+              totalBalance={totalBalance}
+              transactions={transactions}
+              locale={locale}
+              t={t}
+            />
             <TransactionList
               transactions={transactions}
               onDelete={(id) => void deleteTransaction(id)}
@@ -362,7 +367,12 @@ export function AppShell() {
       default:
         return (
           <div className="space-y-6">
-            <BalanceCard totalBalance={totalBalance} locale={locale} t={t} />
+            <BalanceCard
+              totalBalance={totalBalance}
+              transactions={transactions}
+              locale={locale}
+              t={t}
+            />
             <DailySpendingChart
               transactions={transactions}
               locale={locale}
