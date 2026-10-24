@@ -10,8 +10,10 @@ import {
   Menu,
   MoonStar,
   Plus,
+  ReceiptText,
   SunMedium,
   X,
+  Wallet,
 } from "lucide-react";
 
 import { TransactionForm } from "@/components/budget/TransactionForm";
@@ -25,6 +27,8 @@ import { StatisticsChart } from "@/components/budget/StatisticsChart";
 import { StatisticsCategoryChart } from "@/components/budget/StatisticsCategoryChart";
 import { TransactionList } from "@/components/budget/TransactionList";
 import { PaymentsView } from "@/components/budget/PaymentsView";
+import { BillsView } from "@/components/bills/BillsView";
+import { SavingsAccountsView } from "@/components/bills/SavingsAccountsView";
 import { LoansView } from "@/components/loans/LoansView";
 import { AuthScreen } from "@/components/auth/AuthScreen";
 import { AppHeader } from "@/components/layout/AppHeader";
@@ -47,6 +51,8 @@ export type AppView =
   | "home"
   | "payments"
   | "loans"
+  | "bills"
+  | "savingsAccounts"
   | "add"
   | "locale"
   | "menu";
@@ -404,6 +410,16 @@ export function AppShell() {
         );
       case "loans":
         return <LoansView userId={session.user.id} locale={locale} t={t} />;
+      case "bills":
+        return <BillsView userId={session.user.id} locale={locale} t={t} />;
+      case "savingsAccounts":
+        return (
+          <SavingsAccountsView
+            userId={session.user.id}
+            locale={locale}
+            t={t}
+          />
+        );
       case "add":
         return null;
       case "menu":
@@ -776,6 +792,30 @@ export function AppShell() {
               <span>{t.loans}</span>
             </button>
 
+            <button
+              type="button"
+              onClick={() => {
+                setActiveView("bills");
+                setIsMenuDrawerOpen(false);
+              }}
+              className="flex w-full items-center gap-3 rounded-xl border border-border bg-muted/50 p-3 text-left font-medium transition hover:border-ring hover:bg-muted"
+            >
+              <ReceiptText className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+              <span>{t.bills}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setActiveView("savingsAccounts");
+                setIsMenuDrawerOpen(false);
+              }}
+              className="flex w-full items-center gap-3 rounded-xl border border-border bg-muted/50 p-3 text-left font-medium transition hover:border-ring hover:bg-muted"
+            >
+              <Wallet className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+              <span>{t.savingsAccounts}</span>
+            </button>
+
             <div className="rounded-xl border border-border bg-muted/50 p-3">
               <p className="mb-3 text-xs uppercase tracking-[0.2em] text-muted-foreground">
                 {t.language}
@@ -854,7 +894,12 @@ export function AppShell() {
       <BottomNav
         items={navItems.map((item) => ({
           ...item,
-          active: activeView === item.id,
+          active:
+            activeView === item.id ||
+            (item.id === "menu" &&
+              (activeView === "loans" ||
+                activeView === "bills" ||
+                activeView === "savingsAccounts")),
         }))}
       />
     </>
