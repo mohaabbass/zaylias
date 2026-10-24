@@ -170,7 +170,14 @@ export function TransactionList({
                         transaction.type === "income"
                           ? "text-emerald-600 dark:text-emerald-400"
                           : transaction.category === "Räkningar" ||
-                              transaction.category === "Bills"
+                              transaction.category === "Bills" ||
+                              transaction.category === "Gåvor" ||
+                              transaction.category === "Prenumerationer" ||
+                              transaction.category === "Gifts" ||
+                              transaction.category === "Subscriptions" ||
+                              transaction.category === "فواتير" ||
+                              transaction.category === "هدايا" ||
+                              transaction.category === "اشتراكات"
                             ? "text-amber-500 dark:text-amber-400"
                             : "text-red-500"
                       }`}
