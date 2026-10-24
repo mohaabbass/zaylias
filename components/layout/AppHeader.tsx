@@ -1,11 +1,15 @@
 import { LogOut, Wallet } from "lucide-react";
 
+import { useLocale } from "@/components/providers/LocaleProvider";
+
 type AppHeaderProps = {
   title: string;
   onLogout: () => void;
 };
 
 export function AppHeader({ title, onLogout }: AppHeaderProps) {
+  const { t } = useLocale();
+
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-background/90 px-4 pb-3 pt-4 backdrop-blur-sm">
       <div className="mx-auto flex max-w-md items-center justify-between">
@@ -25,7 +29,7 @@ export function AppHeader({ title, onLogout }: AppHeaderProps) {
           className="inline-flex items-center gap-2 rounded-lg border border-border bg-muted px-3 py-1.5 text-xs font-medium text-foreground transition hover:border-ring hover:bg-accent"
         >
           <LogOut className="h-3.5 w-3.5" strokeWidth={2.2} />
-          <span>Logga ut</span>
+          <span>{t.logout}</span>
         </button>
       </div>
     </header>

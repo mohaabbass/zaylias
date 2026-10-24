@@ -29,6 +29,8 @@ export function TransactionForm({
   t,
 }: TransactionFormProps) {
   const suggestionListId = "transaction-title-suggestions";
+  const availableCategories =
+    type === "income" ? t.incomeCategories : t.expenseCategories;
 
   return (
     <form
@@ -109,7 +111,7 @@ export function TransactionForm({
             onChange={(event) => onCategoryChange(event.target.value)}
             className="w-full rounded-lg border border-border bg-background p-2.5 text-sm text-foreground focus:border-emerald-500 focus:outline-none"
           >
-            {t.categoryOptions.map((option) => (
+            {availableCategories.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>

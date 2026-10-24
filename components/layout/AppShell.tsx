@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
   BarChart3,
@@ -13,11 +13,11 @@ import {
   X,
 } from "lucide-react";
 
-import { AuthScreen } from "@/components/auth/AuthScreen";
-import { BalanceCard } from "@/components/budget/BalanceCard";
 import { TransactionForm } from "@/components/budget/TransactionForm";
-import { TransactionList } from "@/components/budget/TransactionList";
+import { BalanceCard } from "@/components/budget/BalanceCard";
 import { DailySpendingChart } from "@/components/budget/DailySpendingChart";
+import { TransactionList } from "@/components/budget/TransactionList";
+import { AuthScreen } from "@/components/auth/AuthScreen";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { useLocale } from "@/components/providers/LocaleProvider";
@@ -28,26 +28,12 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
+import { formatCurrency } from "@/lib/utils";
 import { useBudget } from "@/hooks/useBudget";
 import type { TransactionType } from "@/types/finance";
 
 export type AppView = "home" | "budget" | "add" | "locale" | "menu";
 type ThemeMode = "light" | "dark";
-
-function getInitialTheme(): ThemeMode {
-  if (typeof window === "undefined") {
-    return "dark";
-  }
-
-  const stored = window.localStorage.getItem("zaylias-theme");
-  if (stored === "light" || stored === "dark") {
-    return stored;
-  }
-
-  return window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light";
-}
 
 export function AppShell() {
   const { t, locale, setLocale, locales, localeLabels } = useLocale();
@@ -61,6 +47,7 @@ export function AppShell() {
     signUp,
     logout,
     addTransaction,
+    updateTransaction,
     deleteTransaction,
     setAuthError,
   } = useBudget();
@@ -70,25 +57,51 @@ export function AppShell() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState("Mat");
+  const [category, setCategory] = useState<string>(
+    () => t.expenseCategories[0]?.value ?? "Food",
+  );
   const [type, setType] = useState<TransactionType>("expense");
   const [activeView, setActiveView] = useState<AppView>("home");
   const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false);
   const [isMenuDrawerOpen, setIsMenuDrawerOpen] = useState(false);
   const [theme, setTheme] = useState<ThemeMode>("dark");
+  const [hasHydratedTheme, setHasHydratedTheme] = useState(false);
+  const [editingTransactionId, setEditingTransactionId] = useState<
+    string | null
+  >(null);
 
   useEffect(() => {
-    const initialTheme = getInitialTheme();
-    setTheme(initialTheme);
-    document.documentElement.classList.toggle("dark", initialTheme === "dark");
-    document.documentElement.style.colorScheme = initialTheme;
+    const stored = window.localStorage.getItem("zaylias-theme");
+    const initialTheme =
+      stored === "light" || stored === "dark"
+        ? stored
+        : window.matchMedia("(prefers-color-scheme: dark)").matches
+          ? "dark"
+          : "light";
+
+    queueMicrotask(() => {
+      setTheme(initialTheme);
+      setHasHydratedTheme(true);
+    });
   }, []);
 
   useEffect(() => {
+    if (!hasHydratedTheme) {
+      return;
+    }
+
     document.documentElement.classList.toggle("dark", theme === "dark");
     document.documentElement.style.colorScheme = theme;
     window.localStorage.setItem("zaylias-theme", theme);
-  }, [theme]);
+  }, [hasHydratedTheme, theme]);
+
+  const getDefaultCategory = useCallback(
+    (nextType: TransactionType = type) =>
+      nextType === "income"
+        ? (t.incomeCategories[0]?.value ?? "Salary")
+        : (t.expenseCategories[0]?.value ?? "Food"),
+    [t, type],
+  );
 
   const handleAuth = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -96,9 +109,7 @@ export function AppShell() {
     if (isSignUp) {
       const success = await signUp(email, password);
       if (success) {
-        alert(
-          "Konto skapat! Kolla din e-post för bekräftelselänk om det krävs, eller logga in.",
-        );
+        alert(t.accountCreated);
       }
       return;
     }
@@ -106,11 +117,47 @@ export function AppShell() {
     await signIn(email, password);
   };
 
+  const handleTypeChange = (nextType: TransactionType) => {
+    setType(nextType);
+    const nextCategory = getDefaultCategory(nextType);
+    setCategory(nextCategory);
+  };
+
+  const openEditDrawer = (transaction: (typeof transactions)[number]) => {
+    setEditingTransactionId(transaction.id);
+    setTitle(transaction.title);
+    setAmount(String(transaction.amount));
+    setCategory(transaction.category);
+    setType(transaction.type);
+    setActiveView("add");
+    setIsAddDrawerOpen(true);
+  };
+
   const handleAddTransaction = async (
     event: React.FormEvent<HTMLFormElement>,
   ) => {
     event.preventDefault();
     if (!title || !amount) return;
+
+    if (editingTransactionId) {
+      const success = await updateTransaction(editingTransactionId, {
+        title,
+        amount,
+        category,
+        type,
+      });
+
+      if (success) {
+        setTitle("");
+        setAmount("");
+        setCategory(getDefaultCategory("expense"));
+        setType("expense");
+        setEditingTransactionId(null);
+        setIsAddDrawerOpen(false);
+        setActiveView("home");
+      }
+      return;
+    }
 
     const success = await addTransaction({
       title,
@@ -122,6 +169,8 @@ export function AppShell() {
     if (success) {
       setTitle("");
       setAmount("");
+      setCategory(getDefaultCategory("expense"));
+      setType("expense");
       setIsAddDrawerOpen(false);
       setActiveView("home");
     }
@@ -218,10 +267,12 @@ export function AppShell() {
       case "budget":
         return (
           <div className="space-y-6">
-            <BalanceCard totalBalance={totalBalance} t={t} />
+            <BalanceCard totalBalance={totalBalance} locale={locale} t={t} />
             <TransactionList
               transactions={transactions}
               onDelete={(id) => void deleteTransaction(id)}
+              onEdit={openEditDrawer}
+              locale={locale}
               t={t}
             />
           </div>
@@ -242,33 +293,55 @@ export function AppShell() {
                   {t.totalBalance}
                 </p>
                 <p className="mt-2 text-2xl font-semibold text-foreground">
-                  {totalBalance} {t.currency}
+                  {formatCurrency(
+                    totalBalance,
+                    locale === "ar"
+                      ? "ar-EG"
+                      : locale === "en"
+                        ? "en-US"
+                        : "sv-SE",
+                  )}{" "}
+                  {t.currency}
                 </p>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-xl border border-border bg-muted/50 p-3">
                   <p className="text-xs text-muted-foreground">{t.expense}</p>
                   <p className="mt-2 text-lg font-semibold text-red-500">
-                    {transactions
-                      .filter((transaction) => transaction.type === "expense")
-                      .reduce(
-                        (sum, transaction) =>
-                          sum + Number(transaction.amount || 0),
-                        0,
-                      )}{" "}
+                    {formatCurrency(
+                      transactions
+                        .filter((transaction) => transaction.type === "expense")
+                        .reduce(
+                          (sum, transaction) =>
+                            sum + Number(transaction.amount || 0),
+                          0,
+                        ),
+                      locale === "ar"
+                        ? "ar-EG"
+                        : locale === "en"
+                          ? "en-US"
+                          : "sv-SE",
+                    )}{" "}
                     {t.currency}
                   </p>
                 </div>
                 <div className="rounded-xl border border-border bg-muted/50 p-3">
                   <p className="text-xs text-muted-foreground">{t.income}</p>
                   <p className="mt-2 text-lg font-semibold text-emerald-500">
-                    {transactions
-                      .filter((transaction) => transaction.type === "income")
-                      .reduce(
-                        (sum, transaction) =>
-                          sum + Number(transaction.amount || 0),
-                        0,
-                      )}{" "}
+                    {formatCurrency(
+                      transactions
+                        .filter((transaction) => transaction.type === "income")
+                        .reduce(
+                          (sum, transaction) =>
+                            sum + Number(transaction.amount || 0),
+                          0,
+                        ),
+                      locale === "ar"
+                        ? "ar-EG"
+                        : locale === "en"
+                          ? "en-US"
+                          : "sv-SE",
+                    )}{" "}
                     {t.currency}
                   </p>
                 </div>
@@ -280,7 +353,7 @@ export function AppShell() {
       default:
         return (
           <div className="space-y-6">
-            <BalanceCard totalBalance={totalBalance} t={t} />
+            <BalanceCard totalBalance={totalBalance} locale={locale} t={t} />
             <DailySpendingChart
               transactions={transactions}
               locale={locale}
@@ -289,12 +362,18 @@ export function AppShell() {
             <TransactionList
               transactions={transactions}
               onDelete={(id) => void deleteTransaction(id)}
+              onEdit={openEditDrawer}
+              locale={locale}
               t={t}
             />
           </div>
         );
     }
   };
+
+  const drawerTitle = editingTransactionId
+    ? t.editTransaction
+    : t.addTransaction;
 
   return (
     <>
@@ -310,6 +389,11 @@ export function AppShell() {
         onOpenChange={(open) => {
           setIsAddDrawerOpen(open);
           if (!open) {
+            setTitle("");
+            setAmount("");
+            setCategory(getDefaultCategory("expense"));
+            setType("expense");
+            setEditingTransactionId(null);
             setActiveView("home");
           }
         }}
@@ -318,11 +402,11 @@ export function AppShell() {
           <DrawerHeader className="border-b border-border px-4 pb-3 pt-4">
             <div className="flex items-center justify-between gap-3">
               <DrawerTitle className="text-lg font-semibold text-foreground">
-                {t.addTransaction}
+                {drawerTitle}
               </DrawerTitle>
               <DrawerClose
                 type="button"
-                aria-label="Close"
+                aria-label={t.close}
                 className="rounded-full border border-border bg-muted p-2 text-muted-foreground transition hover:border-ring hover:text-foreground"
               >
                 <X className="h-4 w-4" strokeWidth={2} />
@@ -340,7 +424,7 @@ export function AppShell() {
               onTitleChange={setTitle}
               onAmountChange={setAmount}
               onCategoryChange={setCategory}
-              onTypeChange={setType}
+              onTypeChange={handleTypeChange}
               onSubmit={handleAddTransaction}
               t={t}
             />

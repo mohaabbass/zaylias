@@ -23,20 +23,27 @@ const LocaleContext = createContext<LocaleContextValue | undefined>(undefined);
 
 export function LocaleProvider({ children }: { children: ReactNode }) {
   const [locale, setLocale] = useState<Locale>("sv");
+  const [isHydrated, setIsHydrated] = useState(false);
 
   useEffect(() => {
     const savedLocale = window.localStorage.getItem(
       "zaylias-locale",
     ) as Locale | null;
-    if (savedLocale && locales.includes(savedLocale)) {
-      setLocale(savedLocale);
-      return;
-    }
 
-    setLocale("sv");
+    const nextLocale =
+      savedLocale && locales.includes(savedLocale) ? savedLocale : "sv";
+
+    queueMicrotask(() => {
+      setLocale(nextLocale);
+      setIsHydrated(true);
+    });
   }, []);
 
   useEffect(() => {
+    if (!isHydrated) {
+      return;
+    }
+
     window.localStorage.setItem("zaylias-locale", locale);
     document.documentElement.lang = locale;
     document.documentElement.dir = locale === "ar" ? "rtl" : "ltr";
@@ -49,7 +56,7 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
       "--font-heading",
       locale === "ar" ? "var(--font-cairo)" : "var(--font-inter)",
     );
-  }, [locale]);
+  }, [isHydrated, locale]);
 
   const value = useMemo<LocaleContextValue>(
     () => ({

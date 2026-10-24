@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 
 import type { Translation } from "@/lib/i18n";
+import { formatCurrency } from "@/lib/utils";
 import type { Transaction } from "@/types/finance";
 
 type DailySpendingChartProps = {
@@ -60,7 +61,10 @@ export function DailySpendingChart({
           </h3>
         </div>
         <div className="rounded-full border border-red-500/20 bg-red-500/10 px-2 py-1 text-xs font-medium text-red-500 dark:text-red-300">
-          {data.reduce((sum, entry) => sum + entry.value, 0).toFixed(0)}{" "}
+          {formatCurrency(
+            data.reduce((sum, entry) => sum + entry.value, 0),
+            locale === "ar" ? "ar-EG" : locale === "en" ? "en-US" : "sv-SE",
+          )}{" "}
           {t.currency}
         </div>
       </div>
@@ -80,7 +84,16 @@ export function DailySpendingChart({
                 className="flex flex-1 flex-col items-center justify-end gap-2"
               >
                 <span className="text-[10px] font-medium text-muted-foreground">
-                  {entry.value > 0 ? `${entry.value.toFixed(0)}` : "0"}
+                  {entry.value > 0
+                    ? formatCurrency(
+                        entry.value,
+                        locale === "ar"
+                          ? "ar-EG"
+                          : locale === "en"
+                            ? "en-US"
+                            : "sv-SE",
+                      )
+                    : "0"}
                 </span>
                 <div className="flex h-28 w-full items-end justify-center">
                   <div

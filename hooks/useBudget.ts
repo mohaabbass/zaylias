@@ -128,6 +128,49 @@ export function useBudget() {
     [session],
   );
 
+  const updateTransaction = useCallback(
+    async (
+      id: string,
+      input: {
+        title: string;
+        amount: string;
+        category: string;
+        type: TransactionType;
+      },
+    ) => {
+      if (!session || !input.title || !input.amount) {
+        return false;
+      }
+
+      const { data, error } = await supabase
+        .from("expenses")
+        .update({
+          title: input.title,
+          amount: Number.parseFloat(input.amount),
+          category: input.category,
+          type: input.type,
+        })
+        .eq("id", id)
+        .select();
+
+      if (error) {
+        console.error("Fel vid uppdatering:", error);
+        return false;
+      }
+
+      if (data && data[0]) {
+        setTransactions((current) =>
+          current.map((transaction) =>
+            transaction.id === id ? (data[0] as Transaction) : transaction,
+          ),
+        );
+      }
+
+      return true;
+    },
+    [session],
+  );
+
   const deleteTransaction = useCallback(async (id: string) => {
     const { error } = await supabase.from("expenses").delete().eq("id", id);
 
@@ -162,6 +205,7 @@ export function useBudget() {
     signUp,
     logout,
     addTransaction,
+    updateTransaction,
     deleteTransaction,
     setAuthError,
   };
