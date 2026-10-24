@@ -12,6 +12,8 @@ type TransactionListFilterProps = {
   onDateFromChange: (value: string) => void;
   dateTo: string;
   onDateToChange: (value: string) => void;
+  search: string;
+  onSearchChange: (value: string) => void;
   category: string;
   categories: Array<{ value: string; label: string }>;
   onCategoryChange: (value: string) => void;
@@ -28,6 +30,8 @@ export function TransactionListFilter({
   onDateFromChange,
   dateTo,
   onDateToChange,
+  search,
+  onSearchChange,
   category,
   categories,
   onCategoryChange,
@@ -45,8 +49,8 @@ export function TransactionListFilter({
   const activeFilterCount =
     Number(value !== "all") +
     Number(Boolean(dateFrom || dateTo)) +
-    Number(category !== "all");
-
+    Number(category !== "all") +
+    Number(Boolean(search.trim()));
   return (
     <div
       dir={locale === "ar" ? "rtl" : "ltr"}
@@ -140,6 +144,23 @@ export function TransactionListFilter({
                   className="w-full min-w-0 rounded-lg border border-border bg-background px-2 py-2 text-sm text-foreground"
                 />
               </div>
+            </div>
+
+            <div>
+              <label
+                className="mb-1.5 block text-xs font-medium text-muted-foreground"
+                htmlFor="transaction-title-search"
+              >
+                {t.searchTitle}
+              </label>
+              <input
+                id="transaction-title-search"
+                type="search"
+                value={search}
+                onChange={(event) => onSearchChange(event.target.value)}
+                placeholder={t.titlePlaceholder}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground"
+              />
             </div>
 
             <div>

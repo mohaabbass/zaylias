@@ -34,6 +34,7 @@ export function TransactionList({
   const [dateFromFilter, setDateFromFilter] = useState("");
   const [dateToFilter, setDateToFilter] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [searchFilter, setSearchFilter] = useState("");
   const longPressTimer = useRef<number | null>(null);
 
   const categoryOptions = Array.from(
@@ -75,8 +76,11 @@ export function TransactionList({
     const matchesCategory =
       categoryFilter === "all" ||
       normalizeCategoryValue(transaction.category) === categoryFilter;
+    const matchesSearch = transaction.title
+      .toLocaleLowerCase(locale)
+      .includes(searchFilter.trim().toLocaleLowerCase(locale));
 
-    return matchesType && matchesDate && matchesCategory;
+    return matchesType && matchesDate && matchesCategory && matchesSearch;
   });
 
   useEffect(() => {
@@ -162,6 +166,7 @@ export function TransactionList({
     setDateFromFilter("");
     setDateToFilter("");
     setCategoryFilter("all");
+    setSearchFilter("");
     closeActions();
   };
 
@@ -173,6 +178,8 @@ export function TransactionList({
           value={filter}
           dateFrom={dateFromFilter}
           dateTo={dateToFilter}
+          search={searchFilter}
+          onSearchChange={setSearchFilter}
           category={categoryFilter}
           categories={categoryOptions}
           locale={locale}
@@ -195,7 +202,8 @@ export function TransactionList({
             filter !== "all" ||
             dateFromFilter !== "" ||
             dateToFilter !== "" ||
-            categoryFilter !== "all"
+            categoryFilter !== "all" ||
+            searchFilter.trim() !== ""
           }
         />
       </div>
