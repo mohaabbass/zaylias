@@ -22,6 +22,7 @@ export function useBudget() {
     const { data, error } = await supabase
       .from("expenses")
       .select("*")
+      .eq("user_id", nextSession.user.id)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -149,8 +150,10 @@ export function useBudget() {
           amount: Number.parseFloat(input.amount),
           category: input.category,
           type: input.type,
+          user_id: session.user.id,
         })
         .eq("id", id)
+        .eq("user_id", session.user.id)
         .select();
 
       if (error) {
@@ -171,19 +174,30 @@ export function useBudget() {
     [session],
   );
 
-  const deleteTransaction = useCallback(async (id: string) => {
-    const { error } = await supabase.from("expenses").delete().eq("id", id);
+  const deleteTransaction = useCallback(
+    async (id: string) => {
+      if (!session) {
+        return false;
+      }
 
-    if (error) {
-      console.error("Fel vid radering:", error);
-      return false;
-    }
+      const { error } = await supabase
+        .from("expenses")
+        .delete()
+        .eq("id", id)
+        .eq("user_id", session.user.id);
 
-    setTransactions((current) =>
-      current.filter((transaction) => transaction.id !== id),
-    );
-    return true;
-  }, []);
+      if (error) {
+        console.error("Fel vid radering:", error);
+        return false;
+      }
+
+      setTransactions((current) =>
+        current.filter((transaction) => transaction.id !== id),
+      );
+      return true;
+    },
+    [session],
+  );
 
   const totalBalance = useMemo(
     () =>

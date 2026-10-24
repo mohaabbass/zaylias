@@ -1,6 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 
-import type { Translation } from "@/lib/i18n";
+import {
+  getCategoryLabel,
+  normalizeCategoryValue,
+  type Locale,
+  type Translation,
+} from "@/lib/i18n";
 import { formatCurrency } from "@/lib/utils";
 import type { Transaction } from "@/types/finance";
 
@@ -13,7 +18,7 @@ type TransactionListProps = {
   transactions: Transaction[];
   onDelete: (id: string) => void;
   onEdit: (transaction: Transaction) => void;
-  locale?: string;
+  locale?: Locale;
   t: Translation;
 };
 
@@ -159,7 +164,7 @@ export function TransactionList({
                       </span>
                       {"-"}
                       <span className="font-medium">
-                        {transaction.category}
+                        {getCategoryLabel(locale, transaction.category)}
                       </span>
                     </p>
                   </div>
@@ -169,15 +174,12 @@ export function TransactionList({
                       className={`text-sm font-semibold ${
                         transaction.type === "income"
                           ? "text-emerald-600 dark:text-emerald-400"
-                          : transaction.category === "Räkningar" ||
-                              transaction.category === "Bills" ||
-                              transaction.category === "Gåvor" ||
-                              transaction.category === "Prenumerationer" ||
-                              transaction.category === "Gifts" ||
-                              transaction.category === "Subscriptions" ||
-                              transaction.category === "فواتير" ||
-                              transaction.category === "هدايا" ||
-                              transaction.category === "اشتراكات"
+                          : normalizeCategoryValue(transaction.category) ===
+                                "bills" ||
+                              normalizeCategoryValue(transaction.category) ===
+                                "gifts" ||
+                              normalizeCategoryValue(transaction.category) ===
+                                "subscriptions"
                             ? "text-amber-500 dark:text-amber-400"
                             : "text-red-500"
                       }`}

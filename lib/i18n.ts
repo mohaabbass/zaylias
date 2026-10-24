@@ -13,6 +13,61 @@ export type CategoryOption = {
   label: string;
 };
 
+const legacyCategoryValueMap: Record<string, string> = {
+  Mat: "food",
+  Boende: "housing",
+  Transport: "transport",
+  Nöje: "entertainment",
+  Kläder: "clothes",
+  Räkningar: "bills",
+  Gåvor: "gifts",
+  Prenumerationer: "subscriptions",
+  Övrigt: "other",
+  Lön: "salary",
+  Bidrag: "benefits",
+  "Övriga inkomster": "other-income",
+  Food: "food",
+  Housing: "housing",
+  Entertainment: "entertainment",
+  Clothes: "clothes",
+  Bills: "bills",
+  Gifts: "gifts",
+  Subscriptions: "subscriptions",
+  Other: "other",
+  Salary: "salary",
+  Benefits: "benefits",
+  "Other income": "other-income",
+  طعام: "food",
+  إيجار: "housing",
+  نقل: "transport",
+  ترفيه: "entertainment",
+  ملابس: "clothes",
+  فواتير: "bills",
+  هدايا: "gifts",
+  اشتراكات: "subscriptions",
+  أخرى: "other",
+  راتب: "salary",
+  مزايا: "benefits",
+  "دخل آخر": "other-income",
+};
+
+export function normalizeCategoryValue(value: string) {
+  return legacyCategoryValueMap[value] ?? value;
+}
+
+export function getCategoryLabel(locale: Locale, value: string) {
+  const normalizedValue = normalizeCategoryValue(value);
+  const categories = [
+    ...translations[locale].expenseCategories,
+    ...translations[locale].incomeCategories,
+  ];
+
+  return (
+    categories.find((category) => category.value === normalizedValue)?.label ??
+    value
+  );
+}
+
 export const translations = {
   sv: {
     appTitle: "Zaylias",
@@ -65,20 +120,20 @@ export const translations = {
     lastSevenDays: "Senaste 7 dagarna",
     noSpendData: "Inga inköp den senaste veckan.",
     expenseCategories: [
-      { value: "Mat", label: "Mat" },
-      { value: "Boende", label: "Boende" },
-      { value: "Transport", label: "Transport" },
-      { value: "Nöje", label: "Nöje" },
-      { value: "Kläder", label: "Kläder" },
-      { value: "Räkningar", label: "Räkningar" },
-      { value: "Gåvor", label: "Gåvor" },
-      { value: "Prenumerationer", label: "Prenumerationer" },
-      { value: "Övrigt", label: "Övrigt" },
+      { value: "food", label: "Mat" },
+      { value: "housing", label: "Boende" },
+      { value: "transport", label: "Transport" },
+      { value: "entertainment", label: "Nöje" },
+      { value: "clothes", label: "Kläder" },
+      { value: "bills", label: "Räkningar" },
+      { value: "gifts", label: "Gåvor" },
+      { value: "subscriptions", label: "Prenumerationer" },
+      { value: "other", label: "Övrigt" },
     ] as CategoryOption[],
     incomeCategories: [
-      { value: "Lön", label: "Lön" },
-      { value: "Bidrag", label: "Bidrag" },
-      { value: "Övriga inkomster", label: "Övriga inkomster" },
+      { value: "salary", label: "Lön" },
+      { value: "benefits", label: "Bidrag" },
+      { value: "other-income", label: "Övriga inkomster" },
     ] as CategoryOption[],
   },
   en: {
@@ -132,20 +187,20 @@ export const translations = {
     lastSevenDays: "Last 7 days",
     noSpendData: "No spending in the last 7 days.",
     expenseCategories: [
-      { value: "Food", label: "Food" },
-      { value: "Housing", label: "Housing" },
-      { value: "Transport", label: "Transport" },
-      { value: "Entertainment", label: "Entertainment" },
-      { value: "Clothes", label: "Clothes" },
-      { value: "Bills", label: "Bills" },
-      { value: "Gifts", label: "Gifts" },
-      { value: "Subscriptions", label: "Subscriptions" },
-      { value: "Other", label: "Other" },
+      { value: "food", label: "Food" },
+      { value: "housing", label: "Housing" },
+      { value: "transport", label: "Transport" },
+      { value: "entertainment", label: "Entertainment" },
+      { value: "clothes", label: "Clothes" },
+      { value: "bills", label: "Bills" },
+      { value: "gifts", label: "Gifts" },
+      { value: "subscriptions", label: "Subscriptions" },
+      { value: "other", label: "Other" },
     ] as CategoryOption[],
     incomeCategories: [
-      { value: "Salary", label: "Salary" },
-      { value: "Benefits", label: "Benefits" },
-      { value: "Other income", label: "Other income" },
+      { value: "salary", label: "Salary" },
+      { value: "benefits", label: "Benefits" },
+      { value: "other-income", label: "Other income" },
     ] as CategoryOption[],
   },
   ar: {
@@ -199,20 +254,20 @@ export const translations = {
     lastSevenDays: "آخر 7 أيام",
     noSpendData: "لا توجد مبيعات في آخر 7 أيام.",
     expenseCategories: [
-      { value: "طعام", label: "طعام" },
-      { value: "إيجار", label: "إيجار" },
-      { value: "نقل", label: "نقل" },
-      { value: "ترفيه", label: "ترفيه" },
-      { value: "ملابس", label: "ملابس" },
-      { value: "فواتير", label: "فواتير" },
-      { value: "هدايا", label: "هدايا" },
-      { value: "اشتراكات", label: "اشتراكات" },
-      { value: "أخرى", label: "أخرى" },
+      { value: "food", label: "طعام" },
+      { value: "housing", label: "إيجار" },
+      { value: "transport", label: "نقل" },
+      { value: "entertainment", label: "ترفيه" },
+      { value: "clothes", label: "ملابس" },
+      { value: "bills", label: "فواتير" },
+      { value: "gifts", label: "هدايا" },
+      { value: "subscriptions", label: "اشتراكات" },
+      { value: "other", label: "أخرى" },
     ] as CategoryOption[],
     incomeCategories: [
-      { value: "راتب", label: "راتب" },
-      { value: "مزايا", label: "مزايا" },
-      { value: "دخل آخر", label: "دخل آخر" },
+      { value: "salary", label: "راتب" },
+      { value: "benefits", label: "مزايا" },
+      { value: "other-income", label: "دخل آخر" },
     ] as CategoryOption[],
   },
 } as const;

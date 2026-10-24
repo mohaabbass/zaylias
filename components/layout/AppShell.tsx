@@ -29,6 +29,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { formatCurrency } from "@/lib/utils";
+import { normalizeCategoryValue } from "@/lib/i18n";
 import { useBudget } from "@/hooks/useBudget";
 import type { TransactionType } from "@/types/finance";
 
@@ -57,8 +58,8 @@ export function AppShell() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
-  const [category, setCategory] = useState<string>(
-    () => t.expenseCategories[0]?.value ?? "Food",
+  const [category, setCategory] = useState<string>(() =>
+    normalizeCategoryValue(t.expenseCategories[0]?.value ?? "food"),
   );
   const [type, setType] = useState<TransactionType>("expense");
   const [activeView, setActiveView] = useState<AppView>("home");
@@ -98,8 +99,8 @@ export function AppShell() {
   const getDefaultCategory = useCallback(
     (nextType: TransactionType = type) =>
       nextType === "income"
-        ? (t.incomeCategories[0]?.value ?? "Salary")
-        : (t.expenseCategories[0]?.value ?? "Food"),
+        ? normalizeCategoryValue(t.incomeCategories[0]?.value ?? "salary")
+        : normalizeCategoryValue(t.expenseCategories[0]?.value ?? "food"),
     [t, type],
   );
 
@@ -127,7 +128,7 @@ export function AppShell() {
     setEditingTransactionId(transaction.id);
     setTitle(transaction.title);
     setAmount(String(transaction.amount));
-    setCategory(transaction.category);
+    setCategory(normalizeCategoryValue(transaction.category));
     setType(transaction.type);
     setActiveView("add");
     setIsAddDrawerOpen(true);
