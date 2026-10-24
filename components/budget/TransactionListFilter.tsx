@@ -86,8 +86,10 @@ export function TransactionListFilter({
           />
           <div
             id="transaction-filter-panel"
-            className={`fixed inset-x-4 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-50 max-h-[calc(100dvh-7rem)] overflow-y-auto rounded-xl border border-border bg-popover p-4 shadow-lg sm:absolute sm:inset-x-auto sm:bottom-auto sm:top-full sm:z-20 sm:mt-2 sm:max-h-[calc(100dvh-2rem)] sm:w-72 sm:max-w-[calc(100vw-3rem)] ${
-              locale === "ar" ? "sm:left-0" : "sm:right-0"
+            className={`fixed left-1/2 top-4 z-50 max-h-[calc(100dvh-2rem)] w-[calc(100vw-2rem)] -translate-x-1/2 overflow-y-auto rounded-xl border border-border bg-popover p-4 shadow-lg sm:absolute sm:left-auto sm:top-full sm:z-20 sm:mt-2 sm:max-h-[calc(100dvh-2rem)] sm:w-72 sm:max-w-[calc(100vw-3rem)] sm:translate-x-0 ${
+              locale === "ar"
+                ? "sm:left-0 sm:right-auto"
+                : "sm:left-auto sm:right-0"
             }`}
           >
             <div className="space-y-4">
