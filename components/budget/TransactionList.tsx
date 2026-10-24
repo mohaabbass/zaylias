@@ -134,13 +134,14 @@ export function TransactionList({
         <p className="text-sm text-muted-foreground">{t.emptyHistory}</p>
       ) : (
         <ul className="space-y-2">
-          {filteredTransactions.map((transaction) => {
+          {filteredTransactions.map((transaction, index) => {
             const isPressed = pressedId === transaction.id;
 
             return (
               <li
                 key={transaction.id}
-                className="relative select-none"
+                className="relative select-none animate-row-in"
+                style={{ animationDelay: `${index * 40}ms` }}
                 data-transaction-row
                 onMouseDown={() => startLongPress(transaction.id)}
                 onMouseUp={clearLongPress}
@@ -153,7 +154,7 @@ export function TransactionList({
                 onTouchEnd={clearLongPress}
                 onContextMenu={(event) => event.preventDefault()}
               >
-                <div className="flex items-center justify-between rounded-lg border border-border bg-muted/60 p-3">
+                <div className="flex items-center justify-between rounded-lg border border-border bg-muted/60 p-3 transition-all duration-200 ease-out hover:border-emerald-500/40">
                   <div>
                     <p className="text-sm font-medium text-foreground">
                       {transaction.title}
@@ -201,7 +202,7 @@ export function TransactionList({
                 {isPressed ? (
                   <div
                     data-transaction-action
-                    className="absolute inset-x-2 top-1 z-10 flex gap-2 rounded-xl border border-border bg-popover p-2 shadow-lg"
+                    className="animate-action-in absolute inset-x-2 top-1 z-10 flex gap-2 rounded-xl border border-border bg-popover p-2"
                   >
                     <button
                       type="button"
@@ -209,7 +210,7 @@ export function TransactionList({
                         onEdit(transaction);
                         setPressedId(null);
                       }}
-                      className="flex-1 rounded-lg bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-600 dark:text-emerald-300"
+                      className="flex-1 rounded-lg bg-emerald-500/10 px-3 py-2 text-sm font-medium text-emerald-600 transition hover:bg-emerald-500/15 dark:text-emerald-300"
                     >
                       {t.edit}
                     </button>
@@ -219,14 +220,14 @@ export function TransactionList({
                         onDelete(transaction.id);
                         setPressedId(null);
                       }}
-                      className="flex-1 rounded-lg bg-red-500/10 px-3 py-2 text-sm font-medium text-red-500 dark:text-red-300"
+                      className="flex-1 rounded-lg bg-red-500/10 px-3 py-2 text-sm font-medium text-red-500 transition hover:bg-red-500/15 dark:text-red-300"
                     >
                       {t.remove}
                     </button>
                     <button
                       type="button"
                       onClick={() => setPressedId(null)}
-                      className="rounded-lg border border-border px-3 py-2 text-sm text-muted-foreground"
+                      className="rounded-lg border border-border px-3 py-2 text-sm text-muted-foreground transition hover:bg-muted hover:text-foreground"
                     >
                       {t.cancel}
                     </button>

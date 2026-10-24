@@ -381,7 +381,7 @@ export function AppShell() {
       <AppHeader title={t.appTitle} onLogout={() => void logout()} />
 
       <main className="min-h-screen bg-muted/50 px-4 pb-28 pt-6 text-foreground dark:bg-background sm:px-6">
-        <div className="mx-auto max-w-md">{renderView()}</div>
+        <div className="mx-auto max-w-md animate-view-in">{renderView()}</div>
       </main>
 
       <Drawer
@@ -473,7 +473,7 @@ export function AppShell() {
                       setLocale(option);
                       setIsMenuDrawerOpen(false);
                     }}
-                    className={`flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left transition ${
+                    className={`flex w-full items-center justify-between rounded-lg border px-3 py-2 text-left transition-all duration-200 ${
                       locale === option
                         ? "border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300"
                         : "border-border bg-background text-foreground hover:border-ring"
@@ -496,7 +496,7 @@ export function AppShell() {
                 <button
                   type="button"
                   onClick={() => setTheme("light")}
-                  className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 transition ${
+                  className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 transition-all duration-200 ${
                     theme === "light"
                       ? "border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300"
                       : "border-border bg-background text-foreground hover:border-ring"
@@ -508,7 +508,7 @@ export function AppShell() {
                 <button
                   type="button"
                   onClick={() => setTheme("dark")}
-                  className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 transition ${
+                  className={`flex items-center justify-center gap-2 rounded-lg border px-3 py-2 transition-all duration-200 ${
                     theme === "dark"
                       ? "border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-300"
                       : "border-border bg-background text-foreground hover:border-ring"
@@ -523,7 +523,7 @@ export function AppShell() {
             <button
               type="button"
               onClick={() => void logout()}
-              className="flex w-full items-center justify-between rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-red-500 dark:text-red-300"
+              className="flex w-full items-center justify-between rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-red-500 transition-all duration-200 hover:bg-red-500/15 dark:text-red-300"
             >
               <span>{t.logout}</span>
               <ArrowRight

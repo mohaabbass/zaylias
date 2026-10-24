@@ -137,10 +137,58 @@
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-inter), sans-serif;
+    -webkit-tap-highlight-color: transparent;
   }
 
   html[dir="rtl"] body,
   html[data-locale="ar"] body {
     font-family: "Cairo", var(--font-cairo), sans-serif;
+  }
+}
+
+@layer utilities {
+  .animate-view-in {
+    animation: view-in 0.25s ease-out both;
+  }
+
+  .animate-row-in {
+    animation: row-in 0.2s ease-out both;
+  }
+
+  .animate-action-in {
+    animation: action-in 0.16s ease-out both;
+  }
+}
+
+@keyframes view-in {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes row-in {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes action-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }
