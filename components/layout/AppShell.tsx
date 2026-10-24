@@ -82,6 +82,7 @@ export function AppShell() {
   const [isSavingPayment, setIsSavingPayment] = useState(false);
   const [activeView, setActiveView] = useState<AppView>("home");
   const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false);
+  const [paymentsRefreshToken, setPaymentsRefreshToken] = useState(0);
   const [isMenuDrawerOpen, setIsMenuDrawerOpen] = useState(false);
   const [theme, setTheme] = useState<ThemeMode>("dark");
   const [hasHydratedTheme, setHasHydratedTheme] = useState(false);
@@ -234,6 +235,7 @@ export function AppShell() {
       return;
     }
 
+    setPaymentsRefreshToken((current) => current + 1);
     resetAddForm();
     setIsAddDrawerOpen(false);
     setActiveView("payments");
@@ -337,6 +339,9 @@ export function AppShell() {
               return transaction?.id ?? null;
             }}
             onDeleteExpense={deleteTransaction}
+            onPaymentsChange={() =>
+              setPaymentsRefreshToken((current) => current + 1)
+            }
             locale={locale}
             t={t}
           />
@@ -466,7 +471,13 @@ export function AppShell() {
 
   return (
     <>
-      <AppHeader title={t.appTitle} onLogout={() => void logout()} />
+      <AppHeader
+        title={t.appTitle}
+        userId={session.user.id}
+        paymentsRefreshToken={paymentsRefreshToken}
+        onLogout={() => void logout()}
+        onOpenPayments={() => setActiveView("payments")}
+      />
 
       <main className="min-h-screen bg-muted/50 px-4 pb-28 pt-6 text-foreground dark:bg-background sm:px-6">
         <div className="mx-auto max-w-md animate-view-in">{renderView()}</div>

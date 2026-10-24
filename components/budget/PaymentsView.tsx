@@ -33,6 +33,7 @@ type PaymentsViewProps = {
     type: "expense";
   }) => Promise<string | null>;
   onDeleteExpense: (id: string) => Promise<boolean>;
+  onPaymentsChange: () => void;
   locale: Locale;
   t: Translation;
 };
@@ -43,13 +44,13 @@ const localeMap: Record<Locale, string> = {
   ar: "ar-EG",
 };
 
-const paymentFields =
-  "id, title, amount, category, due_date, created_at";
+const paymentFields = "id, title, amount, category, due_date, created_at";
 
 export function PaymentsView({
   userId,
   onAddExpense,
   onDeleteExpense,
+  onPaymentsChange,
   locale,
   t,
 }: PaymentsViewProps) {
@@ -125,9 +126,7 @@ export function PaymentsView({
     setIsFormOpen(true);
   };
 
-  const handleSavePayment = async (
-    event: React.FormEvent<HTMLFormElement>,
-  ) => {
+  const handleSavePayment = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setActionError("");
 
@@ -173,6 +172,7 @@ export function PaymentsView({
     setPayments((current) =>
       current.map((payment) => (payment.id === data.id ? data : payment)),
     );
+    onPaymentsChange();
 
     resetForm();
     setIsFormOpen(false);
@@ -197,9 +197,8 @@ export function PaymentsView({
       return;
     }
 
-    setPayments((current) =>
-      current.filter((item) => item.id !== payment.id),
-    );
+    setPayments((current) => current.filter((item) => item.id !== payment.id));
+    onPaymentsChange();
   };
 
   const handleMarkPaid = async (payment: Payment) => {
@@ -239,9 +238,8 @@ export function PaymentsView({
       return;
     }
 
-    setPayments((current) =>
-      current.filter((item) => item.id !== payment.id),
-    );
+    setPayments((current) => current.filter((item) => item.id !== payment.id));
+    onPaymentsChange();
     setBusyPaymentId(null);
   };
 
@@ -275,7 +273,10 @@ export function PaymentsView({
             role="alert"
             className="flex items-start gap-3 rounded-xl border border-red-500/30 bg-red-500/5 p-4 text-sm text-red-600 dark:text-red-300"
           >
-            <CircleAlert aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0" />
+            <CircleAlert
+              aria-hidden="true"
+              className="mt-0.5 h-5 w-5 shrink-0"
+            />
             <p className="break-words">{actionError}</p>
           </div>
         ) : null}
@@ -292,7 +293,10 @@ export function PaymentsView({
             role="alert"
             className="flex items-start gap-3 rounded-2xl border border-red-500/30 bg-red-500/5 p-5 text-sm text-red-600 dark:text-red-300"
           >
-            <CircleAlert aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0" />
+            <CircleAlert
+              aria-hidden="true"
+              className="mt-0.5 h-5 w-5 shrink-0"
+            />
             <div>
               <p className="font-semibold">{t.paymentsLoadError}</p>
               <p className="mt-1 break-words opacity-80">{loadError}</p>
@@ -321,12 +325,15 @@ export function PaymentsView({
                       <p className="break-words font-medium text-foreground">
                         {payment.title}
                       </p>
-                      <p className="mt-1 text-xs text-muted-foreground">
+                      {/* <p className="mt-1 text-xs text-muted-foreground">
                         {payment.category}
-                      </p>
+                      </p> */}
                     </div>
                     <p className="shrink-0 font-semibold tabular-nums text-red-500">
-                      {formatCurrency(Number(payment.amount), localeMap[locale])}{" "}
+                      {formatCurrency(
+                        Number(payment.amount),
+                        localeMap[locale],
+                      )}{" "}
                       {t.currency}
                     </p>
                   </div>
@@ -472,7 +479,10 @@ export function PaymentsView({
             </label>
 
             {actionError ? (
-              <p role="alert" className="text-sm text-red-600 dark:text-red-300">
+              <p
+                role="alert"
+                className="text-sm text-red-600 dark:text-red-300"
+              >
                 {actionError}
               </p>
             ) : null}
