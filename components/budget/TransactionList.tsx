@@ -31,14 +31,52 @@ export function TransactionList({
 }: TransactionListProps) {
   const [pressedId, setPressedId] = useState<string | null>(null);
   const [filter, setFilter] = useState<TransactionFilter>("all");
+  const [dateFromFilter, setDateFromFilter] = useState("");
+  const [dateToFilter, setDateToFilter] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState("all");
   const longPressTimer = useRef<number | null>(null);
 
-  const filteredTransactions = transactions.filter((transaction) => {
-    if (filter === "all") {
-      return true;
+  const categoryOptions = Array.from(
+    new Set(
+      transactions.map((transaction) =>
+        normalizeCategoryValue(transaction.category),
+      ),
+    ),
+  )
+    .sort((a, b) =>
+      getCategoryLabel(locale, a).localeCompare(getCategoryLabel(locale, b)),
+    )
+    .map((value) => ({ value, label: getCategoryLabel(locale, value) }));
+
+  const getDateFilterValue = (value: string) => {
+    if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      return value;
     }
 
-    return transaction.type === filter;
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return "";
+    }
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
+
+  const filteredTransactions = transactions.filter((transaction) => {
+    const matchesType = filter === "all" || transaction.type === filter;
+    const transactionDate = getDateFilterValue(transaction.created_at);
+    const matchesDate =
+      (!dateFromFilter && !dateToFilter) ||
+      (Boolean(transactionDate) &&
+        (!dateFromFilter || transactionDate >= dateFromFilter) &&
+        (!dateToFilter || transactionDate <= dateToFilter));
+    const matchesCategory =
+      categoryFilter === "all" ||
+      normalizeCategoryValue(transaction.category) === categoryFilter;
+
+    return matchesType && matchesDate && matchesCategory;
   });
 
   useEffect(() => {
@@ -119,15 +157,46 @@ export function TransactionList({
     closeActions();
   };
 
+  const clearFilters = () => {
+    setFilter("all");
+    setDateFromFilter("");
+    setDateToFilter("");
+    setCategoryFilter("all");
+    closeActions();
+  };
+
   return (
     <div className="rounded-xl border border-border bg-card p-5">
-      <div className="flex items-center gap-2 mb-4 justify-center">
+      <div className="mb-4 flex items-center justify-between gap-3">
         <h2 className="text-lg font-semibold text-foreground">{t.history}</h2>
         <TransactionListFilter
           value={filter}
+          dateFrom={dateFromFilter}
+          dateTo={dateToFilter}
+          category={categoryFilter}
+          categories={categoryOptions}
           locale={locale}
           t={t}
           onChange={handleFilterChange}
+          onDateFromChange={(value) => {
+            setDateFromFilter(value);
+            closeActions();
+          }}
+          onDateToChange={(value) => {
+            setDateToFilter(value);
+            closeActions();
+          }}
+          onCategoryChange={(value) => {
+            setCategoryFilter(value);
+            closeActions();
+          }}
+          onClear={clearFilters}
+          hasActiveFilters={
+            filter !== "all" ||
+            dateFromFilter !== "" ||
+            dateToFilter !== "" ||
+            categoryFilter !== "all"
+          }
         />
       </div>
       {filteredTransactions.length === 0 ? (
