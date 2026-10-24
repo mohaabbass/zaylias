@@ -71,6 +71,8 @@ export const translations = {
       { value: "Nöje", label: "Nöje" },
       { value: "Kläder", label: "Kläder" },
       { value: "Räkningar", label: "Räkningar" },
+      { value: "Gåvor", label: "Gåvor" },
+      { value: "Prenumerationer", label: "Prenumerationer" },
       { value: "Övrigt", label: "Övrigt" },
     ] as CategoryOption[],
     incomeCategories: [
@@ -136,6 +138,8 @@ export const translations = {
       { value: "Entertainment", label: "Entertainment" },
       { value: "Clothes", label: "Clothes" },
       { value: "Bills", label: "Bills" },
+      { value: "Gifts", label: "Gifts" },
+      { value: "Subscriptions", label: "Subscriptions" },
       { value: "Other", label: "Other" },
     ] as CategoryOption[],
     incomeCategories: [
@@ -201,6 +205,8 @@ export const translations = {
       { value: "ترفيه", label: "ترفيه" },
       { value: "ملابس", label: "ملابس" },
       { value: "فواتير", label: "فواتير" },
+      { value: "هدايا", label: "هدايا" },
+      { value: "اشتراكات", label: "اشتراكات" },
       { value: "أخرى", label: "أخرى" },
     ] as CategoryOption[],
     incomeCategories: [
