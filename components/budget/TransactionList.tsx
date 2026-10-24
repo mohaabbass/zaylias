@@ -182,6 +182,7 @@ export function TransactionList({
           onSearchChange={setSearchFilter}
           category={categoryFilter}
           categories={categoryOptions}
+          resultCount={filteredTransactions.length}
           locale={locale}
           t={t}
           onChange={handleFilterChange}
