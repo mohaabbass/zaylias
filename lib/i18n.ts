@@ -175,6 +175,14 @@ export const translations = {
     dailySpending: "Dagliga inköp",
     lastSevenDays: "Senaste 7 dagarna",
     noSpendData: "Inga inköp den senaste veckan.",
+    monthlyCashFlowForecast: "Månadens kassaflödesprognos",
+    projectedEndOfMonthBalance: "Beräknat saldo vid månadens slut",
+    unpaidPaymentsThisMonth: "Obetalda betalningar denna månad",
+    projectedCashFlowThisMonth: "Prognos för månadens kassaflöde",
+    cashFlowForecastDescription:
+      "Baserat på registrerade transaktioner och obetalda betalningar med förfallodatum denna månad.",
+    cashFlowForecastLoadError:
+      "Obetalda betalningar kunde inte hämtas; prognosen visas inte.",
     expenseCategories: [
       { value: "food", label: "Mat" },
       { value: "housing", label: "Boende" },
@@ -299,6 +307,14 @@ export const translations = {
     dailySpending: "Daily spending",
     lastSevenDays: "Last 7 days",
     noSpendData: "No spending in the last 7 days.",
+    monthlyCashFlowForecast: "Monthly cash flow forecast",
+    projectedEndOfMonthBalance: "Estimated balance at month end",
+    unpaidPaymentsThisMonth: "Unpaid payments due this month",
+    projectedCashFlowThisMonth: "Projected cash flow this month",
+    cashFlowForecastDescription:
+      "Based on recorded transactions and unpaid payments due this month.",
+    cashFlowForecastLoadError:
+      "Unpaid payments could not be loaded, so the forecast is unavailable.",
     expenseCategories: [
       { value: "food", label: "Food" },
       { value: "housing", label: "Housing" },
@@ -421,6 +437,14 @@ export const translations = {
     dailySpending: "الإنفاق اليومي",
     lastSevenDays: "آخر 7 أيام",
     noSpendData: "لا توجد مبيعات في آخر 7 أيام.",
+    monthlyCashFlowForecast: "توقع التدفق النقدي الشهري",
+    projectedEndOfMonthBalance: "الرصيد المتوقع في نهاية الشهر",
+    unpaidPaymentsThisMonth: "المدفوعات غير المسددة المستحقة هذا الشهر",
+    projectedCashFlowThisMonth: "التدفق النقدي المتوقع لهذا الشهر",
+    cashFlowForecastDescription:
+      "استنادًا إلى المعاملات المسجلة والمدفوعات غير المسددة المستحقة هذا الشهر.",
+    cashFlowForecastLoadError:
+      "تعذر تحميل المدفوعات غير المسددة، لذا فإن التوقع غير متاح.",
     expenseCategories: [
       { value: "food", label: "طعام" },
       { value: "housing", label: "إيجار" },

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
+  ArrowLeft,
   BarChart3,
   CreditCard,
   House,
@@ -16,6 +17,10 @@ import {
 
 import { TransactionForm } from "@/components/budget/TransactionForm";
 import { BalanceCard } from "@/components/budget/BalanceCard";
+import {
+  CashFlowForecast,
+  type ScheduledForecastPayment,
+} from "@/components/budget/CashFlowForecast";
 import { DailySpendingChart } from "@/components/budget/DailySpendingChart";
 import { StatisticsChart } from "@/components/budget/StatisticsChart";
 import { StatisticsCategoryChart } from "@/components/budget/StatisticsCategoryChart";
@@ -39,7 +44,14 @@ import { supabase } from "@/lib/supabase";
 import { useBudget } from "@/hooks/useBudget";
 import type { TransactionType } from "@/types/finance";
 
-export type AppView = "home" | "payments" | "loans" | "add" | "locale" | "menu";
+export type AppView =
+  | "home"
+  | "payments"
+  | "loans"
+  | "cashflow"
+  | "add"
+  | "locale"
+  | "menu";
 type ThemeMode = "light" | "dark";
 type AddMode = "expense" | "payment";
 
@@ -77,12 +89,65 @@ export function AppShell() {
   const [activeView, setActiveView] = useState<AppView>("home");
   const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false);
   const [paymentsRefreshToken, setPaymentsRefreshToken] = useState(0);
+  const [forecastPayments, setForecastPayments] = useState<
+    ScheduledForecastPayment[]
+  >([]);
+  const [forecastPaymentsLoading, setForecastPaymentsLoading] =
+    useState(true);
+  const [forecastPaymentsError, setForecastPaymentsError] = useState("");
   const [isMenuDrawerOpen, setIsMenuDrawerOpen] = useState(false);
   const [theme, setTheme] = useState<ThemeMode>("dark");
   const [hasHydratedTheme, setHasHydratedTheme] = useState(false);
   const [editingTransactionId, setEditingTransactionId] = useState<
     string | null
   >(null);
+
+  useEffect(() => {
+    let isCurrent = true;
+    const userId = session?.user.id;
+
+    const loadForecastPayments = async () => {
+      if (!userId) {
+        setForecastPayments([]);
+        setForecastPaymentsError("");
+        setForecastPaymentsLoading(false);
+        return;
+      }
+
+      setForecastPaymentsLoading(true);
+      setForecastPaymentsError("");
+
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const toDateKey = (date: Date) =>
+        `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+      const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+      const { data, error } = await supabase
+        .from("payments")
+        .select("amount, due_date")
+        .eq("user_id", userId)
+        .gte("due_date", toDateKey(monthStart))
+        .lte("due_date", toDateKey(monthEnd));
+
+      if (!isCurrent) return;
+
+      if (error) {
+        console.error("Failed to load forecast payments:", error);
+        setForecastPayments([]);
+        setForecastPaymentsError(error.message);
+      } else {
+        setForecastPayments(data ?? []);
+      }
+      setForecastPaymentsLoading(false);
+    };
+
+    void loadForecastPayments();
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [session?.user.id, paymentsRefreshToken]);
 
   useEffect(() => {
     const stored = window.localStorage.getItem("zaylias-theme");
@@ -340,6 +405,28 @@ export function AppShell() {
         );
       case "loans":
         return <LoansView userId={session.user.id} locale={locale} t={t} />;
+      case "cashflow":
+        return (
+          <div className="space-y-4">
+            <button
+              type="button"
+              onClick={() => setActiveView("home")}
+              className="inline-flex items-center gap-2 rounded-lg px-2 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
+            >
+              <ArrowLeft aria-hidden="true" className="h-4 w-4" />
+              {t.home}
+            </button>
+            <CashFlowForecast
+              transactions={transactions}
+              payments={forecastPayments}
+              totalBalance={totalBalance}
+              loading={forecastPaymentsLoading}
+              error={forecastPaymentsError}
+              locale={locale}
+              t={t}
+            />
+          </div>
+        );
       case "add":
         return null;
       case "menu":
@@ -437,6 +524,7 @@ export function AppShell() {
               transactions={transactions}
               locale={locale}
               t={t}
+              onOpenCashFlow={() => setActiveView("cashflow")}
             />
             <DailySpendingChart
               transactions={transactions}
