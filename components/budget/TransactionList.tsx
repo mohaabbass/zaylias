@@ -178,11 +178,12 @@ export function TransactionList({
                           : normalizeCategoryValue(transaction.category) ===
                                 "bills" ||
                               normalizeCategoryValue(transaction.category) ===
-                                "gifts" ||
-                              normalizeCategoryValue(transaction.category) ===
-                                "subscriptions"
+                                "gifts"
                             ? "text-amber-500 dark:text-amber-400"
-                            : "text-red-500"
+                            : normalizeCategoryValue(transaction.category) ===
+                                "subscriptions"
+                              ? "text-violet-500 dark:text-violet-400"
+                              : "text-red-500"
                       }`}
                     >
                       {transaction.type === "income" ? "+" : "-"}
