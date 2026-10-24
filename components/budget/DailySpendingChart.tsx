@@ -10,6 +10,14 @@ type DailySpendingChartProps = {
   t: Translation;
 };
 
+function getLocalDateKey(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+
+  return `${year}-${month}-${day}`;
+}
+
 export function DailySpendingChart({
   transactions,
   locale,
@@ -23,7 +31,7 @@ export function DailySpendingChart({
       date.setDate(today.getDate() - (6 - index));
 
       return {
-        key: date.toISOString().slice(0, 10),
+        key: getLocalDateKey(date),
         label: new Intl.DateTimeFormat(locale, { weekday: "short" }).format(
           date,
         ),
@@ -36,7 +44,9 @@ export function DailySpendingChart({
       if (!transaction.created_at) continue;
 
       const transactionDate = new Date(transaction.created_at);
-      const key = transactionDate.toISOString().slice(0, 10);
+      if (Number.isNaN(transactionDate.getTime())) continue;
+
+      const key = getLocalDateKey(transactionDate);
       const match = entries.find((entry) => entry.key === key);
 
       if (!match) continue;
@@ -97,7 +107,7 @@ export function DailySpendingChart({
                 </span>
                 <div className="flex h-28 w-full items-end justify-center">
                   <div
-                    className="w-full rounded-t-md bg-linear-to-t from-sky-500 to-sky-400 dark:from-sky-400 dark:to-sky-300"
+                    className="w-full rounded-t-md bg-linear-to-t from-sky-700 to-sky-700 dark:from-sky-700 dark:to-sky-700"
                     style={{ height: `${height}%` }}
                   />
                 </div>

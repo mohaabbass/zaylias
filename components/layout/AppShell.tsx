@@ -16,6 +16,7 @@ import {
 import { TransactionForm } from "@/components/budget/TransactionForm";
 import { BalanceCard } from "@/components/budget/BalanceCard";
 import { DailySpendingChart } from "@/components/budget/DailySpendingChart";
+import { StatisticsChart } from "@/components/budget/StatisticsChart";
 import { TransactionList } from "@/components/budget/TransactionList";
 import { AuthScreen } from "@/components/auth/AuthScreen";
 import { AppHeader } from "@/components/layout/AppHeader";
@@ -284,39 +285,19 @@ export function AppShell() {
         return null;
       case "locale":
         return (
-          <div className="rounded-2xl border border-border bg-card p-5">
-            <h2 className="mb-4 text-lg font-semibold text-foreground">
-              {t.statistics}
-            </h2>
-            <div className="space-y-3">
-              <div className="rounded-xl border border-border bg-muted/50 p-4">
-                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                  {t.totalBalance}
-                </p>
-                <p className="mt-2 text-2xl font-semibold text-foreground">
-                  {formatCurrency(
-                    totalBalance,
-                    locale === "ar"
-                      ? "ar-EG"
-                      : locale === "en"
-                        ? "en-US"
-                        : "sv-SE",
-                  )}{" "}
-                  {t.currency}
-                </p>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-xl border border-border bg-muted/50 p-3">
-                  <p className="text-xs text-muted-foreground">{t.expense}</p>
-                  <p className="mt-2 text-lg font-semibold text-red-500">
+          <div className="space-y-4">
+            <section className="rounded-2xl border border-border bg-card p-5">
+              <h2 className="mb-4 text-lg font-semibold text-foreground">
+                {t.statistics}
+              </h2>
+              <div className="space-y-3">
+                <div className="rounded-xl border border-border bg-muted/50 p-4">
+                  <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
+                    {t.totalBalance}
+                  </p>
+                  <p className="mt-2 text-2xl font-semibold text-foreground">
                     {formatCurrency(
-                      transactions
-                        .filter((transaction) => transaction.type === "expense")
-                        .reduce(
-                          (sum, transaction) =>
-                            sum + Number(transaction.amount || 0),
-                          0,
-                        ),
+                      totalBalance,
                       locale === "ar"
                         ? "ar-EG"
                         : locale === "en"
@@ -326,28 +307,55 @@ export function AppShell() {
                     {t.currency}
                   </p>
                 </div>
-                <div className="rounded-xl border border-border bg-muted/50 p-3">
-                  <p className="text-xs text-muted-foreground">{t.income}</p>
-                  <p className="mt-2 text-lg font-semibold text-emerald-500">
-                    {formatCurrency(
-                      transactions
-                        .filter((transaction) => transaction.type === "income")
-                        .reduce(
-                          (sum, transaction) =>
-                            sum + Number(transaction.amount || 0),
-                          0,
-                        ),
-                      locale === "ar"
-                        ? "ar-EG"
-                        : locale === "en"
-                          ? "en-US"
-                          : "sv-SE",
-                    )}{" "}
-                    {t.currency}
-                  </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-xl border border-border bg-muted/50 p-3">
+                    <p className="text-xs text-muted-foreground">{t.expense}</p>
+                    <p className="mt-2 text-lg font-semibold text-red-500">
+                      {formatCurrency(
+                        transactions
+                          .filter(
+                            (transaction) => transaction.type === "expense",
+                          )
+                          .reduce(
+                            (sum, transaction) =>
+                              sum + Number(transaction.amount || 0),
+                            0,
+                          ),
+                        locale === "ar"
+                          ? "ar-EG"
+                          : locale === "en"
+                            ? "en-US"
+                            : "sv-SE",
+                      )}{" "}
+                      {t.currency}
+                    </p>
+                  </div>
+                  <div className="rounded-xl border border-border bg-muted/50 p-3">
+                    <p className="text-xs text-muted-foreground">{t.income}</p>
+                    <p className="mt-2 text-lg font-semibold text-emerald-500">
+                      {formatCurrency(
+                        transactions
+                          .filter(
+                            (transaction) => transaction.type === "income",
+                          )
+                          .reduce(
+                            (sum, transaction) =>
+                              sum + Number(transaction.amount || 0),
+                            0,
+                          ),
+                        locale === "ar"
+                          ? "ar-EG"
+                          : locale === "en"
+                            ? "en-US"
+                            : "sv-SE",
+                      )}{" "}
+                      {t.currency}
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
+            </section>
+            <StatisticsChart transactions={transactions} locale={locale} t={t} />
           </div>
         );
       case "home":

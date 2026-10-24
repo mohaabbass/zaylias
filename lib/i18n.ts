@@ -110,6 +110,9 @@ export const translations = {
     light: "Ljus",
     dark: "Mörkt",
     statistics: "Statistik",
+    statisticsChartTitle: "Inkomster och utgifter",
+    statisticsChartDescription:
+      "Räkningar och prenumerationer ingår i de totala utgifterna.",
     home: "Hem",
     budget: "Budget",
     add: "Lägg till",
@@ -177,6 +180,9 @@ export const translations = {
     light: "Light",
     dark: "Dark",
     statistics: "Statistics",
+    statisticsChartTitle: "Income and expenses",
+    statisticsChartDescription:
+      "Bills and subscriptions are included in total expenses.",
     home: "Home",
     budget: "Budget",
     add: "Add",
@@ -244,6 +250,8 @@ export const translations = {
     light: "فاتح",
     dark: "داكن",
     statistics: "الإحصائيات",
+    statisticsChartTitle: "الدخل والمصروفات",
+    statisticsChartDescription: "الفواتير والاشتراكات مشمولة ضمن إجمالي المصروفات.",
     home: "الرئيسية",
     budget: "الميزانية",
     add: "إضافة",
