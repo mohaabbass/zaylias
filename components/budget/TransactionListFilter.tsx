@@ -77,125 +77,136 @@ export function TransactionListFilter({
       </button>
 
       {isOpen ? (
-        <div
-          id="transaction-filter-panel"
-          className={`absolute top-full z-20 mt-2 w-72 max-w-[calc(100vw-3rem)] rounded-xl border border-border bg-popover p-4 shadow-lg ${
-            locale === "ar" ? "left-0" : "right-0"
-          }`}
-        >
-          <div className="space-y-4">
-            <fieldset>
-              <legend className="mb-2 text-xs font-medium text-muted-foreground">
-                {t.filters}
-              </legend>
-              <div className="grid grid-cols-3 gap-1 rounded-lg bg-muted p-1">
-                {options.map((option) => {
-                  const isActive = value === option.value;
+        <>
+          <button
+            type="button"
+            aria-label={t.close}
+            onClick={() => setIsOpen(false)}
+            className="fixed inset-0 z-40 bg-black/30 sm:hidden"
+          />
+          <div
+            id="transaction-filter-panel"
+            className={`fixed inset-x-4 bottom-[calc(5.5rem+env(safe-area-inset-bottom))] z-50 max-h-[calc(100dvh-7rem)] overflow-y-auto rounded-xl border border-border bg-popover p-4 shadow-lg sm:absolute sm:inset-x-auto sm:bottom-auto sm:top-full sm:z-20 sm:mt-2 sm:max-h-[calc(100dvh-2rem)] sm:w-72 sm:max-w-[calc(100vw-3rem)] ${
+              locale === "ar" ? "sm:left-0" : "sm:right-0"
+            }`}
+          >
+            <div className="space-y-4">
+              <fieldset>
+                <legend className="mb-2 text-xs font-medium text-muted-foreground">
+                  {t.filters}
+                </legend>
+                <div className="grid grid-cols-3 gap-1 rounded-lg bg-muted p-1">
+                  {options.map((option) => {
+                    const isActive = value === option.value;
 
-                  return (
-                    <button
-                      key={option.value}
-                      type="button"
-                      aria-pressed={isActive}
-                      onClick={() => onChange(option.value)}
-                      className={`rounded-md px-2 py-2 text-xs font-medium transition ${
-                        isActive
-                          ? "bg-background text-foreground shadow-sm"
-                          : "text-muted-foreground hover:text-foreground"
-                      }`}
-                    >
+                    return (
+                      <button
+                        key={option.value}
+                        type="button"
+                        aria-pressed={isActive}
+                        onClick={() => onChange(option.value)}
+                        className={`rounded-md px-2 py-2 text-xs font-medium transition ${
+                          isActive
+                            ? "bg-background text-foreground shadow-sm"
+                            : "text-muted-foreground hover:text-foreground"
+                        }`}
+                      >
+                        {option.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </fieldset>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label
+                    className="mb-1.5 block text-xs font-medium text-muted-foreground"
+                    htmlFor="transaction-date-from"
+                  >
+                    {t.dateFromLabel}
+                  </label>
+                  <input
+                    id="transaction-date-from"
+                    type="date"
+                    value={dateFrom}
+                    max={dateTo || undefined}
+                    onChange={(event) => onDateFromChange(event.target.value)}
+                    className="w-full min-w-0 rounded-lg border border-border bg-background px-2 py-2 text-sm text-foreground"
+                  />
+                </div>
+                <div>
+                  <label
+                    className="mb-1.5 block text-xs font-medium text-muted-foreground"
+                    htmlFor="transaction-date-to"
+                  >
+                    {t.dateToLabel}
+                  </label>
+                  <input
+                    id="transaction-date-to"
+                    type="date"
+                    value={dateTo}
+                    min={dateFrom || undefined}
+                    onChange={(event) => onDateToChange(event.target.value)}
+                    className="w-full min-w-0 rounded-lg border border-border bg-background px-2 py-2 text-sm text-foreground"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label
+                  className="mb-1.5 block text-xs font-medium text-muted-foreground"
+                  htmlFor="transaction-title-search"
+                >
+                  {t.searchTitle}
+                </label>
+                <input
+                  id="transaction-title-search"
+                  type="search"
+                  value={search}
+                  onChange={(event) => onSearchChange(event.target.value)}
+                  placeholder={t.titlePlaceholder}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground"
+                />
+              </div>
+
+              <div>
+                <label
+                  className="mb-1.5 block text-xs font-medium text-muted-foreground"
+                  htmlFor="transaction-category-filter"
+                >
+                  {t.categoryLabel}
+                </label>
+                <select
+                  id="transaction-category-filter"
+                  value={category}
+                  onChange={(event) => onCategoryChange(event.target.value)}
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                >
+                  <option value="all">{t.all}</option>
+                  {categories.map((option) => (
+                    <option key={option.value} value={option.value}>
                       {option.label}
-                    </button>
-                  );
-                })}
+                    </option>
+                  ))}
+                </select>
               </div>
-            </fieldset>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label
-                  className="mb-1.5 block text-xs font-medium text-muted-foreground"
-                  htmlFor="transaction-date-from"
+              {hasActiveFilters ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClear();
+                    setIsOpen(false);
+                  }}
+                  className="w-full rounded-lg border border-border px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
                 >
-                  {t.dateFromLabel}
-                </label>
-                <input
-                  id="transaction-date-from"
-                  type="date"
-                  value={dateFrom}
-                  max={dateTo || undefined}
-                  onChange={(event) => onDateFromChange(event.target.value)}
-                  className="w-full min-w-0 rounded-lg border border-border bg-background px-2 py-2 text-sm text-foreground"
-                />
-              </div>
-              <div>
-                <label
-                  className="mb-1.5 block text-xs font-medium text-muted-foreground"
-                  htmlFor="transaction-date-to"
-                >
-                  {t.dateToLabel}
-                </label>
-                <input
-                  id="transaction-date-to"
-                  type="date"
-                  value={dateTo}
-                  min={dateFrom || undefined}
-                  onChange={(event) => onDateToChange(event.target.value)}
-                  className="w-full min-w-0 rounded-lg border border-border bg-background px-2 py-2 text-sm text-foreground"
-                />
-              </div>
+                  {t.clearFilters}
+                </button>
+              ) : null}
             </div>
-
-            <div>
-              <label
-                className="mb-1.5 block text-xs font-medium text-muted-foreground"
-                htmlFor="transaction-title-search"
-              >
-                {t.searchTitle}
-              </label>
-              <input
-                id="transaction-title-search"
-                type="search"
-                value={search}
-                onChange={(event) => onSearchChange(event.target.value)}
-                placeholder={t.titlePlaceholder}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground"
-              />
-            </div>
-
-            <div>
-              <label
-                className="mb-1.5 block text-xs font-medium text-muted-foreground"
-                htmlFor="transaction-category-filter"
-              >
-                {t.categoryLabel}
-              </label>
-              <select
-                id="transaction-category-filter"
-                value={category}
-                onChange={(event) => onCategoryChange(event.target.value)}
-                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
-              >
-                <option value="all">{t.all}</option>
-                {categories.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {hasActiveFilters ? (
-              <button
-                type="button"
-                onClick={onClear}
-                className="w-full rounded-lg border border-border px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground"
-              >
-                {t.clearFilters}
-              </button>
-            ) : null}
           </div>
-        </div>
+        </>
       ) : null}
     </div>
   );
