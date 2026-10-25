@@ -14,8 +14,11 @@ type BottomNavProps = {
 
 export function BottomNav({ items }: BottomNavProps) {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-background/90 px-3 pt-2 pb-3 backdrop-blur-sm">
-      <div className="mx-auto flex max-w-md items-center justify-between gap-2">
+    <nav
+      aria-label="Main navigation"
+      className="fixed bottom-[calc(0.75rem+env(safe-area-inset-bottom))] left-3 right-3 z-30 mx-auto max-w-md rounded-full border border-border bg-background/95 px-3 py-2 shadow-xl backdrop-blur-sm"
+    >
+      <div className="flex items-center justify-between gap-2">
         {items.map((item) => {
           const Icon = item.icon;
 
@@ -24,19 +27,23 @@ export function BottomNav({ items }: BottomNavProps) {
               key={item.id}
               type="button"
               onClick={item.onClick}
-              className={`flex min-w-0 flex-1 flex-col items-center justify-center rounded-xl px-2 py-2 text-center transition-all duration-200 ease-out active:scale-[0.97] ${
-                item.active
-                  ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
-              }`}
+              aria-label={item.label}
+              className={
+                item.id === "add"
+                  ? "flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-white shadow-md shadow-emerald-950/20 transition-all duration-200 ease-out hover:bg-emerald-500 active:scale-[0.97]"
+                  : `flex h-11 min-w-0 flex-1 items-center justify-center rounded-full transition-all duration-200 ease-out active:scale-[0.97] ${
+                      item.active
+                        ? "text-emerald-600 dark:text-emerald-400"
+                        : "text-muted-foreground hover:text-foreground"
+                    }`
+              }
             >
               <Icon
-                className="h-5 w-5 leading-none transition-transform duration-200 ease-out"
+                className={`leading-none transition-transform duration-200 ease-out ${
+                  item.id === "add" ? "h-6 w-6" : "h-5 w-5"
+                }`}
                 strokeWidth={2}
               />
-              <span className="mt-1 text-[10px] font-medium tracking-wide">
-                {item.label}
-              </span>
             </button>
           );
         })}
