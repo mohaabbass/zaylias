@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { useState } from "react";
 
 import type { Translation } from "@/lib/i18n";
+import type { Account } from "@/types/finance";
 
 export type TransactionFilter = "all" | "income" | "expense";
 
@@ -18,6 +19,9 @@ type TransactionListFilterProps = {
   category: string;
   categories: Array<{ value: string; label: string }>;
   onCategoryChange: (value: string) => void;
+  account: string;
+  accounts: Account[];
+  onAccountChange: (value: string) => void;
   resultCount: number;
   onClear: () => void;
   hasActiveFilters: boolean;
@@ -37,6 +41,9 @@ export function TransactionListFilter({
   category,
   categories,
   onCategoryChange,
+  account,
+  accounts,
+  onAccountChange,
   resultCount,
   onClear,
   hasActiveFilters,
@@ -53,6 +60,7 @@ export function TransactionListFilter({
     Number(value !== "all") +
     Number(Boolean(dateFrom || dateTo)) +
     Number(category !== "all") +
+    Number(account !== "all") +
     Number(Boolean(search.trim()));
 
   const renderFilterFields = (idPrefix: string) => (
@@ -153,6 +161,29 @@ export function TransactionListFilter({
           {categories.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label
+          className="mb-1.5 block text-xs font-medium text-muted-foreground"
+          htmlFor={`${idPrefix}-account`}
+        >
+          {t.account}
+        </label>
+        <select
+          id={`${idPrefix}-account`}
+          value={account}
+          onChange={(event) => onAccountChange(event.target.value)}
+          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+        >
+          <option value="all">{t.all}</option>
+          <option value="">{t.noAccount}</option>
+          {accounts.map((option) => (
+            <option key={option.id} value={option.id}>
+              {option.name}
             </option>
           ))}
         </select>

@@ -1,7 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CircleAlert, Landmark, Pencil, Plus, Trash2, X } from "lucide-react";
+import {
+  CircleAlert,
+  Landmark,
+  Pencil,
+  Plus,
+  Star,
+  Trash2,
+  X,
+} from "lucide-react";
 
 import {
   Drawer,
@@ -10,7 +18,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, sortAccountsByFavorite } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import type { Locale, Translation } from "@/lib/i18n";
 import type { Account } from "@/types/finance";
@@ -41,13 +49,16 @@ export function AccountsView({
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [formError, setFormError] = useState("");
-  const [deleteError, setDeleteError] = useState("");
+  const [accountActionError, setAccountActionError] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [deletingAccountId, setDeletingAccountId] = useState<string | null>(
     null,
   );
+  const [updatingFavoriteAccountId, setUpdatingFavoriteAccountId] = useState<
+    string | null
+  >(null);
   const [form, setForm] = useState({
     name: "",
     type: "checking",
@@ -63,7 +74,7 @@ export function AccountsView({
 
       const { data, error } = await supabase
         .from("accounts")
-        .select("id, name, type, balance, created_at")
+        .select("id, name, type, balance, is_favorite, created_at")
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
 
@@ -90,6 +101,7 @@ export function AccountsView({
     (total, account) => total + Number(account.balance),
     0,
   );
+  const sortedAccounts = sortAccountsByFavorite(accounts, localeMap[locale]);
 
   const resetForm = () => {
     setForm({ name: "", type: "checking", balance: "0" });
@@ -113,9 +125,7 @@ export function AccountsView({
     setIsFormOpen(true);
   };
 
-  const handleSaveAccount = async (
-    event: React.FormEvent<HTMLFormElement>,
-  ) => {
+  const handleSaveAccount = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFormError("");
 
@@ -138,12 +148,12 @@ export function AccountsView({
           .update(values)
           .eq("id", editingAccountId)
           .eq("user_id", userId)
-          .select("id, name, type, balance, created_at")
+          .select("id, name, type, balance, is_favorite, created_at")
           .single()
       : await supabase
           .from("accounts")
           .insert({ ...values, user_id: userId })
-          .select("id, name, type, balance, created_at")
+          .select("id, name, type, balance, is_favorite, created_at")
           .single();
     setSaving(false);
 
@@ -176,7 +186,7 @@ export function AccountsView({
   const handleDeleteAccount = async (account: Account) => {
     if (!window.confirm(t.confirmAccountDelete)) return;
 
-    setDeleteError("");
+    setAccountActionError("");
     setDeletingAccountId(account.id);
     const { error } = await supabase
       .from("accounts")
@@ -187,12 +197,39 @@ export function AccountsView({
 
     if (error) {
       console.error("Failed to delete account:", error);
-      setDeleteError(error.message);
+      setAccountActionError(error.message);
       return;
     }
 
     setAccounts((current) =>
       current.filter((currentAccount) => currentAccount.id !== account.id),
+    );
+    onAccountsChange();
+  };
+
+  const handleToggleFavorite = async (account: Account) => {
+    setAccountActionError("");
+    setUpdatingFavoriteAccountId(account.id);
+    const isFavorite = !account.is_favorite;
+    const { data, error } = await supabase
+      .from("accounts")
+      .update({ is_favorite: isFavorite })
+      .eq("id", account.id)
+      .eq("user_id", userId)
+      .select("id, name, type, balance, is_favorite, created_at")
+      .single();
+    setUpdatingFavoriteAccountId(null);
+
+    if (error) {
+      console.error("Failed to update account favorite:", error);
+      setAccountActionError(error.message);
+      return;
+    }
+
+    setAccounts((current) =>
+      current.map((currentAccount) =>
+        currentAccount.id === data.id ? data : currentAccount,
+      ),
     );
     onAccountsChange();
   };
@@ -206,15 +243,15 @@ export function AccountsView({
 
   return (
     <div className="space-y-5">
-      {deleteError ? (
+      {accountActionError ? (
         <section
           aria-live="polite"
           className="flex items-start gap-3 rounded-2xl border border-red-500/30 bg-red-500/5 p-4 text-sm text-red-600 dark:text-red-300"
         >
           <CircleAlert aria-hidden="true" className="mt-0.5 h-5 w-5 shrink-0" />
           <div>
-            <p className="font-semibold">{t.accountsDeleteError}</p>
-            <p className="mt-1 break-words opacity-80">{deleteError}</p>
+            <p className="font-semibold">{t.accountActionError}</p>
+            <p className="mt-1 break-words opacity-80">{accountActionError}</p>
           </div>
         </section>
       ) : null}
@@ -235,7 +272,7 @@ export function AccountsView({
             className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-500"
           >
             <Plus aria-hidden="true" className="h-4 w-4" />
-            {t.newAccount}
+            {/* {t.newAccount} */}
           </button>
         </div>
       </section>
@@ -270,10 +307,14 @@ export function AccountsView({
         </section>
       ) : (
         <div className="space-y-3">
-          {accounts.map((account) => (
+          {sortedAccounts.map((account) => (
             <article
               key={account.id}
-              className="rounded-2xl border border-border bg-card p-5"
+              className={`rounded-2xl border p-5 ${
+                account.is_favorite
+                  ? "border-amber-500/50 bg-amber-500/5"
+                  : "border-border bg-card"
+              }`}
             >
               <div className="flex items-start gap-3">
                 <span className="rounded-xl bg-emerald-500/10 p-2.5 text-emerald-600 dark:text-emerald-400">
@@ -283,6 +324,15 @@ export function AccountsView({
                   <h3 className="truncate font-semibold text-foreground">
                     {account.name}
                   </h3>
+                  {/* {account.is_favorite ? (
+                    <span className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-amber-600 dark:text-amber-400">
+                      <Star
+                        aria-hidden="true"
+                        className="h-3 w-3 fill-current"
+                      />
+                      {t.favorite}
+                    </span>
+                  ) : null} */}
                   <p className="mt-1 text-xs text-muted-foreground">
                     {accountTypeLabel(account.type)}
                   </p>
@@ -294,9 +344,32 @@ export function AccountsView({
                 <div className="flex shrink-0 gap-2">
                   <button
                     type="button"
+                    aria-label={`${account.is_favorite ? t.removeFavorite : t.markFavorite} ${account.name}`}
+                    aria-pressed={account.is_favorite}
+                    onClick={() => void handleToggleFavorite(account)}
+                    disabled={
+                      updatingFavoriteAccountId !== null ||
+                      deletingAccountId === account.id
+                    }
+                    className={`rounded-lg border border-border p-2 transition disabled:opacity-50 ${
+                      account.is_favorite
+                        ? "text-amber-500 hover:border-amber-500 hover:text-amber-600"
+                        : "text-muted-foreground hover:border-amber-500 hover:text-amber-500"
+                    }`}
+                  >
+                    <Star
+                      aria-hidden="true"
+                      className={`h-4 w-4 ${account.is_favorite ? "fill-current" : ""}`}
+                    />
+                  </button>
+                  <button
+                    type="button"
                     aria-label={`${t.edit} ${account.name}`}
                     onClick={() => openEditForm(account)}
-                    disabled={deletingAccountId === account.id}
+                    disabled={
+                      deletingAccountId === account.id ||
+                      updatingFavoriteAccountId === account.id
+                    }
                     className="rounded-lg border border-border p-2 text-muted-foreground transition hover:border-emerald-500 hover:text-emerald-600 disabled:opacity-50 dark:hover:text-emerald-400"
                   >
                     <Pencil aria-hidden="true" className="h-4 w-4" />
@@ -305,7 +378,10 @@ export function AccountsView({
                     type="button"
                     aria-label={`${t.remove} ${account.name}`}
                     onClick={() => void handleDeleteAccount(account)}
-                    disabled={deletingAccountId === account.id}
+                    disabled={
+                      deletingAccountId === account.id ||
+                      updatingFavoriteAccountId === account.id
+                    }
                     className="rounded-lg border border-border p-2 text-muted-foreground transition hover:border-red-500 hover:text-red-500 disabled:opacity-50 dark:hover:text-red-300"
                   >
                     <Trash2 aria-hidden="true" className="h-4 w-4" />
@@ -352,7 +428,10 @@ export function AccountsView({
                 maxLength={120}
                 value={form.name}
                 onChange={(event) =>
-                  setForm((current) => ({ ...current, name: event.target.value }))
+                  setForm((current) => ({
+                    ...current,
+                    name: event.target.value,
+                  }))
                 }
                 className={`${inputClassName} mt-1`}
               />
@@ -363,7 +442,10 @@ export function AccountsView({
               <select
                 value={form.type}
                 onChange={(event) =>
-                  setForm((current) => ({ ...current, type: event.target.value }))
+                  setForm((current) => ({
+                    ...current,
+                    type: event.target.value,
+                  }))
                 }
                 className={`${inputClassName} mt-1`}
               >
@@ -394,7 +476,10 @@ export function AccountsView({
             </label>
 
             {formError ? (
-              <p role="alert" className="text-sm text-red-600 dark:text-red-300">
+              <p
+                role="alert"
+                className="text-sm text-red-600 dark:text-red-300"
+              >
                 {formError}
               </p>
             ) : null}

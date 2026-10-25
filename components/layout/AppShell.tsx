@@ -38,11 +38,17 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { formatCurrency } from "@/lib/utils";
-import { normalizeCategoryValue } from "@/lib/i18n";
+import { formatCurrency, sortAccountsByFavorite } from "@/lib/utils";
+import { normalizeCategoryValue, type Locale } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase";
 import { useBudget } from "@/hooks/useBudget";
 import type { Account, TransactionType } from "@/types/finance";
+
+const localeMap: Record<Locale, string> = {
+  sv: "sv-SE",
+  en: "en-US",
+  ar: "ar-EG",
+};
 
 export type AppView =
   | "home"
@@ -98,8 +104,7 @@ export function AppShell() {
   const [forecastPayments, setForecastPayments] = useState<
     ScheduledForecastPayment[]
   >([]);
-  const [forecastPaymentsLoading, setForecastPaymentsLoading] =
-    useState(true);
+  const [forecastPaymentsLoading, setForecastPaymentsLoading] = useState(true);
   const [forecastPaymentsError, setForecastPaymentsError] = useState("");
   const [isMenuDrawerOpen, setIsMenuDrawerOpen] = useState(false);
   const [theme, setTheme] = useState<ThemeMode>("dark");
@@ -107,6 +112,13 @@ export function AppShell() {
   const [editingTransactionId, setEditingTransactionId] = useState<
     string | null
   >(null);
+  const sortedAccounts = sortAccountsByFavorite(accounts, localeMap[locale]);
+  const favoriteAccounts = sortedAccounts.filter(
+    (account) => account.is_favorite,
+  );
+  const otherAccounts = sortedAccounts.filter(
+    (account) => !account.is_favorite,
+  );
 
   useEffect(() => {
     let isCurrent = true;
@@ -126,7 +138,7 @@ export function AppShell() {
 
       const { data, error } = await supabase
         .from("accounts")
-        .select("id, name, type, balance, created_at")
+        .select("id, name, type, balance, is_favorite, created_at")
         .eq("user_id", userId)
         .order("created_at", { ascending: false });
 
@@ -759,18 +771,34 @@ export function AppShell() {
                     <option value="" disabled>
                       {t.selectAccount}
                     </option>
-                    {accounts.map((account) => (
-                      <option key={account.id} value={account.id}>
-                        {account.name}
-                      </option>
-                    ))}
+                    {favoriteAccounts.length > 0 ? (
+                      <optgroup label={t.favoriteAccounts}>
+                        {favoriteAccounts.map((account) => (
+                          <option key={account.id} value={account.id}>
+                            ★ {account.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ) : null}
+                    {otherAccounts.length > 0 ? (
+                      <optgroup label={t.otherAccounts}>
+                        {otherAccounts.map((account) => (
+                          <option key={account.id} value={account.id}>
+                            {account.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ) : null}
                   </select>
                   {accountsLoading ? (
                     <span className="mt-2 block text-xs text-muted-foreground">
                       {t.loading}
                     </span>
                   ) : accountsError ? (
-                    <span role="alert" className="mt-2 block text-xs text-red-600 dark:text-red-300">
+                    <span
+                      role="alert"
+                      className="mt-2 block text-xs text-red-600 dark:text-red-300"
+                    >
                       {t.accountsLoadError} {accountsError}
                     </span>
                   ) : accounts.length === 0 ? (
@@ -813,6 +841,7 @@ export function AppShell() {
             ) : (
               <TransactionForm
                 accounts={accounts}
+                locale={locale}
                 accountsLoading={accountsLoading}
                 accountsError={accountsError}
                 accountId={accountId}

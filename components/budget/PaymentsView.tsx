@@ -10,7 +10,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, sortAccountsByFavorite } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { normalizeCategoryValue } from "@/lib/i18n";
 import type { Locale, Translation } from "@/lib/i18n";
@@ -82,6 +82,13 @@ export function PaymentsView({
     due_date: "",
   });
   const paymentCategories = t.expenseCategories;
+  const sortedAccounts = sortAccountsByFavorite(accounts, localeMap[locale]);
+  const favoriteAccounts = sortedAccounts.filter(
+    (account) => account.is_favorite,
+  );
+  const otherAccounts = sortedAccounts.filter(
+    (account) => !account.is_favorite,
+  );
 
   useEffect(() => {
     let isCurrent = true;
@@ -512,11 +519,24 @@ export function PaymentsView({
                 <option value="" disabled>
                   {t.selectAccount}
                 </option>
-                {accounts.map((account) => (
-                  <option key={account.id} value={account.id}>
-                    {account.name}
-                  </option>
-                ))}
+                {favoriteAccounts.length > 0 ? (
+                  <optgroup label={t.favoriteAccounts}>
+                    {favoriteAccounts.map((account) => (
+                      <option key={account.id} value={account.id}>
+                        ★ {account.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                ) : null}
+                {otherAccounts.length > 0 ? (
+                  <optgroup label={t.otherAccounts}>
+                    {otherAccounts.map((account) => (
+                      <option key={account.id} value={account.id}>
+                        {account.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                ) : null}
               </select>
               {accountsLoading ? (
                 <span className="mt-2 block text-xs text-muted-foreground">

@@ -14,7 +14,7 @@ type BottomNavProps = {
 
 export function BottomNav({ items }: BottomNavProps) {
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-background/90 px-3 p-2 backdrop-blur-sm">
+    <nav className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-background/90 px-3 pt-2 pb-3 backdrop-blur-sm">
       <div className="mx-auto flex max-w-md items-center justify-between gap-2">
         {items.map((item) => {
           const Icon = item.icon;

@@ -16,5 +16,6 @@ export interface Account {
   name: string;
   type: string | null;
   balance: number | string;
+  is_favorite: boolean;
   created_at: string;
 }

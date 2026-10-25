@@ -1,8 +1,16 @@
-import type { Translation } from "@/lib/i18n";
+import type { Locale, Translation } from "@/lib/i18n";
+import { sortAccountsByFavorite } from "@/lib/utils";
 import type { Account, TransactionType } from "@/types/finance";
+
+const localeMap: Record<Locale, string> = {
+  sv: "sv-SE",
+  en: "en-US",
+  ar: "ar-EG",
+};
 
 type TransactionFormProps = {
   accounts: Account[];
+  locale: Locale;
   accountsLoading: boolean;
   accountsError: string;
   accountId: string;
@@ -23,6 +31,7 @@ type TransactionFormProps = {
 
 export function TransactionForm({
   accounts,
+  locale,
   accountsLoading,
   accountsError,
   accountId,
@@ -43,6 +52,13 @@ export function TransactionForm({
   const suggestionListId = "transaction-title-suggestions";
   const availableCategories =
     type === "income" ? t.incomeCategories : t.expenseCategories;
+  const sortedAccounts = sortAccountsByFavorite(accounts, localeMap[locale]);
+  const favoriteAccounts = sortedAccounts.filter(
+    (account) => account.is_favorite,
+  );
+  const otherAccounts = sortedAccounts.filter(
+    (account) => !account.is_favorite,
+  );
 
   return (
     <form
@@ -146,16 +162,32 @@ export function TransactionForm({
           <option value="" disabled>
             {t.selectAccount}
           </option>
-          {accounts.map((account) => (
-            <option key={account.id} value={account.id}>
-              {account.name}
-            </option>
-          ))}
+          {favoriteAccounts.length > 0 ? (
+            <optgroup label={t.favoriteAccounts}>
+              {favoriteAccounts.map((account) => (
+                <option key={account.id} value={account.id}>
+                  ★ {account.name}
+                </option>
+              ))}
+            </optgroup>
+          ) : null}
+          {otherAccounts.length > 0 ? (
+            <optgroup label={t.otherAccounts}>
+              {otherAccounts.map((account) => (
+                <option key={account.id} value={account.id}>
+                  {account.name}
+                </option>
+              ))}
+            </optgroup>
+          ) : null}
         </select>
         {accountsLoading ? (
           <p className="mt-2 text-xs text-muted-foreground">{t.loading}</p>
         ) : accountsError ? (
-          <p role="alert" className="mt-2 text-xs text-red-600 dark:text-red-300">
+          <p
+            role="alert"
+            className="mt-2 text-xs text-red-600 dark:text-red-300"
+          >
             {t.accountsLoadError} {accountsError}
           </p>
         ) : accounts.length === 0 ? (
