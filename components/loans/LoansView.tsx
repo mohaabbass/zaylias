@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { CalendarDays, CircleAlert, Landmark, Plus, X } from "lucide-react";
+import {
+  CalendarDays,
+  CircleAlert,
+  HandCoins,
+  Landmark,
+  Plus,
+  X,
+} from "lucide-react";
 
 import {
   Drawer,
@@ -329,7 +336,7 @@ export function LoansView({ userId, locale, t }: LoansViewProps) {
   } else if (loans.length === 0) {
     loansContent = (
       <section className="rounded-2xl border border-border bg-card px-5 py-10 text-center">
-        <Landmark
+        <HandCoins
           aria-hidden="true"
           className="mx-auto h-9 w-9 text-muted-foreground"
           strokeWidth={1.6}
@@ -406,7 +413,7 @@ export function LoansView({ userId, locale, t }: LoansViewProps) {
                 <article className="rounded-2xl border border-border bg-card p-5">
                   <div className="flex items-start gap-3">
                     <span className="rounded-xl bg-emerald-500/10 p-2.5 text-emerald-600 dark:text-emerald-400">
-                      <Landmark aria-hidden="true" className="h-5 w-5" />
+                      <HandCoins aria-hidden="true" className="h-5 w-5" />
                     </span>
                     <div className="min-w-0 flex-1">
                       <h3 className="truncate font-semibold text-foreground">

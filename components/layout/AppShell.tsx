@@ -5,6 +5,7 @@ import {
   ArrowRight,
   BarChart3,
   CreditCard,
+  HandCoins,
   House,
   Landmark,
   Menu,
@@ -933,7 +934,7 @@ export function AppShell() {
               }}
               className="flex w-full items-center gap-3 rounded-xl border border-border bg-muted/50 p-3 text-left font-medium transition hover:border-ring hover:bg-muted"
             >
-              <Landmark className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+              <HandCoins className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
               <span>{t.loans}</span>
             </button>
 
