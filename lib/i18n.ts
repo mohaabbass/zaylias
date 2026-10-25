@@ -129,50 +129,6 @@ export const translations = {
     budget: "Budget",
     loans: "Lån",
     payments: "Betalningar",
-    bills: "Räkningar",
-    newBill: "Ny räkning",
-    editBill: "Redigera räkning",
-    createBill: "Lägg till räkning",
-    updateBill: "Spara ändringar",
-    billTitle: "Räkningens namn",
-    billFrequencyLabel: "Intervall (månader)",
-    billValidationError:
-      "Ange ett namn, ett giltigt belopp, ett positivt intervall i hela månader och ett förfallodatum.",
-    billDeleteError: "Det gick inte att ta bort räkningen.",
-    totalMonthlySavings: "Totalt månadssparande",
-    monthlySavings: "Att spara per månad",
-    savingsAccounts: "Sparkonton",
-    newSavingsAccount: "Nytt sparkonto",
-    editSavingsAccount: "Redigera sparkonto",
-    createSavingsAccount: "Lägg till sparkonto",
-    updateSavingsAccount: "Spara ändringar",
-    savingsAccountName: "Kontonamn",
-    savingsAccountBalance: "Nuvarande saldo",
-    monthlySavingsTarget: "Mål för en månad",
-    savingsStillNeeded: "Kvar till målet",
-    savingsAboveTarget: "Över målet",
-    noSavingsAccounts: "Inga sparkonton har lagts till ännu.",
-    savingsAccountsLoadError: "Det gick inte att hämta dina sparkonton.",
-    savingsAccountValidationError:
-      "Ange ett kontonamn och ett giltigt saldo som är noll eller högre.",
-    savingsAccountDeleteError: "Det gick inte att ta bort sparkontot.",
-    billsSavingsAccountHelp:
-      'Skapa kontot "Average bills" för att jämföra saldot med en månads räkningar.',
-    billsSavingsAccountLabel: "Används för räkningarnas sparmål",
-    noBillsSavingsAccount:
-      'Skapa ett sparkonto med namnet "Average bills" för att visa jämförelsen här.',
-    duplicateBillsSavingsAccount:
-      'Det finns redan ett konto med namnet "Average bills".',
-    multipleBillsSavingsAccounts:
-      'Flera konton heter "Average bills". Ta bort dubbletter under Mer > Sparkonton.',
-    billFrequency: (months: number) =>
-      months === 1
-        ? "Varje månad"
-        : `Var ${months}${months === 2 ? ":a" : ":e"} månad`,
-    noBills: "Inga räkningar har lagts till ännu.",
-    billsLoadError: "Det gick inte att hämta dina räkningar.",
-    invalidBillData:
-      "Vissa räkningar har ett ogiltigt belopp eller intervall och ingår inte i summan.",
     totalPayments: "Totala betalningar",
     newPayment: "Ny betalning",
     editPayment: "Redigera betalning",
@@ -305,48 +261,6 @@ export const translations = {
     budget: "Budget",
     loans: "Loans",
     payments: "Payments",
-    bills: "Bills",
-    newBill: "New bill",
-    editBill: "Edit bill",
-    createBill: "Add bill",
-    updateBill: "Save changes",
-    billTitle: "Bill name",
-    billFrequencyLabel: "Frequency (months)",
-    billValidationError:
-      "Enter a name, a valid amount, a positive whole-month frequency, and a due date.",
-    billDeleteError: "Could not delete the bill.",
-    totalMonthlySavings: "Total monthly savings",
-    monthlySavings: "To set aside each month",
-    savingsAccounts: "Savings accounts",
-    newSavingsAccount: "New savings account",
-    editSavingsAccount: "Edit savings account",
-    createSavingsAccount: "Add savings account",
-    updateSavingsAccount: "Save changes",
-    savingsAccountName: "Account name",
-    savingsAccountBalance: "Current balance",
-    monthlySavingsTarget: "One-month target",
-    savingsStillNeeded: "Still needed",
-    savingsAboveTarget: "Above target",
-    noSavingsAccounts: "No savings accounts have been added yet.",
-    savingsAccountsLoadError: "Could not load your savings accounts.",
-    savingsAccountValidationError:
-      "Enter an account name and a valid balance of zero or more.",
-    savingsAccountDeleteError: "Could not delete the savings account.",
-    billsSavingsAccountHelp:
-      'Create the "Average bills" account to compare its balance with one month of bills.',
-    billsSavingsAccountLabel: "Used for the bills savings target",
-    noBillsSavingsAccount:
-      'Create a savings account named "Average bills" to show the comparison here.',
-    duplicateBillsSavingsAccount:
-      'An account named "Average bills" already exists.',
-    multipleBillsSavingsAccounts:
-      'More than one account is named "Average bills". Remove duplicates under More > Savings accounts.',
-    billFrequency: (months: number) =>
-      months === 1 ? "Every month" : `Every ${months} months`,
-    noBills: "No bills have been added yet.",
-    billsLoadError: "Could not load your bills.",
-    invalidBillData:
-      "Some bills have an invalid amount or interval and are excluded from the total.",
     totalPayments: "Total payments",
     newPayment: "New payment",
     editPayment: "Edit payment",
@@ -477,48 +391,6 @@ export const translations = {
     budget: "الميزانية",
     loans: "القروض",
     payments: "المدفوعات",
-    bills: "الفواتير",
-    newBill: "فاتورة جديدة",
-    editBill: "تعديل الفاتورة",
-    createBill: "إضافة فاتورة",
-    updateBill: "حفظ التغييرات",
-    billTitle: "اسم الفاتورة",
-    billFrequencyLabel: "التكرار (بالأشهر)",
-    billValidationError:
-      "أدخل اسمًا ومبلغًا صحيحًا وفترة موجبة بالأشهر وتاريخ الاستحقاق.",
-    billDeleteError: "تعذر حذف الفاتورة.",
-    totalMonthlySavings: "إجمالي الادخار الشهري",
-    monthlySavings: "المبلغ المطلوب ادخاره شهريًا",
-    savingsAccounts: "حسابات التوفير",
-    newSavingsAccount: "حساب توفير جديد",
-    editSavingsAccount: "تعديل حساب التوفير",
-    createSavingsAccount: "إضافة حساب توفير",
-    updateSavingsAccount: "حفظ التغييرات",
-    savingsAccountName: "اسم الحساب",
-    savingsAccountBalance: "الرصيد الحالي",
-    monthlySavingsTarget: "هدف شهر واحد",
-    savingsStillNeeded: "المبلغ المتبقي للهدف",
-    savingsAboveTarget: "أعلى من الهدف",
-    noSavingsAccounts: "لم تتم إضافة حسابات توفير بعد.",
-    savingsAccountsLoadError: "تعذر تحميل حسابات التوفير.",
-    savingsAccountValidationError:
-      "أدخل اسم الحساب ورصيدًا صحيحًا لا يقل عن صفر.",
-    savingsAccountDeleteError: "تعذر حذف حساب التوفير.",
-    billsSavingsAccountHelp:
-      'أنشئ حسابًا باسم "Average bills" لمقارنة رصيده بمصاريف الفواتير لشهر واحد.',
-    billsSavingsAccountLabel: "يُستخدم لهدف ادخار الفواتير",
-    noBillsSavingsAccount:
-      'أنشئ حساب توفير باسم "Average bills" لعرض المقارنة هنا.',
-    duplicateBillsSavingsAccount:
-      'يوجد حساب بالفعل باسم "Average bills".',
-    multipleBillsSavingsAccounts:
-      'يوجد أكثر من حساب باسم "Average bills". احذف الحسابات المكررة من المزيد > حسابات التوفير.',
-    billFrequency: (months: number) =>
-      months === 1 ? "كل شهر" : `كل ${months} أشهر`,
-    noBills: "لم تتم إضافة أي فواتير بعد.",
-    billsLoadError: "تعذر تحميل فواتيرك.",
-    invalidBillData:
-      "بعض الفواتير لها مبلغ أو فترة غير صالحة، ولن تُحتسب ضمن الإجمالي.",
     totalPayments: "إجمالي المدفوعات",
     newPayment: "دفعة جديدة",
     editPayment: "تعديل الدفعة",
