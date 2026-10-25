@@ -132,7 +132,7 @@ export function DailySpendingChart({
               setRange(event.target.value);
             }
           }}
-          className="h-9 cursor-pointer rounded-xl border border-border bg-background px-3 text-sm font-medium text-foreground shadow-sm outline-none transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring"
+          className="h-9 cursor-pointer rounded-xl border border-border bg-muted/60 px-3 text-sm font-medium text-foreground shadow-sm outline-none transition-colors hover:bg-muted focus-visible:border-emerald-500 focus-visible:ring-2 focus-visible:ring-emerald-500/20"
         >
           <option value="day">{t.spendingRangeOneDay}</option>
           <option value="week">{t.spendingRangeOneWeek}</option>
