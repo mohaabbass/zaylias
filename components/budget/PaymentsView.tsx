@@ -14,23 +14,30 @@ import { formatCurrency } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { normalizeCategoryValue } from "@/lib/i18n";
 import type { Locale, Translation } from "@/lib/i18n";
+import type { Account } from "@/types/finance";
 
 type Payment = {
   id: string;
   title: string;
   amount: number | string;
   category: string;
+  account_id: string | null;
   due_date: string;
   created_at: string;
 };
 
 type PaymentsViewProps = {
   userId: string;
+  accounts: Account[];
+  accountsLoading: boolean;
+  accountsError: string;
+  onOpenAccounts: () => void;
   onAddExpense: (payment: {
     title: string;
     amount: string;
     category: string;
     type: "expense";
+    account_id: string;
   }) => Promise<string | null>;
   onDeleteExpense: (id: string) => Promise<boolean>;
   onPaymentsChange: () => void;
@@ -44,10 +51,15 @@ const localeMap: Record<Locale, string> = {
   ar: "ar-EG",
 };
 
-const paymentFields = "id, title, amount, category, due_date, created_at";
+const paymentFields =
+  "id, title, amount, category, account_id, due_date, created_at";
 
 export function PaymentsView({
   userId,
+  accounts,
+  accountsLoading,
+  accountsError,
+  onOpenAccounts,
   onAddExpense,
   onDeleteExpense,
   onPaymentsChange,
@@ -66,6 +78,7 @@ export function PaymentsView({
     title: "",
     amount: "",
     category: "",
+    account_id: "",
     due_date: "",
   });
   const paymentCategories = t.expenseCategories;
@@ -108,7 +121,13 @@ export function PaymentsView({
   );
 
   const resetForm = () => {
-    setForm({ title: "", amount: "", category: "", due_date: "" });
+    setForm({
+      title: "",
+      amount: "",
+      category: "",
+      account_id: "",
+      due_date: "",
+    });
     setEditingPaymentId(null);
     setActionError("");
   };
@@ -119,6 +138,7 @@ export function PaymentsView({
       title: payment.title,
       amount: String(payment.amount),
       category,
+      account_id: payment.account_id ?? "",
       due_date: payment.due_date,
     });
     setEditingPaymentId(payment.id);
@@ -136,6 +156,7 @@ export function PaymentsView({
       !form.category.trim() ||
       !Number.isFinite(amount) ||
       amount <= 0 ||
+      !form.account_id ||
       !form.due_date
     ) {
       setActionError(t.paymentValidationError);
@@ -151,6 +172,7 @@ export function PaymentsView({
       title: form.title.trim(),
       amount,
       category: form.category.trim(),
+      account_id: form.account_id,
       due_date: form.due_date,
     };
 
@@ -203,6 +225,11 @@ export function PaymentsView({
 
   const handleMarkPaid = async (payment: Payment) => {
     setActionError("");
+    if (!payment.account_id) {
+      setActionError(t.paymentAccountRequired);
+      return;
+    }
+
     setBusyPaymentId(payment.id);
 
     const expenseId = await onAddExpense({
@@ -210,6 +237,7 @@ export function PaymentsView({
       amount: String(payment.amount),
       category: payment.category,
       type: "expense",
+      account_id: payment.account_id,
     });
 
     if (!expenseId) {
@@ -341,6 +369,11 @@ export function PaymentsView({
                     <CalendarDays aria-hidden="true" className="h-4 w-4" />
                     {t.dueDate}: {formatDate(payment.due_date)}
                   </p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {t.account}:{" "}
+                    {accounts.find((account) => account.id === payment.account_id)
+                      ?.name ?? t.accountUnavailable}
+                  </p>
                   <div className="mt-4 grid grid-cols-3 gap-2">
                     <button
                       type="button"
@@ -463,6 +496,50 @@ export function PaymentsView({
               </label>
             </div>
             <label className="block text-xs text-muted-foreground">
+              {t.account}
+              <select
+                required
+                disabled={accountsLoading || Boolean(accountsError)}
+                value={form.account_id}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    account_id: event.target.value,
+                  }))
+                }
+                className="mt-1 w-full rounded-lg border border-border bg-background p-2.5 text-sm text-foreground focus:border-emerald-500 focus:outline-none"
+              >
+                <option value="" disabled>
+                  {t.selectAccount}
+                </option>
+                {accounts.map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {account.name}
+                  </option>
+                ))}
+              </select>
+              {accountsLoading ? (
+                <span className="mt-2 block text-xs text-muted-foreground">
+                  {t.loading}
+                </span>
+              ) : accountsError ? (
+                <span role="alert" className="mt-2 block text-xs text-red-600 dark:text-red-300">
+                  {t.accountsLoadError} {accountsError}
+                </span>
+              ) : accounts.length === 0 ? (
+                <span className="mt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                  <span>{t.createAccountFirst}</span>
+                  <button
+                    type="button"
+                    onClick={onOpenAccounts}
+                    className="shrink-0 font-medium text-emerald-600 hover:text-emerald-500 dark:text-emerald-400"
+                  >
+                    {t.accounts}
+                  </button>
+                </span>
+              ) : null}
+            </label>
+            <label className="block text-xs text-muted-foreground">
               {t.dueDate}
               <input
                 required
@@ -489,7 +566,12 @@ export function PaymentsView({
 
             <button
               type="submit"
-              disabled={isSaving}
+              disabled={
+                isSaving ||
+                accountsLoading ||
+                Boolean(accountsError) ||
+                accounts.length === 0
+              }
               className="w-full rounded-lg bg-emerald-600 py-2.5 font-medium text-white transition hover:bg-emerald-500 disabled:opacity-50"
             >
               {isSaving ? t.loading : t.savePayment}

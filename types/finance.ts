@@ -6,6 +6,15 @@ export interface Transaction {
   amount: number;
   category: string;
   type: TransactionType;
+  account_id?: string | null;
   created_at: string;
   user_id?: string;
+}
+
+export interface Account {
+  id: string;
+  name: string;
+  type: string | null;
+  balance: number | string;
+  created_at: string;
 }

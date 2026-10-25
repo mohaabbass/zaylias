@@ -26,6 +26,7 @@ import { StatisticsCategoryChart } from "@/components/budget/StatisticsCategoryC
 import { TransactionList } from "@/components/budget/TransactionList";
 import { PaymentsView } from "@/components/budget/PaymentsView";
 import { LoansView } from "@/components/loans/LoansView";
+import { AccountsView } from "@/components/accounts/AccountsView";
 import { AuthScreen } from "@/components/auth/AuthScreen";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { BottomNav } from "@/components/layout/BottomNav";
@@ -41,12 +42,13 @@ import { formatCurrency } from "@/lib/utils";
 import { normalizeCategoryValue } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase";
 import { useBudget } from "@/hooks/useBudget";
-import type { TransactionType } from "@/types/finance";
+import type { Account, TransactionType } from "@/types/finance";
 
 export type AppView =
   | "home"
   | "payments"
   | "loans"
+  | "accounts"
   | "add"
   | "locale"
   | "menu";
@@ -80,6 +82,7 @@ export function AppShell() {
     normalizeCategoryValue(t.expenseCategories[0]?.value ?? "food"),
   );
   const [type, setType] = useState<TransactionType>("expense");
+  const [accountId, setAccountId] = useState("");
   const [addMode, setAddMode] = useState<AddMode>("expense");
   const [paymentDueDate, setPaymentDueDate] = useState("");
   const [paymentError, setPaymentError] = useState("");
@@ -88,6 +91,10 @@ export function AppShell() {
   const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false);
   const [isCashFlowDrawerOpen, setIsCashFlowDrawerOpen] = useState(false);
   const [paymentsRefreshToken, setPaymentsRefreshToken] = useState(0);
+  const [accountsRefreshToken, setAccountsRefreshToken] = useState(0);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [accountsLoading, setAccountsLoading] = useState(true);
+  const [accountsError, setAccountsError] = useState("");
   const [forecastPayments, setForecastPayments] = useState<
     ScheduledForecastPayment[]
   >([]);
@@ -100,6 +107,53 @@ export function AppShell() {
   const [editingTransactionId, setEditingTransactionId] = useState<
     string | null
   >(null);
+
+  useEffect(() => {
+    let isCurrent = true;
+    const userId = session?.user.id;
+
+    const loadAccounts = async () => {
+      if (!userId) {
+        setAccounts([]);
+        setAccountId("");
+        setAccountsError("");
+        setAccountsLoading(false);
+        return;
+      }
+
+      setAccountsLoading(true);
+      setAccountsError("");
+
+      const { data, error } = await supabase
+        .from("accounts")
+        .select("id, name, type, balance, created_at")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false });
+
+      if (!isCurrent) return;
+
+      if (error) {
+        console.error("Failed to load accounts for transaction forms:", error);
+        setAccounts([]);
+        setAccountId("");
+        setAccountsError(error.message);
+      } else {
+        setAccounts(data ?? []);
+        setAccountId((current) =>
+          current && data.some((account) => account.id === current)
+            ? current
+            : "",
+        );
+      }
+      setAccountsLoading(false);
+    };
+
+    void loadAccounts();
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [session?.user.id, accountsRefreshToken]);
 
   useEffect(() => {
     let isCurrent = true;
@@ -186,6 +240,7 @@ export function AppShell() {
     setAmount("");
     setCategory(getDefaultCategory("expense"));
     setType("expense");
+    setAccountId("");
     setAddMode("expense");
     setPaymentDueDate("");
     setPaymentError("");
@@ -219,6 +274,7 @@ export function AppShell() {
     setAmount(String(transaction.amount));
     setCategory(normalizeCategoryValue(transaction.category));
     setType(transaction.type);
+    setAccountId(transaction.account_id ?? "");
     setActiveView("add");
     setIsAddDrawerOpen(true);
   };
@@ -227,7 +283,7 @@ export function AppShell() {
     event: React.FormEvent<HTMLFormElement>,
   ) => {
     event.preventDefault();
-    if (!title || !amount) return;
+    if (!title || !amount || !accountId) return;
 
     if (editingTransactionId) {
       const success = await updateTransaction(editingTransactionId, {
@@ -235,6 +291,7 @@ export function AppShell() {
         amount,
         category,
         type,
+        account_id: accountId,
       });
 
       if (success) {
@@ -250,6 +307,7 @@ export function AppShell() {
       amount,
       category,
       type,
+      account_id: accountId,
     });
 
     if (success) {
@@ -269,7 +327,8 @@ export function AppShell() {
       !Number.isFinite(parsedAmount) ||
       parsedAmount <= 0 ||
       !paymentDueDate ||
-      !category
+      !category ||
+      !accountId
     ) {
       setPaymentError(t.paymentValidationError);
       return;
@@ -280,6 +339,7 @@ export function AppShell() {
       title: title.trim(),
       amount: parsedAmount,
       category,
+      account_id: accountId,
       due_date: paymentDueDate,
       user_id: session?.user.id,
     });
@@ -390,6 +450,10 @@ export function AppShell() {
         return (
           <PaymentsView
             userId={session.user.id}
+            accounts={accounts}
+            accountsLoading={accountsLoading}
+            accountsError={accountsError}
+            onOpenAccounts={() => setActiveView("accounts")}
             onAddExpense={async (payment) => {
               const transaction = await addExpenseTransaction(payment);
               return transaction?.id ?? null;
@@ -404,6 +468,17 @@ export function AppShell() {
         );
       case "loans":
         return <LoansView userId={session.user.id} locale={locale} t={t} />;
+      case "accounts":
+        return (
+          <AccountsView
+            userId={session.user.id}
+            locale={locale}
+            t={t}
+            onAccountsChange={() =>
+              setAccountsRefreshToken((current) => current + 1)
+            }
+          />
+        );
       case "add":
         return null;
       case "menu":
@@ -512,6 +587,7 @@ export function AppShell() {
               transactions={transactions}
               onDelete={(id) => void deleteTransaction(id)}
               onEdit={openEditDrawer}
+              accounts={accounts}
               locale={locale}
               t={t}
             />
@@ -671,6 +747,48 @@ export function AppShell() {
                     className="mt-1 w-full rounded-lg border border-border bg-background p-2.5 text-sm text-foreground focus:border-emerald-500 focus:outline-none"
                   />
                 </label>
+                <label className="block text-xs text-muted-foreground">
+                  {t.account}
+                  <select
+                    required
+                    disabled={accountsLoading || Boolean(accountsError)}
+                    value={accountId}
+                    onChange={(event) => setAccountId(event.target.value)}
+                    className="mt-1 w-full rounded-lg border border-border bg-background p-2.5 text-sm text-foreground focus:border-emerald-500 focus:outline-none"
+                  >
+                    <option value="" disabled>
+                      {t.selectAccount}
+                    </option>
+                    {accounts.map((account) => (
+                      <option key={account.id} value={account.id}>
+                        {account.name}
+                      </option>
+                    ))}
+                  </select>
+                  {accountsLoading ? (
+                    <span className="mt-2 block text-xs text-muted-foreground">
+                      {t.loading}
+                    </span>
+                  ) : accountsError ? (
+                    <span role="alert" className="mt-2 block text-xs text-red-600 dark:text-red-300">
+                      {t.accountsLoadError} {accountsError}
+                    </span>
+                  ) : accounts.length === 0 ? (
+                    <span className="mt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                      <span>{t.createAccountFirst}</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAddDrawerOpen(false);
+                          setActiveView("accounts");
+                        }}
+                        className="shrink-0 font-medium text-emerald-600 hover:text-emerald-500 dark:text-emerald-400"
+                      >
+                        {t.accounts}
+                      </button>
+                    </span>
+                  ) : null}
+                </label>
                 {paymentError ? (
                   <p
                     role="alert"
@@ -681,7 +799,12 @@ export function AppShell() {
                 ) : null}
                 <button
                   type="submit"
-                  disabled={isSavingPayment}
+                  disabled={
+                    isSavingPayment ||
+                    accountsLoading ||
+                    Boolean(accountsError) ||
+                    accounts.length === 0
+                  }
                   className="w-full rounded-lg bg-emerald-600 py-2.5 font-medium text-white transition hover:bg-emerald-500 disabled:opacity-50"
                 >
                   {isSavingPayment ? t.loading : t.savePayment}
@@ -689,6 +812,10 @@ export function AppShell() {
               </form>
             ) : (
               <TransactionForm
+                accounts={accounts}
+                accountsLoading={accountsLoading}
+                accountsError={accountsError}
+                accountId={accountId}
                 title={title}
                 amount={amount}
                 category={category}
@@ -696,6 +823,11 @@ export function AppShell() {
                 titleSuggestions={recentTransactionTitles}
                 onTitleChange={setTitle}
                 onAmountChange={setAmount}
+                onAccountIdChange={setAccountId}
+                onOpenAccounts={() => {
+                  setIsAddDrawerOpen(false);
+                  setActiveView("accounts");
+                }}
                 onCategoryChange={setCategory}
                 onTypeChange={handleTypeChange}
                 onSubmit={handleAddTransaction}
@@ -774,6 +906,18 @@ export function AppShell() {
             >
               <Landmark className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
               <span>{t.loans}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setActiveView("accounts");
+                setIsMenuDrawerOpen(false);
+              }}
+              className="flex w-full items-center gap-3 rounded-xl border border-border bg-muted/50 p-3 text-left font-medium transition hover:border-ring hover:bg-muted"
+            >
+              <Landmark className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+              <span>{t.accounts}</span>
             </button>
 
             <div className="rounded-xl border border-border bg-muted/50 p-3">

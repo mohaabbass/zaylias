@@ -7,7 +7,7 @@ import {
   type Translation,
 } from "@/lib/i18n";
 import { formatCurrency } from "@/lib/utils";
-import type { Transaction } from "@/types/finance";
+import type { Account, Transaction } from "@/types/finance";
 
 import {
   TransactionListFilter,
@@ -16,6 +16,7 @@ import {
 
 type TransactionListProps = {
   transactions: Transaction[];
+  accounts: Account[];
   onDelete: (id: string) => void;
   onEdit: (transaction: Transaction) => void;
   locale?: Locale;
@@ -24,6 +25,7 @@ type TransactionListProps = {
 
 export function TransactionList({
   transactions,
+  accounts,
   onDelete,
   onEdit,
   locale = "sv",
@@ -246,6 +248,14 @@ export function TransactionList({
                         {getCategoryLabel(locale, transaction.category)}
                       </span>
                     </p>
+                    {transaction.account_id ? (
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {t.account}:{" "}
+                        {accounts.find(
+                          (account) => account.id === transaction.account_id,
+                        )?.name ?? t.accountUnavailable}
+                      </p>
+                    ) : null}
                   </div>
 
                   <div className="flex items-center gap-3">

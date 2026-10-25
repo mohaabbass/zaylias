@@ -1,7 +1,11 @@
 import type { Translation } from "@/lib/i18n";
-import type { TransactionType } from "@/types/finance";
+import type { Account, TransactionType } from "@/types/finance";
 
 type TransactionFormProps = {
+  accounts: Account[];
+  accountsLoading: boolean;
+  accountsError: string;
+  accountId: string;
   title: string;
   amount: string;
   category: string;
@@ -9,6 +13,8 @@ type TransactionFormProps = {
   titleSuggestions?: string[];
   onTitleChange: (value: string) => void;
   onAmountChange: (value: string) => void;
+  onAccountIdChange: (value: string) => void;
+  onOpenAccounts: () => void;
   onCategoryChange: (value: string) => void;
   onTypeChange: (value: TransactionType) => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
@@ -16,6 +22,10 @@ type TransactionFormProps = {
 };
 
 export function TransactionForm({
+  accounts,
+  accountsLoading,
+  accountsError,
+  accountId,
   title,
   amount,
   category,
@@ -23,6 +33,8 @@ export function TransactionForm({
   titleSuggestions = [],
   onTitleChange,
   onAmountChange,
+  onAccountIdChange,
+  onOpenAccounts,
   onCategoryChange,
   onTypeChange,
   onSubmit,
@@ -120,9 +132,52 @@ export function TransactionForm({
         </div>
       </div>
 
+      <div>
+        <label className="mb-1 block text-xs text-muted-foreground">
+          {t.account}
+        </label>
+        <select
+          required
+          disabled={accountsLoading || Boolean(accountsError)}
+          value={accountId}
+          onChange={(event) => onAccountIdChange(event.target.value)}
+          className="w-full rounded-lg border border-border bg-background p-2.5 text-sm text-foreground focus:border-emerald-500 focus:outline-none"
+        >
+          <option value="" disabled>
+            {t.selectAccount}
+          </option>
+          {accounts.map((account) => (
+            <option key={account.id} value={account.id}>
+              {account.name}
+            </option>
+          ))}
+        </select>
+        {accountsLoading ? (
+          <p className="mt-2 text-xs text-muted-foreground">{t.loading}</p>
+        ) : accountsError ? (
+          <p role="alert" className="mt-2 text-xs text-red-600 dark:text-red-300">
+            {t.accountsLoadError} {accountsError}
+          </p>
+        ) : accounts.length === 0 ? (
+          <div className="mt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+            <span>{t.createAccountFirst}</span>
+            <button
+              type="button"
+              onClick={onOpenAccounts}
+              className="shrink-0 font-medium text-emerald-600 hover:text-emerald-500 dark:text-emerald-400"
+            >
+              {t.accounts}
+            </button>
+          </div>
+        ) : null}
+      </div>
+
       <button
         type="submit"
-        className="w-full rounded-lg bg-emerald-600 py-2.5 font-medium text-white transition hover:bg-emerald-500"
+        disabled={
+          accountsLoading || Boolean(accountsError) || accounts.length === 0
+        }
+        className="w-full rounded-lg bg-emerald-600 py-2.5 font-medium text-white transition hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {t.saveTransaction}
       </button>

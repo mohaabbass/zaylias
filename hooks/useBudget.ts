@@ -97,6 +97,7 @@ export function useBudget() {
       amount: string;
       category: string;
       type: TransactionType;
+      account_id: string;
     }) => {
       if (!session || !input.title || !input.amount) {
         return false;
@@ -110,6 +111,7 @@ export function useBudget() {
             amount: Number.parseFloat(input.amount),
             category: input.category,
             type: input.type,
+            account_id: input.account_id,
             user_id: session.user.id,
           },
         ])
@@ -135,6 +137,7 @@ export function useBudget() {
       amount: string;
       category: string;
       type: "expense";
+      account_id: string;
     }) => {
       if (!session || !input.title || !input.amount) {
         return null;
@@ -147,6 +150,7 @@ export function useBudget() {
           amount: Number.parseFloat(input.amount),
           category: input.category,
           type: input.type,
+          account_id: input.account_id,
           user_id: session.user.id,
         })
         .select()
@@ -172,6 +176,7 @@ export function useBudget() {
         amount: string;
         category: string;
         type: TransactionType;
+        account_id: string;
       },
     ) => {
       if (!session || !input.title || !input.amount) {
@@ -185,6 +190,7 @@ export function useBudget() {
           amount: Number.parseFloat(input.amount),
           category: input.category,
           type: input.type,
+          account_id: input.account_id,
           user_id: session.user.id,
         })
         .eq("id", id)
