@@ -5,8 +5,6 @@ import {
   CalendarDays,
   CircleAlert,
   HandCoins,
-  Landmark,
-  Plus,
   X,
 } from "lucide-react";
 
@@ -559,22 +557,6 @@ export function LoansView({ userId, locale, t }: LoansViewProps) {
           </div>
         </section>
       )}
-      <div className="flex justify-end">
-        <button
-          type="button"
-          onClick={() => {
-            setCreateError("");
-            setEditingLoanId(null);
-            resetForm();
-            setIsCreateOpen(true);
-          }}
-          className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-500"
-        >
-          <Plus aria-hidden="true" className="h-4 w-4" />
-          {t.newLoan}
-        </button>
-      </div>
-
       {loansContent}
 
       <Drawer

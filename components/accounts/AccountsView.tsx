@@ -1,15 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import {
-  CircleAlert,
-  Landmark,
-  Pencil,
-  Plus,
-  Star,
-  Trash2,
-  X,
-} from "lucide-react";
+import { CircleAlert, Landmark, Pencil, Star, Trash2, X } from "lucide-react";
 
 import {
   Drawer,
@@ -107,11 +99,6 @@ export function AccountsView({
     setForm({ name: "", type: "checking", balance: "0" });
     setFormError("");
     setEditingAccountId(null);
-  };
-
-  const openCreateForm = () => {
-    resetForm();
-    setIsFormOpen(true);
   };
 
   const openEditForm = (account: Account) => {
@@ -256,24 +243,32 @@ export function AccountsView({
         </section>
       ) : null}
 
-      <section className="rounded-2xl border border-border bg-linear-to-br from-card via-card to-emerald-500/5 p-5">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <h2 className="text-sm font-medium text-muted-foreground">
-              {t.accountsOverview}
-            </h2>
-            <p className="mt-1 text-3xl font-bold tabular-nums tracking-tight text-foreground">
-              {formatCurrency(totalBalance, localeMap[locale])} {t.currency}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={openCreateForm}
-            className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-emerald-600 px-3 py-2.5 text-sm font-medium text-white transition hover:bg-emerald-500"
-          >
-            <Plus aria-hidden="true" className="h-4 w-4" />
-            {/* {t.newAccount} */}
-          </button>
+      <section className="rounded-2xl border border-border bg-card p-5">
+        <div>
+          <h2 className="text-sm font-medium text-muted-foreground">
+            {t.accountsOverview}
+          </h2>
+          <p className="mt-1 text-3xl font-bold tabular-nums tracking-tight text-foreground">
+            {formatCurrency(totalBalance, localeMap[locale])} {t.currency}
+          </p>
+        </div>
+        <hr className="my-4 border-border" />
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <p className="text-muted-foreground">
+            {loading
+              ? t.loading
+              : t.accountCount.replace("{count}", String(accounts.length))}
+          </p>
+          <p className="text-end text-muted-foreground">
+            {loading
+              ? t.loading
+              : t.favoriteAccountCount.replace(
+                  "{count}",
+                  String(
+                    accounts.filter((account) => account.is_favorite).length,
+                  ),
+                )}
+          </p>
         </div>
       </section>
 
@@ -336,7 +331,7 @@ export function AccountsView({
                   <p className="mt-1 text-xs text-muted-foreground">
                     {accountTypeLabel(account.type)}
                   </p>
-                  <p className="mt-2 text-xl font-bold tabular-nums text-foreground">
+                  <p className="mt-2 text-md font-bold tabular-nums text-foreground">
                     {formatCurrency(Number(account.balance), localeMap[locale])}{" "}
                     {t.currency}
                   </p>

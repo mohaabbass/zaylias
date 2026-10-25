@@ -11,6 +11,7 @@ import {
   Menu,
   MoonStar,
   Plus,
+  ReceiptText,
   SunMedium,
   X,
 } from "lucide-react";
@@ -60,7 +61,7 @@ export type AppView =
   | "locale"
   | "menu";
 type ThemeMode = "light" | "dark";
-type AddMode = "expense" | "payment";
+type AddMode = "expense" | "payment" | "loan" | "account";
 
 export function AppShell() {
   const { t, locale, setLocale, locales, localeLabels } = useLocale();
@@ -94,6 +95,23 @@ export function AppShell() {
   const [paymentDueDate, setPaymentDueDate] = useState("");
   const [paymentError, setPaymentError] = useState("");
   const [isSavingPayment, setIsSavingPayment] = useState(false);
+  const [loanForm, setLoanForm] = useState({
+    title: "",
+    total_amount: "",
+    remaining_amount: "",
+    interest_rate: "",
+    monthly_payment: "",
+    invoice_fee: "",
+    extra_costs: "",
+    due_date: "",
+  });
+  const [accountForm, setAccountForm] = useState({
+    name: "",
+    type: "checking",
+    balance: "0",
+  });
+  const [creationError, setCreationError] = useState("");
+  const [isSavingRecord, setIsSavingRecord] = useState(false);
   const [activeView, setActiveView] = useState<AppView>("home");
   const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false);
   const [isCashFlowDrawerOpen, setIsCashFlowDrawerOpen] = useState(false);
@@ -257,6 +275,18 @@ export function AppShell() {
     setAddMode("expense");
     setPaymentDueDate("");
     setPaymentError("");
+    setLoanForm({
+      title: "",
+      total_amount: "",
+      remaining_amount: "",
+      interest_rate: "",
+      monthly_payment: "",
+      invoice_fee: "",
+      extra_costs: "",
+      due_date: "",
+    });
+    setAccountForm({ name: "", type: "checking", balance: "0" });
+    setCreationError("");
     setEditingTransactionId(null);
   }, [getDefaultCategory]);
 
@@ -368,6 +398,104 @@ export function AppShell() {
     resetAddForm();
     setIsAddDrawerOpen(false);
     setActiveView("payments");
+  };
+
+  const handleCreateAccount = async (
+    event: React.FormEvent<HTMLFormElement>,
+  ) => {
+    event.preventDefault();
+    setCreationError("");
+
+    const balance = Number(accountForm.balance);
+    if (!accountForm.name.trim() || !Number.isFinite(balance)) {
+      setCreationError(t.accountValidationError);
+      return;
+    }
+
+    setIsSavingRecord(true);
+    const { error } = await supabase.from("accounts").insert({
+      name: accountForm.name.trim(),
+      type: accountForm.type,
+      balance,
+      user_id: session?.user.id,
+    });
+    setIsSavingRecord(false);
+
+    if (error) {
+      console.error("Failed to create account:", error);
+      setCreationError(error.message);
+      return;
+    }
+
+    setAccountsRefreshToken((current) => current + 1);
+    resetAddForm();
+    setActiveView("accounts");
+    setIsAddDrawerOpen(false);
+  };
+
+  const handleCreateLoan = async (
+    event: React.FormEvent<HTMLFormElement>,
+  ) => {
+    event.preventDefault();
+    setCreationError("");
+
+    const totalAmount = Number(loanForm.total_amount);
+    const remainingAmount = Number(loanForm.remaining_amount);
+    const interestRate =
+      loanForm.interest_rate.trim() === ""
+        ? null
+        : Number(loanForm.interest_rate);
+    const monthlyPayment =
+      loanForm.monthly_payment.trim() === ""
+        ? null
+        : Number(loanForm.monthly_payment);
+    const invoiceFee = Number(loanForm.invoice_fee || 0);
+    const extraCosts = Number(loanForm.extra_costs || 0);
+    const optionalAmounts = [
+      interestRate,
+      monthlyPayment,
+      invoiceFee,
+      extraCosts,
+    ];
+
+    if (
+      !loanForm.title.trim() ||
+      !Number.isFinite(totalAmount) ||
+      !Number.isFinite(remainingAmount) ||
+      totalAmount <= 0 ||
+      remainingAmount < 0 ||
+      remainingAmount > totalAmount ||
+      optionalAmounts.some(
+        (value) => value !== null && (!Number.isFinite(value) || value < 0),
+      )
+    ) {
+      setCreationError(t.loanAmountError);
+      return;
+    }
+
+    setIsSavingRecord(true);
+    const { error } = await supabase.from("loans").insert({
+      title: loanForm.title.trim(),
+      total_amount: totalAmount,
+      remaining_amount: remainingAmount,
+      interest_rate: interestRate,
+      monthly_payment: monthlyPayment,
+      invoice_fee: invoiceFee,
+      extra_costs: extraCosts,
+      due_date: loanForm.due_date || null,
+      user_id: session?.user.id,
+    });
+    setIsSavingRecord(false);
+
+    if (error) {
+      console.error("Failed to create loan:", error);
+      setCreationError(error.message);
+      return;
+    }
+
+    resetAddForm();
+    setActiveView("loans");
+    setIsAddDrawerOpen(false);
   };
 
   const recentTransactionTitles = useMemo(() => {
@@ -613,7 +741,11 @@ export function AppShell() {
     ? t.editTransaction
     : addMode === "payment"
       ? t.newPayment
-      : t.addTransaction;
+      : addMode === "loan"
+        ? t.newLoan
+        : addMode === "account"
+          ? t.newAccount
+          : t.addTransaction;
 
   return (
     <>
@@ -637,12 +769,16 @@ export function AppShell() {
           if (!open) {
             resetAddForm();
             setActiveView((current) =>
-              current === "payments" ? current : "home",
+              current === "payments" ||
+              current === "loans" ||
+              current === "accounts"
+                ? current
+                : "home",
             );
           }
         }}
       >
-        <DrawerContent className="mx-auto max-w-md rounded-t-2xl border border-border bg-popover p-0 text-popover-foreground shadow-2xl">
+        <DrawerContent className="mx-auto max-w-md rounded-t-2xl border border-border bg-popover p-0 text-popover-foreground shadow-2xl [&_input]:rounded-xl [&_input]:border-border [&_input]:bg-muted/60 [&_input]:shadow-sm [&_input]:transition-colors [&_input:focus]:border-emerald-500 [&_input:focus]:ring-2 [&_input:focus]:ring-emerald-500/20 [&_input::placeholder]:text-xs [&_select]:rounded-xl [&_select]:border-border [&_select]:bg-muted/60 [&_select]:shadow-sm [&_select]:transition-colors [&_select:focus]:border-emerald-500 [&_select:focus]:ring-2 [&_select:focus]:ring-emerald-500/20">
           <DrawerHeader className="border-b border-border px-4 pb-3 pt-4">
             <div className="flex items-center justify-between gap-3">
               <DrawerTitle className="text-lg font-semibold text-foreground">
@@ -663,44 +799,55 @@ export function AppShell() {
               <div
                 role="group"
                 aria-label={t.add}
-                className="grid grid-cols-2 gap-2 rounded-lg bg-muted p-1"
+                className="grid grid-cols-2 gap-2"
               >
-                <button
-                  type="button"
-                  aria-pressed={addMode === "expense"}
-                  onClick={() => {
-                    setAddMode("expense");
-                    setPaymentError("");
-                  }}
-                  className={`rounded-md py-2 text-sm font-medium transition ${
-                    addMode === "expense"
-                      ? "bg-emerald-600 text-white"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {t.expense}
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={addMode === "payment"}
-                  onClick={() => {
-                    setAddMode("payment");
-                    setType("expense");
-                    setCategory(
-                      t.expenseCategories.find(
-                        (option) => option.value === "bills",
-                      )?.value ?? getDefaultCategory("expense"),
-                    );
-                    setPaymentError("");
-                  }}
-                  className={`rounded-md py-2 text-sm font-medium transition ${
-                    addMode === "payment"
-                      ? "bg-emerald-600 text-white"
-                      : "text-muted-foreground hover:text-foreground"
-                  }`}
-                >
-                  {t.payments}
-                </button>
+                {(
+                  [
+                    ["expense", t.expense, ReceiptText],
+                    ["payment", t.payments, CreditCard],
+                    ["loan", t.loans, HandCoins],
+                    ["account", t.accounts, Landmark],
+                  ] as const
+                ).map(([mode, label, Icon]) => {
+                  const isSelected = addMode === mode;
+
+                  return (
+                    <button
+                      key={mode}
+                      type="button"
+                      aria-pressed={isSelected}
+                      onClick={() => {
+                        setAddMode(mode);
+                        setCreationError("");
+                        setPaymentError("");
+                        if (mode === "payment") {
+                          setType("expense");
+                          setCategory(
+                            t.expenseCategories.find(
+                              (option) => option.value === "bills",
+                            )?.value ?? getDefaultCategory("expense"),
+                          );
+                        }
+                      }}
+                      className={`flex min-h-16 items-center gap-3 rounded-xl border px-3 py-3 text-start text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+                        isSelected
+                          ? "border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                          : "border-border bg-card text-muted-foreground hover:border-emerald-500/50 hover:bg-muted hover:text-foreground"
+                      }`}
+                    >
+                      <span
+                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+                          isSelected
+                            ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300"
+                            : "bg-muted text-muted-foreground"
+                        }`}
+                      >
+                        <Icon aria-hidden="true" className="h-4 w-4" />
+                      </span>
+                      <span>{label}</span>
+                    </button>
+                  );
+                })}
               </div>
             ) : null}
 
@@ -719,7 +866,7 @@ export function AppShell() {
                     value={title}
                     placeholder={t.paymentTitlePlaceholder}
                     onChange={(event) => setTitle(event.target.value)}
-                    className="mt-1 w-full rounded-lg border border-border bg-background p-2.5 text-sm text-foreground focus:border-emerald-500 focus:outline-none"
+                    className="mt-1 w-full rounded-lg border border-border bg-background p-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-emerald-500 focus:outline-none"
                   />
                 </label>
                 <div className="grid grid-cols-2 gap-3">
@@ -733,7 +880,7 @@ export function AppShell() {
                       value={amount}
                       placeholder={t.amountPlaceholder}
                       onChange={(event) => setAmount(event.target.value)}
-                      className="mt-1 w-full rounded-lg border border-border bg-background p-2.5 text-sm text-foreground focus:border-emerald-500 focus:outline-none"
+                      className="mt-1 w-full rounded-lg border border-border bg-background p-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-emerald-500 focus:outline-none"
                     />
                   </label>
                   <label className="block text-xs text-muted-foreground">
@@ -810,8 +957,8 @@ export function AppShell() {
                       <button
                         type="button"
                         onClick={() => {
-                          setIsAddDrawerOpen(false);
-                          setActiveView("accounts");
+                          setAddMode("account");
+                          setCreationError("");
                         }}
                         className="shrink-0 font-medium text-emerald-600 hover:text-emerald-500 dark:text-emerald-400"
                       >
@@ -841,6 +988,231 @@ export function AppShell() {
                   {isSavingPayment ? t.loading : t.savePayment}
                 </button>
               </form>
+            ) : addMode === "loan" && !editingTransactionId ? (
+              <form
+                onSubmit={(event) => void handleCreateLoan(event)}
+                className="max-h-[70dvh] space-y-4 overflow-y-auto rounded-xl border border-border bg-card p-5"
+              >
+                <label className="block text-xs text-muted-foreground">
+                  {t.loanTitle}
+                  <input
+                    required
+                    maxLength={120}
+                    value={loanForm.title}
+                    placeholder={t.loanTitle}
+                    onChange={(event) =>
+                      setLoanForm((current) => ({
+                        ...current,
+                        title: event.target.value,
+                      }))
+                    }
+                    className="mt-1 w-full rounded-lg border border-border bg-background p-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-emerald-500 focus:outline-none"
+                  />
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="block text-xs text-muted-foreground">
+                    {t.totalAmount}
+                    <input
+                      required
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      value={loanForm.total_amount}
+                      placeholder={t.amountPlaceholder}
+                      onChange={(event) =>
+                        setLoanForm((current) => ({
+                          ...current,
+                          total_amount: event.target.value,
+                        }))
+                      }
+                      className="mt-1 w-full rounded-lg border border-border bg-background p-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-emerald-500 focus:outline-none"
+                    />
+                  </label>
+                  <label className="block text-xs text-muted-foreground">
+                    {t.remainingAmount}
+                    <input
+                      required
+                      type="number"
+                      min="0"
+                      max={loanForm.total_amount || undefined}
+                      step="0.01"
+                      value={loanForm.remaining_amount}
+                      placeholder={t.amountPlaceholder}
+                      onChange={(event) =>
+                        setLoanForm((current) => ({
+                          ...current,
+                          remaining_amount: event.target.value,
+                        }))
+                      }
+                      className="mt-1 w-full rounded-lg border border-border bg-background p-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-emerald-500 focus:outline-none"
+                    />
+                  </label>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="block text-xs text-muted-foreground">
+                    {t.interestRate} (%)
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={loanForm.interest_rate}
+                      placeholder={t.amountPlaceholder}
+                      onChange={(event) =>
+                        setLoanForm((current) => ({
+                          ...current,
+                          interest_rate: event.target.value,
+                        }))
+                      }
+                      className="mt-1 w-full rounded-lg border border-border bg-background p-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-emerald-500 focus:outline-none"
+                    />
+                  </label>
+                  <label className="block text-xs text-muted-foreground">
+                    {t.monthlyPayment}
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={loanForm.monthly_payment}
+                      placeholder={t.amountPlaceholder}
+                      onChange={(event) =>
+                        setLoanForm((current) => ({
+                          ...current,
+                          monthly_payment: event.target.value,
+                        }))
+                      }
+                      className="mt-1 w-full rounded-lg border border-border bg-background p-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-emerald-500 focus:outline-none"
+                    />
+                  </label>
+                  <label className="block text-xs text-muted-foreground">
+                    {t.invoiceFee}
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={loanForm.invoice_fee}
+                      placeholder={t.amountPlaceholder}
+                      onChange={(event) =>
+                        setLoanForm((current) => ({
+                          ...current,
+                          invoice_fee: event.target.value,
+                        }))
+                      }
+                      className="mt-1 w-full rounded-lg border border-border bg-background p-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-emerald-500 focus:outline-none"
+                    />
+                  </label>
+                  <label className="block text-xs text-muted-foreground">
+                    {t.extraCosts}
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={loanForm.extra_costs}
+                      placeholder={t.amountPlaceholder}
+                      onChange={(event) =>
+                        setLoanForm((current) => ({
+                          ...current,
+                          extra_costs: event.target.value,
+                        }))
+                      }
+                      className="mt-1 w-full rounded-lg border border-border bg-background p-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-emerald-500 focus:outline-none"
+                    />
+                  </label>
+                </div>
+                <label className="block text-xs text-muted-foreground">
+                  {t.dueDate}
+                  <input
+                    type="date"
+                    value={loanForm.due_date}
+                    onChange={(event) =>
+                      setLoanForm((current) => ({
+                        ...current,
+                        due_date: event.target.value,
+                      }))
+                    }
+                    className="mt-1 w-full rounded-lg border border-border bg-background p-2.5 text-sm text-foreground focus:border-emerald-500 focus:outline-none"
+                  />
+                </label>
+                {creationError ? (
+                  <p role="alert" className="text-sm text-red-600 dark:text-red-300">
+                    {creationError}
+                  </p>
+                ) : null}
+                <button
+                  type="submit"
+                  disabled={isSavingRecord}
+                  className="w-full rounded-lg bg-emerald-600 py-2.5 font-medium text-white transition hover:bg-emerald-500 disabled:opacity-50"
+                >
+                  {isSavingRecord ? t.loading : t.createLoan}
+                </button>
+              </form>
+            ) : addMode === "account" && !editingTransactionId ? (
+              <form
+                onSubmit={(event) => void handleCreateAccount(event)}
+                className="space-y-4 rounded-xl border border-border bg-card p-5"
+              >
+                <label className="block text-xs text-muted-foreground">
+                  {t.accountName}
+                  <input
+                    required
+                    maxLength={120}
+                    value={accountForm.name}
+                    placeholder={t.accountName}
+                    onChange={(event) =>
+                      setAccountForm((current) => ({
+                        ...current,
+                        name: event.target.value,
+                      }))
+                    }
+                    className="mt-1 w-full rounded-lg border border-border bg-background p-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-emerald-500 focus:outline-none"
+                  />
+                </label>
+                <label className="block text-xs text-muted-foreground">
+                  {t.accountType}
+                  <select
+                    value={accountForm.type}
+                    onChange={(event) =>
+                      setAccountForm((current) => ({
+                        ...current,
+                        type: event.target.value,
+                      }))
+                    }
+                    className="mt-1 w-full rounded-lg border border-border bg-background p-2.5 text-sm text-foreground focus:border-emerald-500 focus:outline-none"
+                  >
+                    <option value="checking">{t.checkingAccount}</option>
+                    <option value="savings">{t.savingsAccount}</option>
+                    <option value="other">{t.otherAccount}</option>
+                  </select>
+                </label>
+                <label className="block text-xs text-muted-foreground">
+                  {t.accountBalance}
+                  <input
+                    required
+                    type="number"
+                    step="0.01"
+                    value={accountForm.balance}
+                    placeholder={t.accountBalance}
+                    onChange={(event) =>
+                      setAccountForm((current) => ({
+                        ...current,
+                        balance: event.target.value,
+                      }))
+                    }
+                    className="mt-1 w-full rounded-lg border border-border bg-background p-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:border-emerald-500 focus:outline-none"
+                  />
+                </label>
+                {creationError ? (
+                  <p role="alert" className="text-sm text-red-600 dark:text-red-300">
+                    {creationError}
+                  </p>
+                ) : null}
+                <button
+                  type="submit"
+                  disabled={isSavingRecord}
+                  className="w-full rounded-lg bg-emerald-600 py-2.5 font-medium text-white transition hover:bg-emerald-500 disabled:opacity-50"
+                >
+                  {isSavingRecord ? t.loading : t.saveAccount}
+                </button>
+              </form>
             ) : (
               <TransactionForm
                 accounts={accounts}
@@ -857,8 +1229,8 @@ export function AppShell() {
                 onAmountChange={setAmount}
                 onAccountIdChange={setAccountId}
                 onOpenAccounts={() => {
-                  setIsAddDrawerOpen(false);
-                  setActiveView("accounts");
+                  setAddMode("account");
+                  setCreationError("");
                 }}
                 onCategoryChange={setCategory}
                 onTypeChange={handleTypeChange}
