@@ -1,7 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CircleAlert, Landmark, Pencil, Star, Trash2, X } from "lucide-react";
+import {
+  CircleAlert,
+  Landmark,
+  Pencil,
+  Star,
+  Trash2,
+  X,
+} from "lucide-react";
 
 import {
   Drawer,
@@ -245,12 +252,12 @@ export function AccountsView({
 
       <section className="rounded-2xl border border-border bg-card p-5">
         <div>
-          <h2 className="text-sm font-medium text-muted-foreground">
-            {t.accountsOverview}
-          </h2>
-          <p className="mt-1 text-3xl font-bold tabular-nums tracking-tight text-foreground">
-            {formatCurrency(totalBalance, localeMap[locale])} {t.currency}
-          </p>
+            <h2 className="text-sm font-medium text-muted-foreground">
+              {t.accountsOverview}
+            </h2>
+            <p className="mt-1 text-3xl font-bold tabular-nums tracking-tight text-foreground">
+              {formatCurrency(totalBalance, localeMap[locale])} {t.currency}
+            </p>
         </div>
         <hr className="my-4 border-border" />
         <div className="grid grid-cols-2 gap-3 text-sm">
@@ -331,7 +338,7 @@ export function AccountsView({
                   <p className="mt-1 text-xs text-muted-foreground">
                     {accountTypeLabel(account.type)}
                   </p>
-                  <p className="mt-2 text-md font-bold tabular-nums text-foreground">
+                  <p className="mt-2 text-lg font-bold tabular-nums text-foreground">
                     {formatCurrency(Number(account.balance), localeMap[locale])}{" "}
                     {t.currency}
                   </p>
