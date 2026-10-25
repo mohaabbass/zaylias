@@ -151,7 +151,9 @@ export function DailySpendingChart({
       ) : (
         <div className="overflow-x-auto rounded-xl bg-muted/20 px-3 pt-4">
           <div
-            className="relative flex h-36 items-end gap-2"
+            className={`relative flex h-36 items-end ${
+              range === "year" ? "gap-1" : "gap-2"
+            }`}
             style={{
               minWidth:
                 range === "day" ? 960 : range === "month" ? 900 : undefined,
@@ -177,7 +179,7 @@ export function DailySpendingChart({
                   className="relative z-10 flex min-w-0 flex-1 flex-col items-center justify-end gap-2"
                 >
                   <div className="relative flex h-28 w-full items-end justify-center px-0.5">
-                    {entry.value > 0 && (
+                    {entry.value > 0 && range !== "year" && (
                       <span
                         aria-hidden="true"
                         className="absolute left-1/2 z-20 max-w-full -translate-x-1/2 truncate whitespace-nowrap text-[8px] font-medium leading-none text-muted-foreground"
@@ -198,7 +200,13 @@ export function DailySpendingChart({
                       style={{ height: `${height}%` }}
                     />
                   </div>
-                  <span className="max-w-full truncate text-[10px] font-medium text-muted-foreground">
+                  <span
+                    className={`font-medium text-muted-foreground ${
+                  range === "year"
+                    ? "whitespace-nowrap text-[9px] leading-tight"
+                    : "max-w-full truncate text-[10px]"
+                    }`}
+                  >
                     {entry.label}
                   </span>
                 </div>

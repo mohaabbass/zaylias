@@ -717,6 +717,7 @@ export function AppShell() {
                   <input
                     required
                     value={title}
+                    placeholder={t.paymentTitlePlaceholder}
                     onChange={(event) => setTitle(event.target.value)}
                     className="mt-1 w-full rounded-lg border border-border bg-background p-2.5 text-sm text-foreground focus:border-emerald-500 focus:outline-none"
                   />
@@ -730,6 +731,7 @@ export function AppShell() {
                       min="0.01"
                       step="0.01"
                       value={amount}
+                      placeholder={t.amountPlaceholder}
                       onChange={(event) => setAmount(event.target.value)}
                       className="mt-1 w-full rounded-lg border border-border bg-background p-2.5 text-sm text-foreground focus:border-emerald-500 focus:outline-none"
                     />

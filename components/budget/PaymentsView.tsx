@@ -378,8 +378,9 @@ export function PaymentsView({
                   </p>
                   <p className="mt-2 text-xs text-muted-foreground">
                     {t.account}:{" "}
-                    {accounts.find((account) => account.id === payment.account_id)
-                      ?.name ?? t.accountUnavailable}
+                    {accounts.find(
+                      (account) => account.id === payment.account_id,
+                    )?.name ?? t.accountUnavailable}
                   </p>
                   <div className="mt-4 grid grid-cols-3 gap-2">
                     <button
@@ -446,6 +447,7 @@ export function PaymentsView({
               <input
                 required
                 value={form.title}
+                placeholder={t.paymentTitlePlaceholder}
                 onChange={(event) =>
                   setForm((current) => ({
                     ...current,
@@ -543,7 +545,10 @@ export function PaymentsView({
                   {t.loading}
                 </span>
               ) : accountsError ? (
-                <span role="alert" className="mt-2 block text-xs text-red-600 dark:text-red-300">
+                <span
+                  role="alert"
+                  className="mt-2 block text-xs text-red-600 dark:text-red-300"
+                >
                   {t.accountsLoadError} {accountsError}
                 </span>
               ) : accounts.length === 0 ? (
