@@ -303,7 +303,9 @@ export function TransactionList({
                             : normalizeCategoryValue(transaction.category) ===
                                   "bills" ||
                                 normalizeCategoryValue(transaction.category) ===
-                                  "gifts"
+                                  "gifts" ||
+                                normalizeCategoryValue(transaction.category) ===
+                                  "housing"
                               ? "text-amber-500 dark:text-amber-400"
                               : normalizeCategoryValue(transaction.category) ===
                                   "subscriptions"

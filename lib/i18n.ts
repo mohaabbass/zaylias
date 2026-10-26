@@ -126,6 +126,9 @@ export const translations = {
     statisticsChartDescription:
       "Räkningar och prenumerationer ingår i de totala utgifterna.",
     expensesByCategory: "Utgifter per kategori",
+    expensesByCategoryDescription: "Fördelning av dina registrerade utgifter.",
+    expenseCount: (count: number) =>
+      count === 1 ? "1 utgift" : `${count} utgifter`,
     home: "Hem",
     budget: "Budget",
     loans: "Lån",
@@ -307,6 +310,9 @@ export const translations = {
     statisticsChartDescription:
       "Bills and subscriptions are included in total expenses.",
     expensesByCategory: "Expenses by category",
+    expensesByCategoryDescription: "A breakdown of your recorded expenses.",
+    expenseCount: (count: number) =>
+      count === 1 ? "1 expense" : `${count} expenses`,
     home: "Home",
     budget: "Budget",
     loans: "Loans",
@@ -486,6 +492,8 @@ export const translations = {
     statisticsChartDescription:
       "الفواتير والاشتراكات مشمولة ضمن إجمالي المصروفات.",
     expensesByCategory: "المصروفات حسب الفئة",
+    expensesByCategoryDescription: "تفصيل لمصروفاتك المسجلة.",
+    expenseCount: (count: number) => `${count} مصروف`,
     home: "الرئيسية",
     budget: "الميزانية",
     loans: "القروض",
