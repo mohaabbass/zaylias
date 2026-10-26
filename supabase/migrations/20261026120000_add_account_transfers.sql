@@ -63,3 +63,5 @@ REVOKE ALL ON FUNCTION public.transfer_between_accounts(uuid, uuid, numeric)
   FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.transfer_between_accounts(uuid, uuid, numeric)
   TO authenticated;
+
+NOTIFY pgrst, 'reload schema';
