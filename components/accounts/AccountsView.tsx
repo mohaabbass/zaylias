@@ -339,24 +339,30 @@ export function AccountsView({
         </section>
       ) : null}
 
-      <section className="rounded-2xl border border-border bg-card p-5">
-        <div>
-          <h2 className="text-sm font-medium text-muted-foreground">
-            {t.accountsOverview}
-          </h2>
-          <p className="mt-1 text-3xl font-bold tabular-nums tracking-tight text-foreground">
-            {formatCurrency(totalBalance, localeMap[locale])} {t.currency}
-          </p>
+      <section className="overflow-hidden rounded-2xl border border-border bg-card p-5 sm:p-6">
+        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+          <Landmark
+            aria-hidden="true"
+            className="h-4 w-4 text-emerald-600 dark:text-emerald-400"
+          />
+          <h2>{t.accountsOverview}</h2>
         </div>
-        <hr className="my-4 border-border" />
-        <div className="flex flex-wrap items-center gap-3 text-sm">
-          <div className="flex items-center gap-4 text-muted-foreground">
-            <p>
+        <p className="mt-2 text-3xl font-bold tabular-nums tracking-tight text-foreground sm:text-4xl">
+          {formatCurrency(totalBalance, localeMap[locale])} {t.currency}
+        </p>
+
+        <div className="mt-5 grid grid-cols-2 gap-3 border-t border-border/70 pt-4">
+          <div className="rounded-xl bg-background/60 px-3 py-2.5">
+            <p className="text-xs text-muted-foreground">{t.accounts}</p>
+            <p className="mt-0.5 text-sm font-semibold text-foreground">
               {loading
                 ? t.loading
                 : t.accountCount.replace("{count}", String(accounts.length))}
             </p>
-            <p>
+          </div>
+          <div className="rounded-xl bg-background/60 px-3 py-2.5">
+            <p className="text-xs text-muted-foreground">{t.favorite}</p>
+            <p className="mt-0.5 text-sm font-semibold text-foreground">
               {loading
                 ? t.loading
                 : t.favoriteAccountCount.replace(
@@ -367,17 +373,18 @@ export function AccountsView({
                   )}
             </p>
           </div>
-          {accounts.length > 1 && !loading && !loadError ? (
-            <button
-              type="button"
-              onClick={openTransferForm}
-              className="ml-auto inline-flex shrink-0 items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground transition hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400"
-            >
-              <ArrowLeftRight aria-hidden="true" className="h-4 w-4" />
-              {t.transferBetweenAccounts}
-            </button>
-          ) : null}
         </div>
+
+        {accounts.length > 1 && !loading && !loadError ? (
+          <button
+            type="button"
+            onClick={openTransferForm}
+            className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-card"
+          >
+            <ArrowLeftRight aria-hidden="true" className="h-4 w-4" />
+            {t.transferBetweenAccounts}
+          </button>
+        ) : null}
       </section>
 
       {loading ? (
