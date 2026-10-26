@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import {
+  ArrowLeftRight,
   CircleAlert,
   Landmark,
   Pencil,
@@ -50,6 +51,14 @@ export function AccountsView({
   const [formError, setFormError] = useState("");
   const [accountActionError, setAccountActionError] = useState("");
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isTransferOpen, setIsTransferOpen] = useState(false);
+  const [transferForm, setTransferForm] = useState({
+    fromAccountId: "",
+    toAccountId: "",
+    amount: "",
+  });
+  const [transferError, setTransferError] = useState("");
+  const [transferring, setTransferring] = useState(false);
   const [editingAccountId, setEditingAccountId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [deletingAccountId, setDeletingAccountId] = useState<string | null>(
@@ -101,6 +110,21 @@ export function AccountsView({
     0,
   );
   const sortedAccounts = sortAccountsByFavorite(accounts, localeMap[locale]);
+
+  const resetTransferForm = () => {
+    setTransferForm({ fromAccountId: "", toAccountId: "", amount: "" });
+    setTransferError("");
+  };
+
+  const openTransferForm = () => {
+    setTransferForm({
+      fromAccountId: accounts[0]?.id ?? "",
+      toAccountId: accounts[1]?.id ?? "",
+      amount: "",
+    });
+    setTransferError("");
+    setIsTransferOpen(true);
+  };
 
   const resetForm = () => {
     setForm({ name: "", type: "checking", balance: "0" });
@@ -174,6 +198,71 @@ export function AccountsView({
 
     resetForm();
     setIsFormOpen(false);
+    onAccountsChange();
+  };
+
+  const handleTransfer = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setTransferError("");
+
+    const amount = Number(transferForm.amount);
+    if (
+      !transferForm.fromAccountId ||
+      !transferForm.toAccountId ||
+      transferForm.fromAccountId === transferForm.toAccountId ||
+      !Number.isFinite(amount) ||
+      amount <= 0
+    ) {
+      setTransferError(t.transferValidationError);
+      return;
+    }
+
+    setTransferring(true);
+    const { data, error } = await supabase.rpc("transfer_between_accounts", {
+      p_from_account_id: transferForm.fromAccountId,
+      p_to_account_id: transferForm.toAccountId,
+      p_amount: amount,
+    });
+    setTransferring(false);
+
+    if (error) {
+      console.error("Failed to transfer between accounts:", error);
+      setTransferError(error.message);
+      return;
+    }
+
+    const updatedBalances = new Map<string, string>();
+    const rows: unknown[] = Array.isArray(data) ? data : [];
+    for (const row of rows) {
+      if (
+        typeof row === "object" &&
+        row !== null &&
+        "account_id" in row &&
+        "account_balance" in row &&
+        typeof row.account_id === "string" &&
+        typeof row.account_balance === "string"
+      ) {
+        updatedBalances.set(row.account_id, row.account_balance);
+      }
+    }
+    if (
+      updatedBalances.size !== 2 ||
+      !updatedBalances.has(transferForm.fromAccountId) ||
+      !updatedBalances.has(transferForm.toAccountId)
+    ) {
+      console.error("Account transfer returned unexpected balance data:", data);
+      setTransferError(t.transferFailed);
+      return;
+    }
+
+    setAccounts((current) =>
+      current.map((account) => {
+        const balance = updatedBalances.get(account.id);
+        return balance === undefined ? account : { ...account, balance };
+      }),
+    );
+    resetTransferForm();
+    setIsTransferOpen(false);
     onAccountsChange();
   };
 
@@ -252,30 +341,42 @@ export function AccountsView({
 
       <section className="rounded-2xl border border-border bg-card p-5">
         <div>
-            <h2 className="text-sm font-medium text-muted-foreground">
-              {t.accountsOverview}
-            </h2>
-            <p className="mt-1 text-3xl font-bold tabular-nums tracking-tight text-foreground">
-              {formatCurrency(totalBalance, localeMap[locale])} {t.currency}
-            </p>
+          <h2 className="text-sm font-medium text-muted-foreground">
+            {t.accountsOverview}
+          </h2>
+          <p className="mt-1 text-3xl font-bold tabular-nums tracking-tight text-foreground">
+            {formatCurrency(totalBalance, localeMap[locale])} {t.currency}
+          </p>
         </div>
         <hr className="my-4 border-border" />
-        <div className="grid grid-cols-2 gap-3 text-sm">
-          <p className="text-muted-foreground">
-            {loading
-              ? t.loading
-              : t.accountCount.replace("{count}", String(accounts.length))}
-          </p>
-          <p className="text-end text-muted-foreground">
-            {loading
-              ? t.loading
-              : t.favoriteAccountCount.replace(
-                  "{count}",
-                  String(
-                    accounts.filter((account) => account.is_favorite).length,
-                  ),
-                )}
-          </p>
+        <div className="flex flex-wrap items-center gap-3 text-sm">
+          <div className="flex items-center gap-4 text-muted-foreground">
+            <p>
+              {loading
+                ? t.loading
+                : t.accountCount.replace("{count}", String(accounts.length))}
+            </p>
+            <p>
+              {loading
+                ? t.loading
+                : t.favoriteAccountCount.replace(
+                    "{count}",
+                    String(
+                      accounts.filter((account) => account.is_favorite).length,
+                    ),
+                  )}
+            </p>
+          </div>
+          {accounts.length > 1 && !loading && !loadError ? (
+            <button
+              type="button"
+              onClick={openTransferForm}
+              className="ml-auto inline-flex shrink-0 items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground transition hover:border-emerald-500 hover:text-emerald-600 dark:hover:text-emerald-400"
+            >
+              <ArrowLeftRight aria-hidden="true" className="h-4 w-4" />
+              {t.transferBetweenAccounts}
+            </button>
+          ) : null}
         </div>
       </section>
 
@@ -496,6 +597,119 @@ export function AccountsView({
                 : editingAccountId
                   ? t.updateAccount
                   : t.saveAccount}
+            </button>
+          </form>
+        </DrawerContent>
+      </Drawer>
+
+      <Drawer
+        open={isTransferOpen}
+        onOpenChange={(open) => {
+          setIsTransferOpen(open);
+          if (!open) resetTransferForm();
+        }}
+      >
+        <DrawerContent className="mx-auto max-h-[90dvh] max-w-md rounded-t-2xl border border-border bg-popover p-0 text-popover-foreground shadow-2xl">
+          <DrawerHeader className="border-b border-border px-4 pb-3 pt-4">
+            <div className="flex items-center justify-between gap-3">
+              <DrawerTitle className="text-lg font-semibold text-foreground">
+                {t.transferBetweenAccounts}
+              </DrawerTitle>
+              <DrawerClose
+                type="button"
+                aria-label={t.close}
+                className="rounded-full border border-border bg-muted p-2 text-muted-foreground transition hover:border-ring hover:text-foreground"
+              >
+                <X className="h-4 w-4" strokeWidth={2} />
+              </DrawerClose>
+            </div>
+          </DrawerHeader>
+
+          <form
+            onSubmit={(event) => void handleTransfer(event)}
+            className="space-y-4 overflow-y-auto px-4 pb-6 pt-4"
+          >
+            <label className="block text-xs text-muted-foreground">
+              {t.fromAccount}
+              <select
+                required
+                value={transferForm.fromAccountId}
+                onChange={(event) =>
+                  setTransferForm((current) => ({
+                    ...current,
+                    fromAccountId: event.target.value,
+                  }))
+                }
+                className={`${inputClassName} mt-1`}
+              >
+                <option value="" disabled>
+                  {t.selectAccount}
+                </option>
+                {accounts.map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {`${account.name} (${formatCurrency(Number(account.balance), localeMap[locale])} ${t.currency})`}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="block text-xs text-muted-foreground">
+              {t.toAccount}
+              <select
+                required
+                value={transferForm.toAccountId}
+                onChange={(event) =>
+                  setTransferForm((current) => ({
+                    ...current,
+                    toAccountId: event.target.value,
+                  }))
+                }
+                className={`${inputClassName} mt-1`}
+              >
+                <option value="" disabled>
+                  {t.selectAccount}
+                </option>
+                {accounts.map((account) => (
+                  <option key={account.id} value={account.id}>
+                    {`${account.name} (${formatCurrency(Number(account.balance), localeMap[locale])} ${t.currency})`}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="block text-xs text-muted-foreground">
+              {t.transferAmount}
+              <input
+                required
+                type="number"
+                min="0.01"
+                step="0.01"
+                value={transferForm.amount}
+                onChange={(event) =>
+                  setTransferForm((current) => ({
+                    ...current,
+                    amount: event.target.value,
+                  }))
+                }
+                className={`${inputClassName} mt-1`}
+              />
+            </label>
+
+            {transferError ? (
+              <p
+                role="alert"
+                className="text-sm text-red-600 dark:text-red-300"
+              >
+                {transferError}
+              </p>
+            ) : null}
+
+            <button
+              type="submit"
+              disabled={transferring}
+              className="w-full rounded-lg bg-emerald-600 py-2.5 font-medium text-white transition hover:bg-emerald-500 disabled:opacity-50"
+            >
+              {transferring ? t.loading : t.transfer}
             </button>
           </form>
         </DrawerContent>
