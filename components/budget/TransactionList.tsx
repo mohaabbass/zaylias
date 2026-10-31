@@ -76,7 +76,7 @@ export function TransactionList({
 
   const filteredTransactions = transactions.filter((transaction) => {
     const matchesType = filter === "all" || transaction.type === filter;
-    const transactionDate = getDateFilterValue(transaction.created_at);
+    const transactionDate = getDateFilterValue(transaction.transaction_date);
     const matchesDate =
       (!dateFromFilter && !dateToFilter) ||
       (Boolean(transactionDate) &&
@@ -159,7 +159,7 @@ export function TransactionList({
   const closeActions = () => setPressedId(null);
 
   const formatDate = (value: string) => {
-    const date = new Date(value);
+    const date = new Date(`${value}T00:00:00Z`);
     if (Number.isNaN(date.getTime())) {
       return "";
     }
@@ -174,6 +174,7 @@ export function TransactionList({
       day: "numeric",
       month: "short",
       year: "numeric",
+      timeZone: "UTC",
     }).format(date);
   };
 
@@ -278,7 +279,7 @@ export function TransactionList({
                       </p>
                       <p className="text-xs text-muted-foreground mt-1 flex flex-row gap-2 items-center">
                         <span className="text-muted-foreground/80">
-                          {formatDate(transaction.created_at)}
+                          {formatDate(transaction.transaction_date)}
                         </span>
                         {"-"}
                         <span className="font-medium">

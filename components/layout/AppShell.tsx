@@ -62,6 +62,13 @@ export type AppView =
 type ThemeMode = "light" | "dark";
 type AddMode = "expense" | "payment" | "loan" | "account";
 
+function getLocalDateString(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export function AppShell() {
   const { t, locale, setLocale, locales, localeLabels } = useLocale();
   const {
@@ -85,6 +92,7 @@ export function AppShell() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [title, setTitle] = useState("");
   const [amount, setAmount] = useState("");
+  const [transactionDate, setTransactionDate] = useState("");
   const [category, setCategory] = useState<string>(() =>
     normalizeCategoryValue(t.expenseCategories[0]?.value ?? "food"),
   );
@@ -242,6 +250,7 @@ export function AppShell() {
           : "light";
 
     queueMicrotask(() => {
+      setTransactionDate(getLocalDateString(new Date()));
       setTheme(initialTheme);
       setHasHydratedTheme(true);
     });
@@ -268,6 +277,7 @@ export function AppShell() {
   const resetAddForm = useCallback(() => {
     setTitle("");
     setAmount("");
+    setTransactionDate(getLocalDateString(new Date()));
     setCategory(getDefaultCategory("expense"));
     setType("expense");
     setAccountId("");
@@ -314,6 +324,7 @@ export function AppShell() {
     setEditingTransactionId(transaction.id);
     setTitle(transaction.title);
     setAmount(String(transaction.amount));
+    setTransactionDate(transaction.transaction_date);
     setCategory(normalizeCategoryValue(transaction.category));
     setType(transaction.type);
     setAccountId(transaction.account_id ?? "");
@@ -325,7 +336,7 @@ export function AppShell() {
     event: React.FormEvent<HTMLFormElement>,
   ) => {
     event.preventDefault();
-    if (!title || !amount || !accountId) return;
+    if (!title || !amount || !accountId || !transactionDate) return;
 
     if (editingTransactionId) {
       const success = await updateTransaction(editingTransactionId, {
@@ -334,6 +345,7 @@ export function AppShell() {
         category,
         type,
         account_id: accountId,
+        transaction_date: transactionDate,
       });
 
       if (success) {
@@ -350,6 +362,7 @@ export function AppShell() {
       category,
       type,
       account_id: accountId,
+      transaction_date: transactionDate,
     });
 
     if (success) {
@@ -1217,10 +1230,12 @@ export function AppShell() {
                 title={title}
                 amount={amount}
                 category={category}
+                transactionDate={transactionDate}
                 type={type}
                 titleSuggestions={recentTransactionTitles}
                 onTitleChange={setTitle}
                 onAmountChange={setAmount}
+                onTransactionDateChange={setTransactionDate}
                 onAccountIdChange={setAccountId}
                 onOpenAccounts={() => {
                   setAddMode("account");

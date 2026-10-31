@@ -49,12 +49,11 @@ export function CashFlowForecast({
     let expenses = 0;
 
     for (const transaction of transactions) {
-      const date = new Date(transaction.created_at);
       const amount = Number(transaction.amount);
       if (
-        Number.isNaN(date.getTime()) ||
-        date.getFullYear() !== currentYear ||
-        date.getMonth() !== currentMonth ||
+        !transaction.transaction_date ||
+        transaction.transaction_date.slice(0, 7) !==
+          `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}` ||
         !Number.isFinite(amount)
       ) {
         continue;

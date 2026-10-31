@@ -17,10 +17,12 @@ type TransactionFormProps = {
   title: string;
   amount: string;
   category: string;
+  transactionDate: string;
   type: TransactionType;
   titleSuggestions?: string[];
   onTitleChange: (value: string) => void;
   onAmountChange: (value: string) => void;
+  onTransactionDateChange: (value: string) => void;
   onAccountIdChange: (value: string) => void;
   onOpenAccounts: () => void;
   onCategoryChange: (value: string) => void;
@@ -38,10 +40,12 @@ export function TransactionForm({
   title,
   amount,
   category,
+  transactionDate,
   type,
   titleSuggestions = [],
   onTitleChange,
   onAmountChange,
+  onTransactionDateChange,
   onAccountIdChange,
   onOpenAccounts,
   onCategoryChange,
@@ -202,6 +206,19 @@ export function TransactionForm({
             </button>
           </div>
         ) : null}
+      </div>
+
+      <div>
+        <label className="mb-1 block text-xs text-muted-foreground">
+          {t.transactionDate}
+        </label>
+        <input
+          required
+          type="date"
+          value={transactionDate}
+          onChange={(event) => onTransactionDateChange(event.target.value)}
+          className="w-full rounded-lg border border-border bg-background p-2.5 text-sm text-foreground focus:border-emerald-500 focus:outline-none"
+        />
       </div>
 
       <button

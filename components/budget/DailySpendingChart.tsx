@@ -184,7 +184,7 @@ export function DailySpendingChart({
 
     for (const transaction of transactions) {
       if (transaction.type !== "expense") continue;
-      if (!transaction.created_at) continue;
+      if (!transaction.transaction_date) continue;
       if (
         excludedCategories.includes(
           normalizeCategoryValue(transaction.category),
@@ -193,12 +193,14 @@ export function DailySpendingChart({
         continue;
       }
 
-      const transactionDate = new Date(transaction.created_at);
+      const transactionDate = new Date(
+        `${transaction.transaction_date}T00:00:00`,
+      );
       if (Number.isNaN(transactionDate.getTime())) continue;
 
       const key =
         range === "day"
-          ? `${getLocalDateKey(transactionDate)}-${transactionDate.getHours()}`
+          ? `${getLocalDateKey(transactionDate)}-${new Date(transaction.created_at).getHours()}`
           : range === "year"
             ? getLocalMonthKey(transactionDate)
             : getLocalDateKey(transactionDate);

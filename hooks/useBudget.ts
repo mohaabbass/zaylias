@@ -23,6 +23,7 @@ export function useBudget() {
       .from("expenses")
       .select("*")
       .eq("user_id", nextSession.user.id)
+      .order("transaction_date", { ascending: false })
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -98,6 +99,7 @@ export function useBudget() {
       category: string;
       type: TransactionType;
       account_id: string;
+      transaction_date: string;
     }) => {
       if (!session || !input.title || !input.amount) {
         return false;
@@ -112,6 +114,7 @@ export function useBudget() {
             category: input.category,
             type: input.type,
             account_id: input.account_id,
+            transaction_date: input.transaction_date,
             user_id: session.user.id,
           },
         ])
@@ -123,7 +126,13 @@ export function useBudget() {
       }
 
       if (data && data[0]) {
-        setTransactions((current) => [data[0] as Transaction, ...current]);
+        setTransactions((current) =>
+          [...current, data[0] as Transaction].sort(
+            (a, b) =>
+              b.transaction_date.localeCompare(a.transaction_date) ||
+              b.created_at.localeCompare(a.created_at),
+          ),
+        );
       }
 
       return true;
@@ -162,7 +171,13 @@ export function useBudget() {
       }
 
       const transaction = data as Transaction;
-      setTransactions((current) => [transaction, ...current]);
+      setTransactions((current) =>
+        [...current, transaction].sort(
+          (a, b) =>
+            b.transaction_date.localeCompare(a.transaction_date) ||
+            b.created_at.localeCompare(a.created_at),
+        ),
+      );
       return transaction;
     },
     [session],
@@ -177,6 +192,7 @@ export function useBudget() {
         category: string;
         type: TransactionType;
         account_id: string;
+        transaction_date: string;
       },
     ) => {
       if (!session || !input.title || !input.amount) {
@@ -191,6 +207,7 @@ export function useBudget() {
           category: input.category,
           type: input.type,
           account_id: input.account_id,
+          transaction_date: input.transaction_date,
           user_id: session.user.id,
         })
         .eq("id", id)
@@ -204,9 +221,15 @@ export function useBudget() {
 
       if (data && data[0]) {
         setTransactions((current) =>
-          current.map((transaction) =>
-            transaction.id === id ? (data[0] as Transaction) : transaction,
-          ),
+          current
+            .map((transaction) =>
+              transaction.id === id ? (data[0] as Transaction) : transaction,
+            )
+            .sort(
+              (a, b) =>
+                b.transaction_date.localeCompare(a.transaction_date) ||
+                b.created_at.localeCompare(a.created_at),
+            ),
         );
       }
 

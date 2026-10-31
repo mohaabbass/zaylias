@@ -7,6 +7,7 @@ export interface Transaction {
   category: string;
   type: TransactionType;
   account_id?: string | null;
+  transaction_date: string;
   created_at: string;
   user_id?: string;
 }
