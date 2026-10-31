@@ -785,7 +785,7 @@ export function AppShell() {
           }
         }}
       >
-        <DrawerContent className="mx-auto max-w-md rounded-t-2xl border border-border bg-popover p-0 text-popover-foreground shadow-2xl [&_input]:rounded-xl [&_input]:border-border [&_input]:bg-muted/60 [&_input]:shadow-sm [&_input]:transition-colors [&_input:focus]:border-emerald-500 [&_input:focus]:ring-2 [&_input:focus]:ring-emerald-500/20 [&_input::placeholder]:text-xs [&_select]:rounded-xl [&_select]:border-border [&_select]:bg-muted/60 [&_select]:shadow-sm [&_select]:transition-colors [&_select:focus]:border-emerald-500 [&_select:focus]:ring-2 [&_select:focus]:ring-emerald-500/20">
+        <DrawerContent className="mx-auto h-[calc(100dvh-env(safe-area-inset-top))] max-h-none max-w-md rounded-t-2xl border border-border bg-popover p-0 text-popover-foreground shadow-2xl sm:h-auto sm:max-h-[calc(100dvh-6rem)] [&_input]:rounded-xl [&_input]:border-border [&_input]:bg-muted/60 [&_input]:shadow-sm [&_input]:transition-colors [&_input:focus]:border-emerald-500 [&_input:focus]:ring-2 [&_input:focus]:ring-emerald-500/20 [&_input::placeholder]:text-xs [&_select]:rounded-xl [&_select]:border-border [&_select]:bg-muted/60 [&_select]:shadow-sm [&_select]:transition-colors [&_select:focus]:border-emerald-500 [&_select:focus]:ring-2 [&_select:focus]:ring-emerald-500/20">
           <DrawerHeader className="border-b border-border px-4 pb-3 pt-4">
             <div className="flex items-center justify-between gap-3">
               <DrawerTitle className="text-lg font-semibold text-foreground">
@@ -801,7 +801,7 @@ export function AppShell() {
             </div>
           </DrawerHeader>
 
-          <div className="space-y-4 px-4 pb-6 pt-4">
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-4">
             {!editingTransactionId ? (
               <div
                 role="group"
@@ -990,7 +990,7 @@ export function AppShell() {
                     Boolean(accountsError) ||
                     accounts.length === 0
                   }
-                  className="w-full rounded-lg bg-emerald-600 py-2.5 font-medium text-white transition hover:bg-emerald-500 disabled:opacity-50"
+                  className="sticky bottom-0 z-10 w-full rounded-lg bg-emerald-600 py-2.5 font-medium text-white transition hover:bg-emerald-500 disabled:opacity-50"
                 >
                   {isSavingPayment ? t.loading : t.savePayment}
                 </button>
@@ -998,7 +998,7 @@ export function AppShell() {
             ) : addMode === "loan" && !editingTransactionId ? (
               <form
                 onSubmit={(event) => void handleCreateLoan(event)}
-                className="max-h-[70dvh] space-y-4 overflow-y-auto rounded-xl border border-border bg-card p-5"
+                className="space-y-4 rounded-xl border border-border bg-card p-5"
               >
                 <label className="block text-xs text-muted-foreground">
                   {t.loanTitle}
@@ -1147,7 +1147,7 @@ export function AppShell() {
                 <button
                   type="submit"
                   disabled={isSavingRecord}
-                  className="w-full rounded-lg bg-emerald-600 py-2.5 font-medium text-white transition hover:bg-emerald-500 disabled:opacity-50"
+                  className="sticky bottom-0 z-10 w-full rounded-lg bg-emerald-600 py-2.5 font-medium text-white transition hover:bg-emerald-500 disabled:opacity-50"
                 >
                   {isSavingRecord ? t.loading : t.createLoan}
                 </button>
@@ -1215,7 +1215,7 @@ export function AppShell() {
                 <button
                   type="submit"
                   disabled={isSavingRecord}
-                  className="w-full rounded-lg bg-emerald-600 py-2.5 font-medium text-white transition hover:bg-emerald-500 disabled:opacity-50"
+                  className="sticky bottom-0 z-10 w-full rounded-lg bg-emerald-600 py-2.5 font-medium text-white transition hover:bg-emerald-500 disabled:opacity-50"
                 >
                   {isSavingRecord ? t.loading : t.saveAccount}
                 </button>
