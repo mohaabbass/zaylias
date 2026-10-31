@@ -1,8 +1,21 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { SlidersHorizontal, X } from "lucide-react";
 
-import type { Translation } from "@/lib/i18n";
+import {
+  getCategoryLabel,
+  normalizeCategoryValue,
+  type Translation,
+} from "@/lib/i18n";
 import { formatCurrency } from "@/lib/utils";
 import type { Transaction } from "@/types/finance";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+} from "@/components/ui/drawer";
 
 type DailySpendingChartProps = {
   transactions: Transaction[];
@@ -11,6 +24,7 @@ type DailySpendingChartProps = {
 };
 
 type SpendingRange = "day" | "week" | "month" | "year";
+const chartSettingsStorageKey = "zaylias-daily-spending-chart";
 
 function isSpendingRange(value: string): value is SpendingRange {
   return (
@@ -36,6 +50,84 @@ export function DailySpendingChart({
   t,
 }: DailySpendingChartProps) {
   const [range, setRange] = useState<SpendingRange>("week");
+  const [excludedCategories, setExcludedCategories] = useState<string[]>([
+    "housing",
+    "bills",
+  ]);
+  const [hasLoadedSettings, setHasLoadedSettings] = useState(false);
+  const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
+
+  useEffect(() => {
+    const savedSettings: {
+      range?: SpendingRange;
+      excludedCategories?: string[];
+    } = {};
+
+    try {
+      const stored = window.localStorage.getItem(chartSettingsStorageKey);
+      if (stored) {
+        const parsed: unknown = JSON.parse(stored);
+        if (typeof parsed === "object" && parsed !== null) {
+          const settings = parsed as Record<string, unknown>;
+          if (
+            typeof settings.range === "string" &&
+            isSpendingRange(settings.range)
+          ) {
+            savedSettings.range = settings.range;
+          }
+          if (Array.isArray(settings.excludedCategories)) {
+            savedSettings.excludedCategories = settings.excludedCategories
+              .filter(
+                (category): category is string =>
+                  typeof category === "string",
+              )
+              .map(normalizeCategoryValue);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Failed to load daily spending chart settings:", error);
+    }
+
+    queueMicrotask(() => {
+      if (savedSettings.range) setRange(savedSettings.range);
+      if (savedSettings.excludedCategories) {
+        setExcludedCategories(savedSettings.excludedCategories);
+      }
+      setHasLoadedSettings(true);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!hasLoadedSettings) return;
+
+    try {
+      window.localStorage.setItem(
+        chartSettingsStorageKey,
+        JSON.stringify({ range, excludedCategories }),
+      );
+    } catch (error) {
+      console.error("Failed to save daily spending chart settings:", error);
+    }
+  }, [excludedCategories, hasLoadedSettings, range]);
+
+  const categoryOptions = useMemo(() => {
+    const categories = new Map(
+      t.expenseCategories.map((category) => [category.value, category.label]),
+    );
+
+    for (const transaction of transactions) {
+      if (transaction.type !== "expense") continue;
+
+      const category = normalizeCategoryValue(transaction.category);
+      if (category && !categories.has(category)) {
+        categories.set(category, getCategoryLabel(locale, category));
+      }
+    }
+
+    return Array.from(categories, ([value, label]) => ({ value, label }));
+  }, [locale, t.expenseCategories, transactions]);
+
   const data = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -93,6 +185,13 @@ export function DailySpendingChart({
     for (const transaction of transactions) {
       if (transaction.type !== "expense") continue;
       if (!transaction.created_at) continue;
+      if (
+        excludedCategories.includes(
+          normalizeCategoryValue(transaction.category),
+        )
+      ) {
+        continue;
+      }
 
       const transactionDate = new Date(transaction.created_at);
       if (Number.isNaN(transactionDate.getTime())) continue;
@@ -111,7 +210,7 @@ export function DailySpendingChart({
     }
 
     return entries;
-  }, [locale, range, transactions]);
+  }, [excludedCategories, locale, range, transactions]);
 
   const maxValue = Math.max(...data.map((entry) => entry.value), 1);
   const total = data.reduce((sum, entry) => sum + entry.value, 0);
@@ -119,27 +218,43 @@ export function DailySpendingChart({
     locale === "ar" ? "ar-EG" : locale === "en" ? "en-US" : "sv-SE";
 
   return (
-    <section className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-5">
-      <p className="text-xs ml-1 mb-4 font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+    <Drawer
+      open={isCategoryDialogOpen}
+      onOpenChange={setIsCategoryDialogOpen}
+    >
+      <section className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-5">
+      <h3 className="mb-4 text-sm font-semibold tracking-wide text-foreground">
         {t.dailySpending}
-      </p>
-      <div className="mb-5 flex w-full items-center justify-between gap-3">
-        <select
-          aria-label={t.spendingRange}
-          value={range}
-          onChange={(event) => {
-            if (isSpendingRange(event.target.value)) {
-              setRange(event.target.value);
-            }
-          }}
-          className="h-9 cursor-pointer rounded-xl border border-border bg-muted/60 px-3 text-sm font-medium text-foreground shadow-sm outline-none transition-colors hover:bg-muted focus-visible:border-emerald-500 focus-visible:ring-2 focus-visible:ring-emerald-500/20"
-        >
-          <option value="day">{t.spendingRangeOneDay}</option>
-          <option value="week">{t.spendingRangeOneWeek}</option>
-          <option value="month">{t.spendingRangeOneMonth}</option>
-          <option value="year">{t.spendingRangeOneYear}</option>
-        </select>
-        <div className="rounded-xl border border-sky-500/20 bg-sky-500/10 px-3 py-1.5 text-sm font-semibold tabular-nums text-sky-700 dark:text-sky-300">
+      </h3>
+      <div className="mb-5 flex w-full items-center gap-2 sm:gap-3">
+        <div className="flex min-w-0 items-center gap-2">
+          <select
+            aria-label={t.spendingRange}
+            value={range}
+            onChange={(event) => {
+              if (isSpendingRange(event.target.value)) {
+                setRange(event.target.value);
+              }
+            }}
+            className="h-9 min-w-0 max-w-40 cursor-pointer rounded-xl border border-border bg-muted/60 px-2.5 text-sm font-medium text-foreground shadow-sm outline-none transition-colors hover:bg-muted focus-visible:border-emerald-500 focus-visible:ring-2 focus-visible:ring-emerald-500/20 sm:px-3"
+          >
+            <option value="day">{t.spendingRangeOneDay}</option>
+            <option value="week">{t.spendingRangeOneWeek}</option>
+            <option value="month">{t.spendingRangeOneMonth}</option>
+            <option value="year">{t.spendingRangeOneYear}</option>
+          </select>
+          <button
+            type="button"
+            aria-label={t.spendingCategories}
+            aria-haspopup="dialog"
+            aria-expanded={isCategoryDialogOpen}
+            onClick={() => setIsCategoryDialogOpen(true)}
+            className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl border border-border bg-muted/60 text-foreground shadow-sm transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30"
+          >
+            <SlidersHorizontal aria-hidden="true" className="size-4" />
+          </button>
+        </div>
+        <div className="ml-auto shrink-0 whitespace-nowrap rounded-xl border border-sky-500/20 bg-sky-500/10 px-2.5 py-1.5 text-xs font-semibold tabular-nums text-sky-700 dark:text-sky-300 sm:px-3 sm:text-sm">
           {formatCurrency(total, currencyLocale)} {t.currency}
         </div>
       </div>
@@ -202,9 +317,9 @@ export function DailySpendingChart({
                   </div>
                   <span
                     className={`font-medium text-muted-foreground ${
-                  range === "year"
-                    ? "whitespace-nowrap text-[9px] leading-tight"
-                    : "max-w-full truncate text-[10px]"
+                      range === "year"
+                        ? "whitespace-nowrap text-[9px] leading-tight"
+                        : "max-w-full truncate text-[10px]"
                     }`}
                   >
                     {entry.label}
@@ -215,6 +330,59 @@ export function DailySpendingChart({
           </div>
         </div>
       )}
-    </section>
+      </section>
+      <DrawerContent className="mx-auto max-w-md rounded-t-2xl border border-border bg-popover p-0 text-popover-foreground shadow-2xl">
+        <DrawerHeader className="border-b border-border px-5 pb-4 pt-5 text-left">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <DrawerTitle className="text-lg font-semibold text-foreground">
+                {t.spendingCategoriesTitle}
+              </DrawerTitle>
+              <DrawerDescription className="mt-1">
+                {t.spendingCategoriesDescription}
+              </DrawerDescription>
+            </div>
+            <DrawerClose
+              type="button"
+              aria-label={t.close}
+              className="rounded-full border border-border bg-muted p-2 text-muted-foreground transition hover:border-ring hover:text-foreground"
+            >
+              <X className="size-4" strokeWidth={2} />
+            </DrawerClose>
+          </div>
+        </DrawerHeader>
+        <div className="max-h-[55dvh] space-y-1 overflow-y-auto px-5 py-3">
+          {categoryOptions.map((category) => {
+            const isIncluded = !excludedCategories.includes(category.value);
+
+            return (
+              <label
+                key={category.value}
+                className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted/70"
+              >
+                <input
+                  type="checkbox"
+                  checked={isIncluded}
+                  onChange={() =>
+                    setExcludedCategories((current) =>
+                      isIncluded
+                        ? [...current, category.value]
+                        : current.filter((value) => value !== category.value),
+                    )
+                  }
+                  className="size-4 accent-emerald-600"
+                />
+                <span>{category.label}</span>
+              </label>
+            );
+          })}
+        </div>
+        <div className="border-t border-border px-5 py-4">
+          <DrawerClose className="w-full rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40">
+            {t.close}
+          </DrawerClose>
+        </div>
+      </DrawerContent>
+    </Drawer>
   );
 }
