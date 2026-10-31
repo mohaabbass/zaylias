@@ -53,6 +53,7 @@ export function DailySpendingChart({
   const [excludedCategories, setExcludedCategories] = useState<string[]>([
     "housing",
     "bills",
+    "subscriptions",
   ]);
   const [hasLoadedSettings, setHasLoadedSettings] = useState(false);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
@@ -78,8 +79,7 @@ export function DailySpendingChart({
           if (Array.isArray(settings.excludedCategories)) {
             savedSettings.excludedCategories = settings.excludedCategories
               .filter(
-                (category): category is string =>
-                  typeof category === "string",
+                (category): category is string => typeof category === "string",
               )
               .map(normalizeCategoryValue);
           }
@@ -218,118 +218,115 @@ export function DailySpendingChart({
     locale === "ar" ? "ar-EG" : locale === "en" ? "en-US" : "sv-SE";
 
   return (
-    <Drawer
-      open={isCategoryDialogOpen}
-      onOpenChange={setIsCategoryDialogOpen}
-    >
+    <Drawer open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
       <section className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-5">
-      <h3 className="mb-4 text-sm font-semibold tracking-wide text-foreground">
-        {t.dailySpending}
-      </h3>
-      <div className="mb-5 flex w-full items-center gap-2 sm:gap-3">
-        <div className="flex min-w-0 items-center gap-2">
-          <select
-            aria-label={t.spendingRange}
-            value={range}
-            onChange={(event) => {
-              if (isSpendingRange(event.target.value)) {
-                setRange(event.target.value);
-              }
-            }}
-            className="h-9 min-w-0 max-w-40 cursor-pointer rounded-xl border border-border bg-muted/60 px-2.5 text-sm font-medium text-foreground shadow-sm outline-none transition-colors hover:bg-muted focus-visible:border-emerald-500 focus-visible:ring-2 focus-visible:ring-emerald-500/20 sm:px-3"
-          >
-            <option value="day">{t.spendingRangeOneDay}</option>
-            <option value="week">{t.spendingRangeOneWeek}</option>
-            <option value="month">{t.spendingRangeOneMonth}</option>
-            <option value="year">{t.spendingRangeOneYear}</option>
-          </select>
-          <button
-            type="button"
-            aria-label={t.spendingCategories}
-            aria-haspopup="dialog"
-            aria-expanded={isCategoryDialogOpen}
-            onClick={() => setIsCategoryDialogOpen(true)}
-            className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl border border-border bg-muted/60 text-foreground shadow-sm transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30"
-          >
-            <SlidersHorizontal aria-hidden="true" className="size-4" />
-          </button>
-        </div>
-        <div className="ml-auto shrink-0 whitespace-nowrap rounded-xl border border-sky-500/20 bg-sky-500/10 px-2.5 py-1.5 text-xs font-semibold tabular-nums text-sky-700 dark:text-sky-300 sm:px-3 sm:text-sm">
-          {formatCurrency(total, currencyLocale)} {t.currency}
-        </div>
-      </div>
-
-      {data.every((entry) => entry.value === 0) ? (
-        <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-border bg-muted/30 px-4 text-center text-sm text-muted-foreground">
-          {t.noSpendData}
-        </div>
-      ) : (
-        <div className="overflow-x-auto rounded-xl bg-muted/20 px-3 pt-4">
-          <div
-            className={`relative flex h-36 items-end ${
-              range === "year" ? "gap-1" : "gap-2"
-            }`}
-            style={{
-              minWidth:
-                range === "day" ? 960 : range === "month" ? 900 : undefined,
-            }}
-          >
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-x-0 bottom-6 top-0 flex flex-col justify-between"
+        <h3 className="mb-4 text-sm font-semibold tracking-wide text-foreground">
+          {t.dailySpending}
+        </h3>
+        <div className="mb-5 flex w-full items-center gap-2 sm:gap-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <select
+              aria-label={t.spendingRange}
+              value={range}
+              onChange={(event) => {
+                if (isSpendingRange(event.target.value)) {
+                  setRange(event.target.value);
+                }
+              }}
+              className="h-9 min-w-0 max-w-40 cursor-pointer rounded-xl border border-border bg-muted/60 px-2.5 text-sm font-medium text-foreground shadow-sm outline-none transition-colors hover:bg-muted focus-visible:border-emerald-500 focus-visible:ring-2 focus-visible:ring-emerald-500/20 sm:px-3"
             >
-              <span className="border-t border-dashed border-border/70" />
-              <span className="border-t border-dashed border-border/70" />
-              <span className="border-t border-border/80" />
-            </div>
-            {data.map((entry) => {
-              const height =
-                entry.value > 0
-                  ? Math.max((entry.value / maxValue) * 100, 5)
-                  : 0;
-
-              return (
-                <div
-                  key={entry.key}
-                  className="relative z-10 flex min-w-0 flex-1 flex-col items-center justify-end gap-2"
-                >
-                  <div className="relative flex h-28 w-full items-end justify-center px-0.5">
-                    {entry.value > 0 && range !== "year" && (
-                      <span
-                        aria-hidden="true"
-                        className="absolute left-1/2 z-20 max-w-full -translate-x-1/2 truncate whitespace-nowrap text-[8px] font-medium leading-none text-muted-foreground"
-                        style={{ bottom: `calc(${height}% + 4px)` }}
-                      >
-                        {formatCurrency(entry.value, currencyLocale)}
-                      </span>
-                    )}
-                    <div
-                      aria-label={`${entry.label}: ${formatCurrency(entry.value, currencyLocale)} ${t.currency}`}
-                      role="img"
-                      title={`${entry.label}: ${formatCurrency(entry.value, currencyLocale)} ${t.currency}`}
-                      className={`w-full rounded-t-lg transition-[height,filter] duration-300 ${
-                        entry.value > 0
-                          ? "bg-linear-to-t from-sky-600 to-sky-400 hover:brightness-110"
-                          : "bg-transparent"
-                      }`}
-                      style={{ height: `${height}%` }}
-                    />
-                  </div>
-                  <span
-                    className={`font-medium text-muted-foreground ${
-                      range === "year"
-                        ? "whitespace-nowrap text-[9px] leading-tight"
-                        : "max-w-full truncate text-[10px]"
-                    }`}
-                  >
-                    {entry.label}
-                  </span>
-                </div>
-              );
-            })}
+              <option value="day">{t.spendingRangeOneDay}</option>
+              <option value="week">{t.spendingRangeOneWeek}</option>
+              <option value="month">{t.spendingRangeOneMonth}</option>
+              <option value="year">{t.spendingRangeOneYear}</option>
+            </select>
+            <button
+              type="button"
+              aria-label={t.spendingCategories}
+              aria-haspopup="dialog"
+              aria-expanded={isCategoryDialogOpen}
+              onClick={() => setIsCategoryDialogOpen(true)}
+              className="inline-flex size-9 shrink-0 items-center justify-center rounded-xl border border-border bg-muted/60 text-foreground shadow-sm transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30"
+            >
+              <SlidersHorizontal aria-hidden="true" className="size-4" />
+            </button>
+          </div>
+          <div className="ml-auto shrink-0 whitespace-nowrap rounded-xl border border-sky-500/20 bg-sky-500/10 px-2.5 py-1.5 text-xs font-semibold tabular-nums text-sky-700 dark:text-sky-300 sm:px-3 sm:text-sm">
+            {formatCurrency(total, currencyLocale)} {t.currency}
           </div>
         </div>
-      )}
+
+        {data.every((entry) => entry.value === 0) ? (
+          <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-border bg-muted/30 px-4 text-center text-sm text-muted-foreground">
+            {t.noSpendData}
+          </div>
+        ) : (
+          <div className="overflow-x-auto rounded-xl bg-muted/20 px-3 pt-4">
+            <div
+              className={`relative flex h-36 items-end ${
+                range === "year" ? "gap-1" : "gap-2"
+              }`}
+              style={{
+                minWidth:
+                  range === "day" ? 960 : range === "month" ? 900 : undefined,
+              }}
+            >
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-x-0 bottom-6 top-0 flex flex-col justify-between"
+              >
+                <span className="border-t border-dashed border-border/70" />
+                <span className="border-t border-dashed border-border/70" />
+                <span className="border-t border-border/80" />
+              </div>
+              {data.map((entry) => {
+                const height =
+                  entry.value > 0
+                    ? Math.max((entry.value / maxValue) * 100, 5)
+                    : 0;
+
+                return (
+                  <div
+                    key={entry.key}
+                    className="relative z-10 flex min-w-0 flex-1 flex-col items-center justify-end gap-2"
+                  >
+                    <div className="relative flex h-28 w-full items-end justify-center px-0.5">
+                      {entry.value > 0 && range !== "year" && (
+                        <span
+                          aria-hidden="true"
+                          className="absolute left-1/2 z-20 max-w-full -translate-x-1/2 truncate whitespace-nowrap text-[8px] font-medium leading-none text-muted-foreground"
+                          style={{ bottom: `calc(${height}% + 4px)` }}
+                        >
+                          {formatCurrency(entry.value, currencyLocale)}
+                        </span>
+                      )}
+                      <div
+                        aria-label={`${entry.label}: ${formatCurrency(entry.value, currencyLocale)} ${t.currency}`}
+                        role="img"
+                        title={`${entry.label}: ${formatCurrency(entry.value, currencyLocale)} ${t.currency}`}
+                        className={`w-full rounded-t-lg transition-[height,filter] duration-300 ${
+                          entry.value > 0
+                            ? "bg-linear-to-t from-sky-600 to-sky-400 hover:brightness-110"
+                            : "bg-transparent"
+                        }`}
+                        style={{ height: `${height}%` }}
+                      />
+                    </div>
+                    <span
+                      className={`font-medium text-muted-foreground ${
+                        range === "year"
+                          ? "whitespace-nowrap text-[9px] leading-tight"
+                          : "max-w-full truncate text-[10px]"
+                      }`}
+                    >
+                      {entry.label}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </section>
       <DrawerContent className="mx-auto max-w-md rounded-t-2xl border border-border bg-popover p-0 text-popover-foreground shadow-2xl">
         <DrawerHeader className="border-b border-border px-5 pb-4 pt-5 text-left">
