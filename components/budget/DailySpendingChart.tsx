@@ -165,9 +165,7 @@ export function DailySpendingChart({
           : Array.from({ length: range === "week" ? 7 : 30 }, (_, index) => {
               const date = new Date(today);
               date.setDate(
-                today.getDate() -
-                  (range === "week" ? (today.getDay() + 6) % 7 : 29) +
-                  index,
+                today.getDate() - (range === "week" ? 6 : 29) + index,
               );
 
               return {
