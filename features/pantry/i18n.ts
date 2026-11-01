@@ -4,7 +4,10 @@ export const pantryTranslations = {
   sv: {
     title: "Mitt skafferi",
     subtitle: "Håll koll på vad du har hemma.",
+    browseCategories: "Kategorier",
+    itemsCount: (count: number) => `${count} varor`,
     inStockProducts: "Ditt lager",
+    products: "Varor",
     addType: "Lägg till",
     addItem: "Lägg till vara",
     search: "Sök varor",
@@ -133,7 +136,10 @@ export const pantryTranslations = {
   en: {
     title: "My pantry",
     subtitle: "Keep track of what you have at home.",
+    browseCategories: "Categories",
+    itemsCount: (count: number) => `${count} items`,
     inStockProducts: "Your inventory",
+    products: "Products",
     addType: "Add",
     addItem: "Add item",
     search: "Search items",

@@ -55,9 +55,9 @@ export function AppSelectionScreen({
             <h2 className="text-2xl font-semibold tracking-tight">
               {t.chooseApp}
             </h2>
-            <p className="mt-2 text-sm text-slate-400">
+            {/* <p className="mt-2 text-sm text-slate-400">
               {t.chooseAppDescription}
-            </p>
+            </p> */}
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">

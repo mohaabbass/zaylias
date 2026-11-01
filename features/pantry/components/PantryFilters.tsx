@@ -1,44 +1,38 @@
-import { Heart, Percent, Search } from "lucide-react";
+import { CalendarClock, Heart, Percent, Search } from "lucide-react";
 
 import type { PantryTranslation } from "@/features/pantry/i18n";
 import type { StatusFilter } from "@/features/pantry/types";
-import { getCategoryLabel } from "@/features/pantry/constants";
-import type { Locale } from "@/lib/i18n";
 
 type PantryFiltersProps = {
   t: PantryTranslation;
-  locale: Locale;
   search: string;
   statusFilter: StatusFilter;
-  categoryFilter: string;
   favoritesOnly: boolean;
   belowHalfOnly: boolean;
-  categories: string[];
+  expiringOnly: boolean;
   inStockCount: number;
   belowHalfCount: number;
   onSearchChange: (value: string) => void;
   onStatusChange: (value: StatusFilter) => void;
-  onCategoryChange: (value: string) => void;
   onFavoritesChange: () => void;
   onBelowHalfChange: () => void;
+  onExpiringChange: () => void;
 };
 
 export function PantryFilters({
   t,
-  locale,
   search,
   statusFilter,
-  categoryFilter,
   favoritesOnly,
   belowHalfOnly,
-  categories,
+  expiringOnly,
   inStockCount,
   belowHalfCount,
   onSearchChange,
   onStatusChange,
-  onCategoryChange,
   onFavoritesChange,
   onBelowHalfChange,
+  onExpiringChange,
 }: PantryFiltersProps) {
   const statusTabs: { value: StatusFilter; label: string }[] = [
     { value: "i_lager", label: t.inStock },
@@ -48,7 +42,7 @@ export function PantryFilters({
   ];
 
   return (
-    <section className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.035] p-4 sm:p-5">
+    <div className="space-y-3">
       <label className="relative block min-w-0">
         <Search
           aria-hidden="true"
@@ -85,6 +79,19 @@ export function PantryFilters({
         ))}
         <button
           type="button"
+          onClick={onExpiringChange}
+          aria-pressed={expiringOnly}
+          className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-medium transition ${
+            expiringOnly
+              ? "bg-amber-300/15 text-amber-200"
+              : "bg-white/[0.06] text-slate-300 hover:bg-white/10"
+          }`}
+        >
+          <CalendarClock aria-hidden="true" className="h-3.5 w-3.5" />
+          {t.expiring}
+        </button>
+        <button
+          type="button"
           onClick={onFavoritesChange}
           aria-pressed={favoritesOnly}
           className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-medium transition ${
@@ -115,37 +122,6 @@ export function PantryFilters({
         </button>
       </div>
 
-      {categories.length > 0 ? (
-        <div className="scrollbar-hidden flex gap-2 overflow-x-auto border-t border-white/[0.07] pt-3">
-          <button
-            type="button"
-            onClick={() => onCategoryChange("all")}
-            aria-pressed={categoryFilter === "all"}
-            className={`shrink-0 rounded-full px-3 py-1.5 text-xs transition ${
-              categoryFilter === "all"
-                ? "bg-white/15 text-white"
-                : "text-slate-400 hover:bg-white/[0.06] hover:text-white"
-            }`}
-          >
-            {t.all}
-          </button>
-          {categories.map((category) => (
-            <button
-              key={category}
-              type="button"
-              onClick={() => onCategoryChange(category)}
-              aria-pressed={categoryFilter === category}
-              className={`shrink-0 rounded-full px-3 py-1.5 text-xs transition ${
-                categoryFilter === category
-                  ? "bg-white/15 text-white"
-                  : "text-slate-400 hover:bg-white/[0.06] hover:text-white"
-              }`}
-            >
-              {getCategoryLabel(category, locale)}
-            </button>
-          ))}
-        </div>
-      ) : null}
-    </section>
+    </div>
   );
 }
