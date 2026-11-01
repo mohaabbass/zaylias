@@ -33,11 +33,17 @@ type PantryProductCardProps = {
   onUpdate: (
     product: PantryProduct,
     values: Partial<
-      Pick<PantryProduct, "status" | "is_favorite" | "kvantitet">
+      Pick<
+        PantryProduct,
+        "status" | "is_favorite" | "kvantitet" | "remaining_percent"
+      >
     >,
   ) => void;
   onEdit: (product: PantryProduct) => void;
   onDelete: (product: PantryProduct) => void;
+  onDiscard: (product: PantryProduct) => void;
+  onConsume: (product: PantryProduct) => void;
+  onViewImage: (product: PantryProduct) => void;
 };
 
 function CategoryIcon({ category }: { category: string | null }) {
@@ -63,6 +69,9 @@ export function PantryProductCard({
   onUpdate,
   onEdit,
   onDelete,
+  onDiscard,
+  onConsume,
+  onViewImage,
 }: PantryProductCardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const expiryDays = product.sista_forbrukningsdag
@@ -79,9 +88,7 @@ export function PantryProductCard({
             ? t.expiresIn(expiryDays)
             : formatDate(product.sista_forbrukningsdag!, numberLocale);
   const needsAttention =
-    expiryDays !== null &&
-    expiryDays <= 7 &&
-    product.status === "i_lager";
+    expiryDays !== null && expiryDays <= 7 && product.status === "i_lager";
   const isExpired =
     expiryDays !== null && expiryDays < 0 && product.status === "i_lager";
   const statusLabel =
@@ -98,10 +105,20 @@ export function PantryProductCard({
         quantity,
       )
     : "—";
+  const storedRemaining = Number(product.remaining_percent ?? 100);
+  const remainingPercent = Number.isFinite(storedRemaining)
+    ? Math.max(0, Math.min(100, storedRemaining))
+    : 100;
   const adjustQuantity = (change: number) => {
-    const nextQuantity = Math.max(0, (hasValidQuantity ? quantity : 0) + change);
+    const nextQuantity = Math.max(
+      0,
+      (hasValidQuantity ? quantity : 0) + change,
+    );
     const values: Partial<
-      Pick<PantryProduct, "status" | "is_favorite" | "kvantitet">
+      Pick<
+        PantryProduct,
+        "status" | "is_favorite" | "kvantitet" | "remaining_percent"
+      >
     > = { kvantitet: nextQuantity };
 
     if (change < 0 && nextQuantity === 0) {
@@ -110,10 +127,41 @@ export function PantryProductCard({
 
     onUpdate(product, values);
   };
+  const adjustRemaining = (change: number) => {
+    const nextRemaining = Math.max(
+      0,
+      Math.min(100, remainingPercent + change),
+    );
+    if (change < 0 && nextRemaining === 0) {
+      onConsume(product);
+      return;
+    }
+
+    onUpdate(product, {
+      remaining_percent: nextRemaining,
+    });
+  };
 
   return (
     <article className="flex flex-col rounded-2xl border border-white/10 bg-slate-900/70 p-4 transition hover:border-white/20">
       <div className="flex items-start gap-3">
+        {product.bild_url ? (
+          <button
+            type="button"
+            aria-label={`${t.viewProductImage}: ${product.namn}`}
+            onClick={() => onViewImage(product)}
+            className="shrink-0 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
+          >
+            <Image
+              unoptimized
+              src={product.bild_url}
+              alt=""
+              width={44}
+              height={44}
+              className="h-11 w-11 rounded-xl bg-white object-contain"
+            />
+          </button>
+        ) : null}
         <button
           type="button"
           aria-expanded={isExpanded}
@@ -121,20 +169,11 @@ export function PantryProductCard({
           onClick={() => setIsExpanded((current) => !current)}
           className="group flex min-w-0 flex-1 items-start gap-3 rounded-lg text-left"
         >
-          {product.bild_url ? (
-            <Image
-              unoptimized
-              src={product.bild_url}
-              alt=""
-              width={44}
-              height={44}
-              className="h-11 w-11 shrink-0 rounded-xl bg-white object-contain"
-            />
-          ) : (
+          {!product.bild_url ? (
             <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-300/10 text-emerald-200">
               <CategoryIcon category={product.kategori} />
             </span>
-          )}
+          ) : null}
           <span className="min-w-0 flex-1">
             <span className="block truncate font-semibold text-white">
               {product.namn}
@@ -259,6 +298,53 @@ export function PantryProductCard({
           {product.butik ? (
             <p className="truncate">{t.boughtAt(product.butik)}</p>
           ) : null}
+          {product.status === "i_lager" ? (
+            <div className="mt-3 flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => adjustRemaining(-10)}
+                disabled={isBusy || remainingPercent <= 0}
+                aria-label={t.decreaseRemaining}
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-300 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <Minus aria-hidden="true" className="h-4 w-4" />
+              </button>
+              <div className="min-w-0 flex-1">
+                <div className="mb-1 flex justify-between text-xs text-slate-400">
+                  <span>{t.remainingAmount}</span>
+                  <span>{remainingPercent}%</span>
+                </div>
+                <div
+                  role="progressbar"
+                  aria-label={t.remainingAmount}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={remainingPercent}
+                  className="h-2 overflow-hidden rounded-full bg-white/10"
+                >
+                  <div
+                    className={`h-full rounded-full transition-all ${
+                      remainingPercent <= 20
+                        ? "bg-rose-400"
+                        : remainingPercent <= 50
+                          ? "bg-amber-300"
+                          : "bg-emerald-300"
+                    }`}
+                    style={{ width: `${remainingPercent}%` }}
+                  />
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => adjustRemaining(10)}
+                disabled={isBusy || remainingPercent >= 100}
+                aria-label={t.increaseRemaining}
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-300 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                <Plus aria-hidden="true" className="h-4 w-4" />
+              </button>
+            </div>
+          ) : null}
           {product.pris != null ? (
             <p>
               {new Intl.NumberFormat(numberLocale, {
@@ -269,37 +355,35 @@ export function PantryProductCard({
           ) : null}
         </div>
 
-        <div className="mt-3 space-y-2 border-t border-white/[0.07] pt-3">
-          <div className="grid grid-cols-2 gap-2">
-            {product.status === "i_lager" ? (
-              <button
-                type="button"
-                onClick={() => onUpdate(product, { status: "kastad" })}
-                disabled={isBusy}
-                aria-label={t.markDiscarded}
-                className="col-span-2 inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-amber-300/15 bg-amber-300/[0.04] px-2 py-1.5 text-xs font-medium text-amber-100 transition hover:bg-amber-300/10 disabled:opacity-50"
-              >
-                <CircleMinus aria-hidden="true" className="h-4 w-4" />
-                {t.discardAction}
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => onUpdate(product, { status: "i_lager" })}
-                disabled={isBusy}
-                className="col-span-2 inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-emerald-300/15 bg-emerald-300/[0.06] px-2 py-1.5 text-xs font-medium text-emerald-100 transition hover:bg-emerald-300/10 disabled:opacity-50"
-              >
-                {t.returnToStock}
-              </button>
-            )}
-          </div>
-          <div className="flex justify-end gap-2 border-t border-white/[0.07] pt-2">
+        <div className="mt-3 border-t border-white/[0.07] pt-3">
+          <div className="grid grid-cols-3 gap-2">
+          {product.status === "i_lager" ? (
+            <button
+              type="button"
+              onClick={() => onDiscard(product)}
+              disabled={isBusy}
+              aria-label={t.markDiscarded}
+              className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-amber-300/20 bg-amber-300/[0.04] px-2 py-1.5 text-xs font-medium text-amber-100 transition hover:bg-amber-300/10 disabled:opacity-50"
+            >
+              <CircleMinus aria-hidden="true" className="h-4 w-4" />
+              {t.discardAction}
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => onUpdate(product, { status: "i_lager" })}
+              disabled={isBusy}
+              className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg border border-emerald-300/15 bg-emerald-300/[0.06] px-2 py-1.5 text-xs font-medium text-emerald-100 transition hover:bg-emerald-300/10 disabled:opacity-50"
+            >
+              {t.returnToStock}
+            </button>
+          )}
             <button
               type="button"
               onClick={() => onEdit(product)}
               disabled={isBusy}
               aria-label={t.edit}
-              className="inline-flex min-h-8 items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-slate-400 transition hover:bg-white/5 hover:text-white disabled:opacity-50"
+              className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg px-2 py-1 text-xs text-slate-400 transition hover:bg-white/5 hover:text-white disabled:opacity-50"
             >
               <Pencil aria-hidden="true" className="h-4 w-4" />
               {t.edit}
@@ -309,7 +393,7 @@ export function PantryProductCard({
               onClick={() => onDelete(product)}
               disabled={isBusy}
               aria-label={t.delete}
-              className="inline-flex min-h-8 items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-rose-300 transition hover:bg-red-400/10 disabled:opacity-50"
+              className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg px-2 py-1 text-xs text-rose-300 transition hover:bg-red-400/10 disabled:opacity-50"
             >
               <Trash2 aria-hidden="true" className="h-4 w-4" />
               {t.delete}

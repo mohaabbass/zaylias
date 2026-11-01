@@ -24,15 +24,14 @@ export function formatDate(date: string, locale: string) {
 export async function compressProductImage(file: File): Promise<Blob> {
   if (
     file.type === "image/gif" ||
-    file.type === "image/svg+xml" ||
-    file.type === "image/webp"
+    file.type === "image/svg+xml"
   ) {
     return file;
   }
 
   const image = await createImageBitmap(file);
   try {
-    const maxDimension = 1200;
+    const maxDimension = 900;
     const scale = Math.min(
       1,
       maxDimension / Math.max(image.width, image.height),
@@ -57,7 +56,7 @@ export async function compressProductImage(file: File): Promise<Blob> {
           }
         },
         "image/webp",
-        0.8,
+        0.65,
       );
     });
 

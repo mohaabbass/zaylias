@@ -1,4 +1,4 @@
-import { Archive, CircleAlert, Clock3, Heart } from "lucide-react";
+import { Archive, CircleAlert, Heart, Percent } from "lucide-react";
 
 import type { PantryTranslation } from "@/features/pantry/i18n";
 
@@ -6,7 +6,7 @@ type PantryStatsProps = {
   t: PantryTranslation;
   totalItems: number;
   expiring: number;
-  opened: number;
+  belowHalf: number;
   favorites: number;
 };
 
@@ -14,13 +14,13 @@ export function PantryStats({
   t,
   totalItems,
   expiring,
-  opened,
+  belowHalf,
   favorites,
 }: PantryStatsProps) {
   const stats = [
     { label: t.totalItems, value: totalItems, icon: Archive, color: "text-emerald-300" },
     { label: t.expiring, value: expiring, icon: CircleAlert, color: "text-amber-300" },
-    { label: t.opened, value: opened, icon: Clock3, color: "text-sky-300" },
+    { label: t.belowHalf, value: belowHalf, icon: Percent, color: "text-sky-300" },
     { label: t.favorites, value: favorites, icon: Heart, color: "text-rose-300" },
   ];
 

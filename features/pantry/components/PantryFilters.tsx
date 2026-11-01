@@ -1,4 +1,4 @@
-import { Heart, Search } from "lucide-react";
+import { Heart, Percent, Search } from "lucide-react";
 
 import type { PantryTranslation } from "@/features/pantry/i18n";
 import type { StatusFilter } from "@/features/pantry/types";
@@ -12,12 +12,15 @@ type PantryFiltersProps = {
   statusFilter: StatusFilter;
   categoryFilter: string;
   favoritesOnly: boolean;
+  belowHalfOnly: boolean;
   categories: string[];
   inStockCount: number;
+  belowHalfCount: number;
   onSearchChange: (value: string) => void;
   onStatusChange: (value: StatusFilter) => void;
   onCategoryChange: (value: string) => void;
   onFavoritesChange: () => void;
+  onBelowHalfChange: () => void;
 };
 
 export function PantryFilters({
@@ -27,12 +30,15 @@ export function PantryFilters({
   statusFilter,
   categoryFilter,
   favoritesOnly,
+  belowHalfOnly,
   categories,
   inStockCount,
+  belowHalfCount,
   onSearchChange,
   onStatusChange,
   onCategoryChange,
   onFavoritesChange,
+  onBelowHalfChange,
 }: PantryFiltersProps) {
   const statusTabs: { value: StatusFilter; label: string }[] = [
     { value: "i_lager", label: t.inStock },
@@ -58,7 +64,7 @@ export function PantryFilters({
         />
       </label>
 
-      <div className="flex gap-2 overflow-x-auto pb-1">
+      <div className="scrollbar-hidden flex gap-2 overflow-x-auto pb-1">
         {statusTabs.map((tab) => (
           <button
             key={tab.value}
@@ -93,10 +99,24 @@ export function PantryFilters({
           />
           {t.favorites}
         </button>
+        <button
+          type="button"
+          onClick={onBelowHalfChange}
+          aria-pressed={belowHalfOnly}
+          className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-medium transition ${
+            belowHalfOnly
+              ? "bg-sky-300/15 text-sky-200"
+              : "bg-white/[0.06] text-slate-300 hover:bg-white/10"
+          }`}
+        >
+          <Percent aria-hidden="true" className="h-3.5 w-3.5" />
+          {t.belowHalf}
+          <span className="opacity-70">{belowHalfCount}</span>
+        </button>
       </div>
 
       {categories.length > 0 ? (
-        <div className="flex gap-2 overflow-x-auto border-t border-white/[0.07] pt-3">
+        <div className="scrollbar-hidden flex gap-2 overflow-x-auto border-t border-white/[0.07] pt-3">
           <button
             type="button"
             onClick={() => onCategoryChange("all")}

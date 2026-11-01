@@ -61,7 +61,9 @@ export function RecipeView({
   const [search, setSearch] = useState("");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [expandedRecipeId, setExpandedRecipeId] = useState<string | null>(null);
-  const [pendingDeleteRecipe, setPendingDeleteRecipe] = useState<Recipe | null>(null);
+  const [pendingDeleteRecipe, setPendingDeleteRecipe] = useState<Recipe | null>(
+    null,
+  );
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
   const [form, setForm] = useState<RecipeFormValues>(createEmptyForm);
@@ -115,7 +117,10 @@ export function RecipeView({
         if (!isCurrent) return;
 
         if (ingredientResult.error) {
-          console.error("Failed to load recipe ingredients:", ingredientResult.error);
+          console.error(
+            "Failed to load recipe ingredients:",
+            ingredientResult.error,
+          );
           setLoadError(true);
           setRecipes([]);
           setIsLoading(false);
@@ -123,7 +128,10 @@ export function RecipeView({
         }
 
         if (favoriteResult.error) {
-          console.error("Failed to load recipe favorites:", favoriteResult.error);
+          console.error(
+            "Failed to load recipe favorites:",
+            favoriteResult.error,
+          );
           setLoadError(true);
           setRecipes([]);
           setIsLoading(false);
@@ -236,8 +244,8 @@ export function RecipeView({
     const hasInvalidIngredient = form.ingredients.some((ingredient) => {
       const hasAnyValue = Boolean(
         ingredient.ingrediens_namn.trim() ||
-          ingredient.kvantitet.trim() ||
-          ingredient.enhet.trim(),
+        ingredient.kvantitet.trim() ||
+        ingredient.enhet.trim(),
       );
       if (!hasAnyValue) return false;
       if (!ingredient.ingrediens_namn.trim()) return true;
@@ -289,7 +297,10 @@ export function RecipeView({
         .eq("recept_id", editingRecipe.id);
 
       if (deleteIngredientsError) {
-        console.error("Failed to replace recipe ingredients:", deleteIngredientsError);
+        console.error(
+          "Failed to replace recipe ingredients:",
+          deleteIngredientsError,
+        );
         setOperationError(t.recipeUpdateError);
         setIsSaving(false);
         return;
@@ -306,7 +317,10 @@ export function RecipeView({
           );
 
         if (insertIngredientsError) {
-          console.error("Failed to save recipe ingredients:", insertIngredientsError);
+          console.error(
+            "Failed to save recipe ingredients:",
+            insertIngredientsError,
+          );
           setOperationError(t.ingredientSaveError);
           setReloadToken((current) => current + 1);
           setIsSaving(false);
@@ -339,7 +353,10 @@ export function RecipeView({
           );
 
         if (insertIngredientsError) {
-          console.error("Failed to save recipe ingredients:", insertIngredientsError);
+          console.error(
+            "Failed to save recipe ingredients:",
+            insertIngredientsError,
+          );
           setOperationError(t.ingredientSaveError);
           setReloadToken((current) => current + 1);
           setIsSaving(false);
@@ -464,7 +481,7 @@ export function RecipeView({
               className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.04] pl-10 pr-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-emerald-400/60"
             />
           </label>
-          <div className="flex gap-2 overflow-x-auto pb-1">
+          <div className="scrollbar-hidden flex gap-2 overflow-x-auto pb-1">
             <button
               type="button"
               aria-pressed={favoritesOnly}

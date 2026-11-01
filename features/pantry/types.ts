@@ -7,6 +7,7 @@ export type PantryProduct = {
   namn: string;
   kategori: string | null;
   kvantitet: number | string | null;
+  remaining_percent: number | string | null;
   enhet: string | null;
   pris: number | string | null;
   kopdatum: string | null;

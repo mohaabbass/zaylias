@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { BookOpen, Heart, House, LayoutGrid, Plus } from "lucide-react";
+import { BookOpen, Heart, House, LayoutGrid, Plus, X } from "lucide-react";
 import type { FormEvent } from "react";
 import { AlertDialog } from "@base-ui/react/alert-dialog";
+import { Dialog } from "@base-ui/react/dialog";
+import Image from "next/image";
 
 import { BottomNav } from "@/components/layout/BottomNav";
 import { useLocale } from "@/components/providers/LocaleProvider";
@@ -77,6 +79,7 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("i_lager");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [belowHalfOnly, setBelowHalfOnly] = useState(false);
   const [activeSection, setActiveSection] = useState<"inventory" | "recipes">(
     "inventory",
   );
@@ -97,6 +100,14 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
   const [busyProductId, setBusyProductId] = useState<string | null>(null);
   const [pendingDeleteProduct, setPendingDeleteProduct] =
     useState<PantryProduct | null>(null);
+  const [pendingDiscardProduct, setPendingDiscardProduct] =
+    useState<PantryProduct | null>(null);
+  const [pendingConsumedProduct, setPendingConsumedProduct] =
+    useState<PantryProduct | null>(null);
+  const [imagePreview, setImagePreview] = useState<{
+    name: string;
+    url: string;
+  } | null>(null);
 
   useEffect(() => {
     let isCurrent = true;
@@ -144,6 +155,13 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
       if (favoritesOnly && !product.is_favorite) {
         return false;
       }
+      if (
+        belowHalfOnly &&
+        (product.status !== "i_lager" ||
+          !(Number(product.remaining_percent ?? 100) < 50))
+      ) {
+        return false;
+      }
 
       return (
         !normalizedSearch ||
@@ -162,6 +180,7 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
     });
   }, [
     categoryFilter,
+    belowHalfOnly,
     favoritesOnly,
     numberLocale,
     products,
@@ -177,8 +196,8 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
     const daysUntilExpiry = dateDifference(product.sista_forbrukningsdag);
     return daysUntilExpiry >= 0 && daysUntilExpiry <= 7;
   }).length;
-  const openedCount = inStockProducts.filter(
-    (product) => product.ar_oppnad,
+  const belowHalfCount = inStockProducts.filter(
+    (product) => Number(product.remaining_percent ?? 100) < 50,
   ).length;
   const favoriteCount = inStockProducts.filter(
     (product) => product.is_favorite,
@@ -386,6 +405,7 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
       namn: form.namn.trim(),
       kategori: form.kategori || null,
       kvantitet: quantity,
+      remaining_percent: editingProduct?.remaining_percent ?? 100,
       enhet: form.enhet.trim() || null,
       pris: price,
       kopdatum: form.kopdatum || null,
@@ -477,7 +497,10 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
   const updateProduct = async (
     product: PantryProduct,
     values: Partial<
-      Pick<PantryProduct, "status" | "is_favorite" | "kvantitet">
+      Pick<
+        PantryProduct,
+        "status" | "is_favorite" | "kvantitet" | "remaining_percent"
+      >
     >,
   ) => {
     setBusyProductId(product.id);
@@ -532,11 +555,31 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
     void deleteProduct(product);
   };
 
+  const confirmDiscardProduct = () => {
+    if (!pendingDiscardProduct) return;
+
+    const product = pendingDiscardProduct;
+    setPendingDiscardProduct(null);
+    void updateProduct(product, { status: "kastad" });
+  };
+
+  const confirmConsumeProduct = () => {
+    if (!pendingConsumedProduct) return;
+
+    const product = pendingConsumedProduct;
+    setPendingConsumedProduct(null);
+    void updateProduct(product, {
+      status: "konsumerad",
+      remaining_percent: 0,
+    });
+  };
+
   const resetFilters = () => {
     setSearch("");
     setStatusFilter("all");
     setCategoryFilter("all");
     setFavoritesOnly(false);
+    setBelowHalfOnly(false);
   };
 
   const navItems = [
@@ -615,7 +658,7 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
                 t={t}
                 totalItems={inStockProducts.length}
                 expiring={expiringCount}
-                opened={openedCount}
+                belowHalf={belowHalfCount}
                 favorites={favoriteCount}
               />
 
@@ -626,13 +669,18 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
                 statusFilter={statusFilter}
                 categoryFilter={categoryFilter}
                 favoritesOnly={favoritesOnly}
+                belowHalfOnly={belowHalfOnly}
                 categories={categories}
                 inStockCount={inStockProducts.length}
+                belowHalfCount={belowHalfCount}
                 onSearchChange={setSearch}
                 onStatusChange={setStatusFilter}
                 onCategoryChange={setCategoryFilter}
                 onFavoritesChange={() =>
                   setFavoritesOnly((current) => !current)
+                }
+                onBelowHalfChange={() =>
+                  setBelowHalfOnly((current) => !current)
                 }
               />
 
@@ -678,6 +726,16 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
                       }}
                       onEdit={openEditForm}
                       onDelete={setPendingDeleteProduct}
+                      onDiscard={setPendingDiscardProduct}
+                      onConsume={setPendingConsumedProduct}
+                      onViewImage={(product) => {
+                        if (product.bild_url) {
+                          setImagePreview({
+                            name: product.namn,
+                            url: product.bild_url,
+                          });
+                        }
+                      }}
                     />
                   ))}
                 </section>
@@ -725,6 +783,48 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
         }}
       />
 
+      <Dialog.Root
+        open={imagePreview !== null}
+        onOpenChange={(open) => {
+          if (!open) setImagePreview(null);
+        }}
+      >
+        <Dialog.Portal>
+          <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/80 transition-opacity data-ending-style:opacity-0 data-starting-style:opacity-0" />
+          <Dialog.Viewport className="fixed inset-0 z-50 grid place-items-center overflow-y-auto p-4">
+            <Dialog.Popup className="w-full max-w-[min(90vw,56rem)] rounded-2xl border border-white/10 bg-slate-900 p-4 text-white shadow-2xl outline-none sm:p-6">
+              {imagePreview ? (
+                <>
+                  <div className="mb-4 flex items-center justify-between gap-4">
+                    <Dialog.Title className="truncate text-lg font-semibold">
+                      {imagePreview.name}
+                    </Dialog.Title>
+                    <button
+                      type="button"
+                      aria-label={t.closeImage}
+                      onClick={() => setImagePreview(null)}
+                      className="shrink-0 rounded-lg p-2 text-slate-300 transition hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
+                    >
+                      <X aria-hidden="true" className="h-5 w-5" />
+                    </button>
+                  </div>
+                  <div className="relative mx-auto h-[min(75dvh,50rem)] w-full max-w-[50rem]">
+                    <Image
+                      unoptimized
+                      fill
+                      sizes="82vw"
+                      src={imagePreview.url}
+                      alt={imagePreview.name}
+                      className="object-contain"
+                    />
+                  </div>
+                </>
+              ) : null}
+            </Dialog.Popup>
+          </Dialog.Viewport>
+        </Dialog.Portal>
+      </Dialog.Root>
+
       <AlertDialog.Root
         open={pendingDeleteProduct !== null}
         onOpenChange={(open) => {
@@ -755,6 +855,72 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
                   onClick={confirmDeleteProduct}
                 >
                   {t.delete}
+                </Button>
+              </div>
+            </AlertDialog.Popup>
+          </AlertDialog.Viewport>
+        </AlertDialog.Portal>
+      </AlertDialog.Root>
+
+      <AlertDialog.Root
+        open={pendingConsumedProduct !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingConsumedProduct(null);
+        }}
+      >
+        <AlertDialog.Portal>
+          <AlertDialog.Backdrop className="fixed inset-0 z-50 bg-black/50 transition-opacity data-ending-style:opacity-0 data-starting-style:opacity-0" />
+          <AlertDialog.Viewport className="fixed inset-0 z-50 grid place-items-center overflow-y-auto p-4">
+            <AlertDialog.Popup className="w-full max-w-md rounded-xl border border-border bg-card p-6 text-card-foreground shadow-lg outline-none transition-[opacity,transform] data-ending-style:scale-95 data-ending-style:opacity-0 data-starting-style:scale-95 data-starting-style:opacity-0">
+              <AlertDialog.Title className="text-lg font-semibold">
+                {t.consumeItemTitle}
+              </AlertDialog.Title>
+              <AlertDialog.Description className="mt-2 text-sm text-muted-foreground">
+                {t.consumeConfirm}
+              </AlertDialog.Description>
+              <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setPendingConsumedProduct(null)}
+                >
+                  {t.cancel}
+                </Button>
+                <Button type="button" onClick={confirmConsumeProduct}>
+                  {t.markConsumed}
+                </Button>
+              </div>
+            </AlertDialog.Popup>
+          </AlertDialog.Viewport>
+        </AlertDialog.Portal>
+      </AlertDialog.Root>
+
+      <AlertDialog.Root
+        open={pendingDiscardProduct !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingDiscardProduct(null);
+        }}
+      >
+        <AlertDialog.Portal>
+          <AlertDialog.Backdrop className="fixed inset-0 z-50 bg-black/50 transition-opacity data-ending-style:opacity-0 data-starting-style:opacity-0" />
+          <AlertDialog.Viewport className="fixed inset-0 z-50 grid place-items-center overflow-y-auto p-4">
+            <AlertDialog.Popup className="w-full max-w-md rounded-xl border border-border bg-card p-6 text-card-foreground shadow-lg outline-none transition-[opacity,transform] data-ending-style:scale-95 data-ending-style:opacity-0 data-starting-style:scale-95 data-starting-style:opacity-0">
+              <AlertDialog.Title className="text-lg font-semibold">
+                {t.discardItemTitle}
+              </AlertDialog.Title>
+              <AlertDialog.Description className="mt-2 text-sm text-muted-foreground">
+                {t.discardConfirm}
+              </AlertDialog.Description>
+              <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setPendingDiscardProduct(null)}
+                >
+                  {t.cancel}
+                </Button>
+                <Button type="button" onClick={confirmDiscardProduct}>
+                  {t.discardAction}
                 </Button>
               </div>
             </AlertDialog.Popup>

@@ -18,4 +18,4 @@ export function getCategoryLabel(category: string, locale: Locale): string {
 }
 
 export const productColumns =
-  "id, user_id, namn, kategori, kvantitet, enhet, pris, kopdatum, sista_forbrukningsdag, ar_oppnad, oppnad_datum, butik, streckkod, varumarke, bild_url, status, is_favorite, created_at";
+  "id, user_id, namn, kategori, kvantitet, remaining_percent, enhet, pris, kopdatum, sista_forbrukningsdag, ar_oppnad, oppnad_datum, butik, streckkod, varumarke, bild_url, status, is_favorite, created_at";
