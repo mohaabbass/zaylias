@@ -1,6 +1,6 @@
 import type { Locale, Translation } from "@/lib/i18n";
 import { sortAccountsByFavorite } from "@/lib/utils";
-import type { Account, TransactionType } from "@/types/finance";
+import type { Account, TransactionType } from "@/features/economy/types/finance";
 
 const localeMap: Record<Locale, string> = {
   sv: "sv-SE",

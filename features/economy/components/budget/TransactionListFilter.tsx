@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { useState } from "react";
 
 import type { Translation } from "@/lib/i18n";
-import type { Account } from "@/types/finance";
+import type { Account } from "@/features/economy/types/finance";
 
 export type TransactionFilter = "all" | "income" | "expense";
 

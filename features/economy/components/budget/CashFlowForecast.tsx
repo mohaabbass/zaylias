@@ -4,7 +4,7 @@ import { useMemo } from "react";
 
 import type { Locale, Translation } from "@/lib/i18n";
 import { formatCurrency } from "@/lib/utils";
-import type { Transaction } from "@/types/finance";
+import type { Transaction } from "@/features/economy/types/finance";
 
 export type ScheduledForecastPayment = {
   amount: number | string;

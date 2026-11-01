@@ -3,7 +3,7 @@ import { useMemo } from "react";
 import type { Translation, Locale } from "@/lib/i18n";
 import { getCategoryLabel, normalizeCategoryValue } from "@/lib/i18n";
 import { formatCurrency } from "@/lib/utils";
-import type { Transaction } from "@/types/finance";
+import type { Transaction } from "@/features/economy/types/finance";
 
 type StatisticsCategoryChartProps = {
   transactions: Transaction[];

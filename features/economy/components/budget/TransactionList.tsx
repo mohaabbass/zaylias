@@ -9,7 +9,7 @@ import {
   type Translation,
 } from "@/lib/i18n";
 import { formatCurrency } from "@/lib/utils";
-import type { Account, Transaction } from "@/types/finance";
+import type { Account, Transaction } from "@/features/economy/types/finance";
 
 import {
   TransactionListFilter,

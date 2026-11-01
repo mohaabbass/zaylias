@@ -21,7 +21,7 @@ import {
 import { formatCurrency, sortAccountsByFavorite } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import type { Locale, Translation } from "@/lib/i18n";
-import type { Account } from "@/types/finance";
+import type { Account } from "@/features/economy/types/finance";
 
 type AccountsViewProps = {
   userId: string;
