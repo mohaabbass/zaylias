@@ -114,6 +114,40 @@ export function PantryProductForm({
             </p>
           ) : null}
 
+          <div className="space-y-2">
+            <label className="block space-y-1.5 text-sm">
+              <span className="font-medium text-slate-200">{t.barcode}</span>
+              <input
+                value={form.streckkod}
+                onChange={(event) =>
+                  setForm((current) => ({
+                    ...current,
+                    streckkod: event.target.value,
+                  }))
+                }
+                className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.06] px-3 text-white outline-none focus:border-emerald-400/60"
+              />
+            </label>
+            <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={onScanBarcode}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-white/10 px-3 text-sm font-medium text-slate-200 transition hover:bg-white/5"
+              >
+                <ScanLine aria-hidden="true" className="h-4 w-4" />
+                {t.scanBarcode}
+              </button>
+              <button
+                type="button"
+                onClick={onLookupProduct}
+                disabled={!form.streckkod.trim() || isLookingUpProduct}
+                className="h-11 rounded-xl bg-emerald-400/10 px-3 text-sm font-semibold text-emerald-200 transition hover:bg-emerald-400/20 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isLookingUpProduct ? t.lookingUpProduct : t.lookupProduct}
+              </button>
+            </div>
+          </div>
+
           {scannerOpen ? (
             <PantryProductScanner
               onDetected={onBarcodeDetected}
@@ -277,50 +311,17 @@ export function PantryProductForm({
             </label>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <label className="block space-y-1.5 text-sm">
-              <span className="font-medium text-slate-200">{t.store}</span>
-              <input
-                value={form.butik}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, butik: event.target.value }))
-                }
-                placeholder={t.storePlaceholder}
-                className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.06] px-3 text-white outline-none placeholder:text-slate-500 focus:border-emerald-400/60"
-              />
-            </label>
-            <label className="block space-y-1.5 text-sm">
-              <span className="font-medium text-slate-200">{t.barcode}</span>
-              <input
-                value={form.streckkod}
-                onChange={(event) =>
-                  setForm((current) => ({
-                    ...current,
-                    streckkod: event.target.value,
-                  }))
-                }
-                className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.06] px-3 text-white outline-none focus:border-emerald-400/60"
-              />
-            </label>
-            <div className="flex flex-col justify-end gap-2">
-              <button
-                type="button"
-                onClick={onScanBarcode}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-white/10 px-3 text-sm font-medium text-slate-200 transition hover:bg-white/5"
-              >
-                <ScanLine aria-hidden="true" className="h-4 w-4" />
-                {t.scanBarcode}
-              </button>
-              <button
-                type="button"
-                onClick={onLookupProduct}
-                disabled={!form.streckkod.trim() || isLookingUpProduct}
-                className="h-10 rounded-xl bg-emerald-400/10 px-3 text-xs font-semibold text-emerald-200 transition hover:bg-emerald-400/20 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {isLookingUpProduct ? t.lookingUpProduct : t.lookupProduct}
-              </button>
-            </div>
-          </div>
+          <label className="block space-y-1.5 text-sm">
+            <span className="font-medium text-slate-200">{t.store}</span>
+            <input
+              value={form.butik}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, butik: event.target.value }))
+              }
+              placeholder={t.storePlaceholder}
+              className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.06] px-3 text-white outline-none placeholder:text-slate-500 focus:border-emerald-400/60"
+            />
+          </label>
           {form.bild_url ? (
             <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.035] p-3">
               <Image

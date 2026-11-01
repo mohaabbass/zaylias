@@ -234,6 +234,28 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
     setForm((current) => ({ ...current, streckkod: normalizedBarcode }));
 
     try {
+      const { data: catalogProduct, error: catalogError } = await supabase
+        .from("produkt_katalog")
+        .select("namn, brand, image_url, kategori")
+        .eq("streckkod", normalizedBarcode)
+        .maybeSingle();
+
+      if (catalogError) {
+        throw catalogError;
+      }
+
+      if (catalogProduct) {
+        setForm((current) => ({
+          ...current,
+          streckkod: normalizedBarcode,
+          namn: catalogProduct.namn,
+          varumarke: catalogProduct.brand ?? "",
+          bild_url: catalogProduct.image_url ?? "",
+          kategori: catalogProduct.kategori ?? current.kategori,
+        }));
+        return;
+      }
+
       const response = await fetch(
         `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(normalizedBarcode)}.json`,
       );
@@ -314,6 +336,26 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
     };
 
     setIsSaving(true);
+
+    if (values.streckkod) {
+      const { error } = await supabase.from("produkt_katalog").upsert(
+        {
+          streckkod: values.streckkod,
+          namn: values.namn,
+          brand: values.varumarke,
+          image_url: values.bild_url,
+          kategori: values.kategori,
+        },
+        { onConflict: "streckkod" },
+      );
+
+      if (error) {
+        console.error("Failed to save product to catalog:", error);
+        setOperationError(t.catalogSaveError);
+        setIsSaving(false);
+        return;
+      }
+    }
 
     if (editingProduct) {
       const { data, error } = await supabase
