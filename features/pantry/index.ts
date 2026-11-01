@@ -1,1 +1,1 @@
-export { PantryView } from "./components/PantryView";
+export { PantryApp } from "./PantryApp";

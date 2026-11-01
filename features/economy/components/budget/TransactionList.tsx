@@ -5,9 +5,9 @@ import { Button } from "@/components/ui/button";
 import {
   getCategoryLabel,
   normalizeCategoryValue,
-  type Locale,
-  type Translation,
-} from "@/lib/i18n";
+} from "@/features/economy/i18n";
+import type { Locale } from "@/lib/i18n";
+import type { EconomyTranslation } from "@/features/economy/i18n";
 import { formatCurrency } from "@/lib/utils";
 import type { Account, Transaction } from "@/features/economy/types/finance";
 
@@ -24,7 +24,7 @@ type TransactionListProps = {
   onDelete: (id: string) => void;
   onEdit: (transaction: Transaction) => void;
   locale?: Locale;
-  t: Translation;
+  t: EconomyTranslation;
 };
 
 export function TransactionList({

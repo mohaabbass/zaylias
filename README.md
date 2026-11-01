@@ -38,8 +38,9 @@ Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/bui
 ## Feature organization
 
 - `features/economy` owns economy-specific UI, state, and finance types.
-- `features/pantry` owns pantry-specific UI.
+- `features/pantry` owns pantry-specific UI, state types, and translations.
 - `components/layout`, `components/ui`, `components/providers`, and `lib` contain shared app infrastructure.
 - `app` contains Next.js routes; the features remain part of one app and deployment.
+- `lib/i18n.ts` owns shared app/auth copy, each feature owns its translations, and `app/i18n.ts` combines them for the locale provider.
 
 Keep feature-specific data access and changes within the owning feature. Shared infrastructure should not depend on either feature.

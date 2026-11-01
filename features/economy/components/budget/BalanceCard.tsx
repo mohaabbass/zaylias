@@ -1,6 +1,6 @@
 import { ArrowDownRight, ArrowUpRight, Coins } from "lucide-react";
 
-import type { Translation } from "@/lib/i18n";
+import type { EconomyTranslation } from "@/features/economy/i18n";
 import { formatCurrency } from "@/lib/utils";
 import type { Transaction } from "@/features/economy/types/finance";
 
@@ -8,7 +8,7 @@ type BalanceCardProps = {
   totalBalance: number;
   transactions: Transaction[];
   locale?: string;
-  t: Translation;
+  t: EconomyTranslation;
   onOpenCashFlow: () => void;
 };
 

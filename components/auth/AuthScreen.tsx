@@ -1,4 +1,4 @@
-import type { Translation } from "@/lib/i18n";
+import type { SharedTranslation } from "@/lib/i18n";
 import { BrandMark } from "@/components/ui/BrandMark";
 
 type AuthScreenProps = {
@@ -10,7 +10,7 @@ type AuthScreenProps = {
   onPasswordChange: (value: string) => void;
   onToggleMode: () => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
-  t: Translation;
+  t: SharedTranslation;
 };
 
 export function AuthScreen({

@@ -1,4 +1,5 @@
-import type { Locale, Translation } from "@/lib/i18n";
+import type { Locale } from "@/lib/i18n";
+import type { EconomyTranslation } from "@/features/economy/i18n";
 import { sortAccountsByFavorite } from "@/lib/utils";
 import type { Account, TransactionType } from "@/features/economy/types/finance";
 
@@ -27,7 +28,7 @@ type TransactionFormProps = {
   onCategoryChange: (value: string) => void;
   onTypeChange: (value: TransactionType) => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
-  t: Translation;
+  t: EconomyTranslation;
 };
 
 export function TransactionForm({

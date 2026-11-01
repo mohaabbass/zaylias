@@ -2,7 +2,7 @@ import { SlidersHorizontal, X } from "lucide-react";
 import { createPortal } from "react-dom";
 import { useState } from "react";
 
-import type { Translation } from "@/lib/i18n";
+import type { EconomyTranslation } from "@/features/economy/i18n";
 import type { Account } from "@/features/economy/types/finance";
 
 export type TransactionFilter = "all" | "income" | "expense";
@@ -25,7 +25,7 @@ type TransactionListFilterProps = {
   resultCount: number;
   onClear: () => void;
   hasActiveFilters: boolean;
-  t: Translation;
+  t: EconomyTranslation;
 };
 
 export function TransactionListFilter({

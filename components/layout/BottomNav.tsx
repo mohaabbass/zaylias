@@ -25,6 +25,7 @@ export function BottomNav({ items }: BottomNavProps) {
               type="button"
               onClick={item.onClick}
               aria-label={item.label}
+              aria-current={item.active ? "page" : undefined}
               className={`flex min-w-0 flex-1 flex-col items-center justify-center text-center transition-all duration-200 ease-out active:scale-[0.97] ${
                 item.id === "add"
                   ? "py-0 text-white"

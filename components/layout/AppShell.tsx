@@ -31,6 +31,7 @@ import {
   type ScheduledForecastPayment,
   type TransactionType,
 } from "@/features/economy";
+import { PantryApp } from "@/features/pantry";
 import { AuthScreen } from "@/components/auth/AuthScreen";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { AppSelectionScreen } from "@/components/layout/AppSelectionScreen";
@@ -44,7 +45,8 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { formatCurrency, sortAccountsByFavorite } from "@/lib/utils";
-import { normalizeCategoryValue, type Locale } from "@/lib/i18n";
+import { normalizeCategoryValue } from "@/features/economy/i18n";
+import type { Locale } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase";
 
 const localeMap: Record<Locale, string> = {
@@ -606,16 +608,28 @@ export function AppShell() {
     );
   }
 
-  if (activeApp !== "economy") {
+  if (activeApp === null) {
     return (
       <AppSelectionScreen
-        view={activeApp === "pantry" ? "pantry" : "picker"}
-        userId={session.user.id}
         onSelectEconomy={() => setActiveApp("economy")}
         onSelectPantry={() => setActiveApp("pantry")}
-        onBackToApps={() => setActiveApp(null)}
         onLogout={handleLogout}
         t={t}
+      />
+    );
+  }
+
+  if (activeApp === "pantry") {
+    return (
+      <PantryApp
+        userId={session.user.id}
+        paymentsRefreshToken={paymentsRefreshToken}
+        onLogout={handleLogout}
+        onSwitchApps={() => setActiveApp(null)}
+        onOpenEconomyPayments={() => {
+          setActiveView("payments");
+          setActiveApp("economy");
+        }}
       />
     );
   }

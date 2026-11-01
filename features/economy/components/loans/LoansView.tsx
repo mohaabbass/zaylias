@@ -17,7 +17,8 @@ import {
 } from "@/components/ui/drawer";
 import { formatCurrency } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
-import type { Locale, Translation } from "@/lib/i18n";
+import type { Locale } from "@/lib/i18n";
+import type { EconomyTranslation } from "@/features/economy/i18n";
 
 type Loan = {
   id: string;
@@ -34,7 +35,7 @@ type Loan = {
 type LoansViewProps = {
   userId: string;
   locale: Locale;
-  t: Translation;
+  t: EconomyTranslation;
 };
 
 const localeMap: Record<Locale, string> = {

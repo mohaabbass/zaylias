@@ -12,8 +12,9 @@ import {
 } from "@/components/ui/drawer";
 import { formatCurrency, sortAccountsByFavorite } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
-import { normalizeCategoryValue } from "@/lib/i18n";
-import type { Locale, Translation } from "@/lib/i18n";
+import { normalizeCategoryValue } from "@/features/economy/i18n";
+import type { Locale } from "@/lib/i18n";
+import type { EconomyTranslation } from "@/features/economy/i18n";
 import type { Account } from "@/features/economy/types/finance";
 
 type Payment = {
@@ -42,7 +43,7 @@ type PaymentsViewProps = {
   onDeleteExpense: (id: string) => Promise<boolean>;
   onPaymentsChange: () => void;
   locale: Locale;
-  t: Translation;
+  t: EconomyTranslation;
 };
 
 const localeMap: Record<Locale, string> = {
