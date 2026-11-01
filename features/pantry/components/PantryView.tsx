@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   BookOpen,
   House,
@@ -24,10 +24,12 @@ import { PantryPageHeader } from "@/features/pantry/components/PantryPageHeader"
 import { PantryProductCard } from "@/features/pantry/components/PantryProductCard";
 import { PantryProductForm } from "@/features/pantry/components/PantryProductForm";
 import { RecipeView } from "@/features/pantry/components/RecipeView";
+import { PantryStats } from "@/features/pantry/components/PantryStats";
 import { productColumns } from "@/features/pantry/constants";
 import { pantryTranslations } from "@/features/pantry/i18n";
 import type {
   PantryProduct,
+  ProductCatalogEntry,
   ProductFormValues,
   StatusFilter,
 } from "@/features/pantry/types";
@@ -80,6 +82,10 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
   const [products, setProducts] = useState<PantryProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
+  const [recipeCount, setRecipeCount] = useState<number | null>(null);
+  const [isRecipeCountLoading, setIsRecipeCountLoading] = useState(true);
+  const [recipeCountError, setRecipeCountError] = useState(false);
+  const [recipeCountReloadToken, setRecipeCountReloadToken] = useState(0);
   const [reloadToken, setReloadToken] = useState(0);
   const [operationError, setOperationError] = useState("");
   const [search, setSearch] = useState("");
@@ -88,10 +94,9 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [belowHalfOnly, setBelowHalfOnly] = useState(false);
   const [expiringOnly, setExpiringOnly] = useState(false);
-  const [activeSection, setActiveSection] = useState<"inventory" | "recipes">(
-    "inventory",
-  );
-  const productsSectionRef = useRef<HTMLElement>(null);
+  const [activeSection, setActiveSection] = useState<
+    "home" | "products" | "recipes"
+  >("home");
   const [recipeAddRequest, setRecipeAddRequest] = useState(0);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<PantryProduct | null>(
@@ -100,6 +105,13 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
   const [form, setForm] = useState<ProductFormValues>(() =>
     createEmptyForm(locale),
   );
+  const [catalogSearch, setCatalogSearch] = useState<{
+    query: string;
+    products: ProductCatalogEntry[];
+    isLoading: boolean;
+    error: string;
+  }>({ query: "", products: [], isLoading: false, error: "" });
+  const [selectedCatalogName, setSelectedCatalogName] = useState("");
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [formError, setFormError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -117,6 +129,69 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
     name: string;
     url: string;
   } | null>(null);
+
+  useEffect(() => {
+    const query = form.namn.trim();
+    if (
+      !isFormOpen ||
+      editingProduct ||
+      query.length < 2 ||
+      selectedCatalogName === query
+    ) {
+      return;
+    }
+
+    let isCurrent = true;
+    const timeout = window.setTimeout(() => {
+      const searchCatalog = async () => {
+        setCatalogSearch({
+          query,
+          products: [],
+          isLoading: true,
+          error: "",
+        });
+
+        const { data, error } = await supabase
+          .from("produkt_katalog")
+          .select("catalog_id, streckkod, namn, brand, image_url, kategori")
+          .ilike("namn", `%${query}%`)
+          .order("namn")
+          .limit(8);
+
+        if (!isCurrent) return;
+
+        if (error) {
+          console.error("Failed to search product catalog:", error);
+          setCatalogSearch({
+            query,
+            products: [],
+            isLoading: false,
+            error: t.catalogSearchError,
+          });
+        } else {
+          setCatalogSearch({
+            query,
+            products: data ?? [],
+            isLoading: false,
+            error: "",
+          });
+        }
+      };
+
+      void searchCatalog();
+    }, 250);
+
+    return () => {
+      isCurrent = false;
+      window.clearTimeout(timeout);
+    };
+  }, [
+    editingProduct,
+    form.namn,
+    isFormOpen,
+    selectedCatalogName,
+    t.catalogSearchError,
+  ]);
 
   useEffect(() => {
     let isCurrent = true;
@@ -150,6 +225,36 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
       isCurrent = false;
     };
   }, [reloadToken, userId]);
+
+  useEffect(() => {
+    let isCurrent = true;
+
+    const loadRecipeCount = async () => {
+      setIsRecipeCountLoading(true);
+      setRecipeCountError(false);
+
+      const { count, error } = await supabase
+        .from("recept")
+        .select("id", { count: "exact", head: true })
+        .or(`user_id.is.null,user_id.eq.${userId}`);
+
+      if (!isCurrent) return;
+
+      if (error) {
+        console.error("Failed to load recipe count:", error);
+        setRecipeCountError(true);
+      } else {
+        setRecipeCount(count ?? 0);
+      }
+      setIsRecipeCountLoading(false);
+    };
+
+    void loadRecipeCount();
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [recipeCountReloadToken, userId]);
 
   const filteredProducts = useMemo(() => {
     const normalizedSearch = search.trim().toLocaleLowerCase(numberLocale);
@@ -208,6 +313,11 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
   const inStockProducts = products.filter(
     (product) => product.status === "i_lager",
   );
+  const expiringCount = inStockProducts.filter((product) => {
+    if (!product.sista_forbrukningsdag) return false;
+    const daysUntilExpiry = dateDifference(product.sista_forbrukningsdag);
+    return daysUntilExpiry >= 0 && daysUntilExpiry <= 7;
+  }).length;
   const belowHalfCount = inStockProducts.filter(
     (product) => Number(product.remaining_percent ?? 100) < 50,
   ).length;
@@ -233,6 +343,7 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
   const openNewForm = () => {
     setEditingProduct(null);
     setForm(createEmptyForm(locale));
+    setSelectedCatalogName("");
     setSelectedImage(null);
     setFormError("");
     setLookupError("");
@@ -243,7 +354,7 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
 
   const switchAddForm = (type: "product" | "recipe") => {
     if (type === "product") {
-      setActiveSection("inventory");
+      setActiveSection("products");
       openNewForm();
       return;
     }
@@ -354,6 +465,20 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
     }
   };
 
+  const selectCatalogProduct = (product: ProductCatalogEntry) => {
+    setSelectedCatalogName(product.namn);
+    setForm((current) => ({
+      ...current,
+      streckkod: product.streckkod ?? "",
+      namn: product.namn,
+      varumarke: product.brand ?? "",
+      bild_url: product.image_url ?? "",
+      kategori: product.kategori ?? current.kategori,
+    }));
+    setCatalogSearch({ query: "", products: [], isLoading: false, error: "" });
+    setSelectedImage(null);
+  };
+
   const saveProduct = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setFormError("");
@@ -436,24 +561,57 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
       bild_url: imageUrl,
     };
 
-    if (values.streckkod) {
-      const { error } = await supabase.from("produkt_katalog").upsert(
-        {
-          streckkod: values.streckkod,
-          namn: values.namn,
-          brand: values.varumarke,
-          image_url: values.bild_url,
-          kategori: values.kategori,
-        },
-        { onConflict: "streckkod" },
-      );
+    const catalogValues = {
+      streckkod: values.streckkod,
+      namn: values.namn,
+      brand: values.varumarke,
+      image_url: values.bild_url,
+      kategori: values.kategori,
+    };
+    let catalogSaveError: { message: string } | null = null;
 
-      if (error) {
-        console.error("Failed to save product to catalog:", error);
-        setOperationError(t.catalogSaveError);
-        setIsSaving(false);
-        return;
+    if (values.streckkod) {
+      const { error } = await supabase
+        .from("produkt_katalog")
+        .upsert(catalogValues, { onConflict: "streckkod" });
+      catalogSaveError = error;
+    } else {
+      let existingQuery = supabase
+        .from("produkt_katalog")
+        .select("catalog_id, image_url, kategori")
+        .eq("namn", values.namn)
+        .is("streckkod", null);
+      existingQuery = values.varumarke
+        ? existingQuery.eq("brand", values.varumarke)
+        : existingQuery.is("brand", null);
+
+      const { data: existingProduct, error: findError } = await existingQuery
+        .limit(1)
+        .maybeSingle();
+
+      if (findError) {
+        catalogSaveError = findError;
+      } else {
+        const catalogEntry = {
+          ...catalogValues,
+          image_url: values.bild_url ?? existingProduct?.image_url ?? null,
+          kategori: values.kategori ?? existingProduct?.kategori ?? null,
+        };
+        const result = existingProduct
+          ? await supabase
+              .from("produkt_katalog")
+              .update(catalogEntry)
+              .eq("catalog_id", existingProduct.catalog_id)
+          : await supabase.from("produkt_katalog").insert(catalogEntry);
+        catalogSaveError = result.error;
       }
+    }
+
+    if (catalogSaveError) {
+      console.error("Failed to save product to catalog:", catalogSaveError);
+      setOperationError(t.catalogSaveError);
+      setIsSaving(false);
+      return;
     }
 
     if (editingProduct) {
@@ -599,33 +757,42 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
     setExpiringOnly(false);
   };
 
+  const selectStatFilter = (
+    filter: "in-stock" | "expiring" | "below-half" | "favorites" | "recipes",
+  ) => {
+    if (filter === "recipes") {
+      setActiveSection("recipes");
+      setFavoritesOnly(false);
+      return;
+    }
+
+    setActiveSection("products");
+    setSearch("");
+    setStatusFilter("i_lager");
+    setCategoryFilter("all");
+    setFavoritesOnly(filter === "favorites");
+    setBelowHalfOnly(filter === "below-half");
+    setExpiringOnly(filter === "expiring");
+  };
+
   const openProducts = () => {
-    setActiveSection("inventory");
+    setActiveSection("products");
     setSearch("");
     setStatusFilter("all");
     setCategoryFilter("all");
     setFavoritesOnly(false);
     setBelowHalfOnly(false);
     setExpiringOnly(false);
-    productsSectionRef.current?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
   };
 
   const navItems = [
     {
-      id: "inventory",
+      id: "home",
       label: t.inventory,
       icon: House,
-      active:
-        activeSection === "inventory" &&
-        statusFilter === "i_lager" &&
-        !favoritesOnly &&
-        !belowHalfOnly &&
-        !expiringOnly,
+      active: activeSection === "home",
       onClick: () => {
-        setActiveSection("inventory");
+        setActiveSection("home");
         setSearch("");
         setStatusFilter("i_lager");
         setCategoryFilter("all");
@@ -638,7 +805,7 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
       id: "products",
       label: t.products,
       icon: Package,
-      active: activeSection === "inventory" && statusFilter === "all",
+      active: activeSection === "products",
       onClick: openProducts,
     },
     {
@@ -675,6 +842,9 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
               userId={userId}
               addRequest={recipeAddRequest}
               onAddRequestHandled={() => setRecipeAddRequest(0)}
+              onRecipeListChange={() =>
+                setRecipeCountReloadToken((current) => current + 1)
+              }
               onSwitchForm={switchAddForm}
             />
           ) : (
@@ -690,61 +860,8 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
                 </div>
               ) : null}
 
-              <PantryCategories
-                categories={categoryOptions}
-                categoryFilter={categoryFilter}
-                locale={locale}
-                t={t}
-                totalCount={categoryTotalCount}
-                onCategoryChange={setCategoryFilter}
-              />
-
-              <section
-                ref={productsSectionRef}
-                aria-labelledby="pantry-products-heading"
-                className="space-y-4"
-              >
-                <div className="flex items-center justify-between gap-3">
-                  <h2
-                    id="pantry-products-heading"
-                    className="text-lg font-semibold text-white"
-                  >
-                    {t.products}
-                  </h2>
-                  {!isLoading && !loadError ? (
-                    <span className="text-xs text-slate-400">
-                      {t.itemsCount(filteredProducts.length)}
-                    </span>
-                  ) : null}
-                </div>
-
-                <PantryFilters
-                  t={t}
-                  search={search}
-                  statusFilter={statusFilter}
-                  favoritesOnly={favoritesOnly}
-                  belowHalfOnly={belowHalfOnly}
-                  expiringOnly={expiringOnly}
-                  inStockCount={inStockProducts.length}
-                  belowHalfCount={belowHalfCount}
-                  onSearchChange={setSearch}
-                  onStatusChange={setStatusFilter}
-                  onFavoritesChange={() =>
-                    setFavoritesOnly((current) => !current)
-                  }
-                  onBelowHalfChange={() =>
-                    setBelowHalfOnly((current) => !current)
-                  }
-                  onExpiringChange={() =>
-                    setExpiringOnly((current) => !current)
-                  }
-                />
-
-                {isLoading ? (
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.035] px-5 py-12 text-center text-sm text-slate-400">
-                    {t.loading}
-                  </div>
-                ) : loadError ? (
+              {activeSection === "home" ? (
+                loadError ? (
                   <div
                     role="alert"
                     className="rounded-2xl border border-red-400/30 bg-red-500/10 px-5 py-8 text-center"
@@ -758,42 +875,148 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
                       {t.retry}
                     </button>
                   </div>
-                ) : filteredProducts.length === 0 ? (
-                  <PantryEmptyState
-                    t={t}
-                    hasProducts={products.length > 0}
-                    onClearFilters={resetFilters}
-                  />
                 ) : (
-                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                    {filteredProducts.map((product) => (
-                      <PantryProductCard
-                        key={product.id}
-                        product={product}
-                        t={t}
-                        locale={locale}
-                        numberLocale={numberLocale}
-                        isBusy={busyProductId === product.id}
-                        onUpdate={(target, values) => {
-                          void updateProduct(target, values);
-                        }}
-                        onEdit={openEditForm}
-                        onDelete={setPendingDeleteProduct}
-                        onDiscard={setPendingDiscardProduct}
-                        onConsume={setPendingConsumedProduct}
-                        onViewImage={(product) => {
-                          if (product.bild_url) {
-                            setImagePreview({
-                              name: product.namn,
-                              url: product.bild_url,
-                            });
+                  <>
+                    <PantryStats
+                      t={t}
+                      totalItems={inStockProducts.length}
+                      expiring={expiringCount}
+                      belowHalf={belowHalfCount}
+                      recipeCount={recipeCount}
+                      isLoading={isLoading}
+                      isRecipeCountLoading={
+                        isRecipeCountLoading && recipeCount === null
+                      }
+                      onSelect={selectStatFilter}
+                    />
+                    {recipeCountError ? (
+                      <div
+                        role="alert"
+                        className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200"
+                      >
+                        <p>{t.recipeLoadError}</p>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setReloadToken((current) => current + 1)
                           }
-                        }}
+                          className="mt-2 font-semibold text-red-100 underline underline-offset-4"
+                        >
+                          {t.retry}
+                        </button>
+                      </div>
+                    ) : null}
+                  </>
+                )
+              ) : (
+                <>
+                  <PantryCategories
+                    categories={categoryOptions}
+                    categoryFilter={categoryFilter}
+                    locale={locale}
+                    t={t}
+                    totalCount={categoryTotalCount}
+                    onCategoryChange={setCategoryFilter}
+                  />
+
+                  <section
+                    aria-labelledby="pantry-products-heading"
+                    className="space-y-4"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <h2
+                        id="pantry-products-heading"
+                        className="text-lg font-semibold text-white"
+                      >
+                        {t.products}
+                      </h2>
+                      {!isLoading && !loadError ? (
+                        <span className="text-xs text-slate-400">
+                          {t.itemsCount(filteredProducts.length)}
+                        </span>
+                      ) : null}
+                    </div>
+
+                    <PantryFilters
+                      t={t}
+                      search={search}
+                      statusFilter={statusFilter}
+                      favoritesOnly={favoritesOnly}
+                      belowHalfOnly={belowHalfOnly}
+                      expiringOnly={expiringOnly}
+                      inStockCount={inStockProducts.length}
+                      belowHalfCount={belowHalfCount}
+                      onSearchChange={setSearch}
+                      onStatusChange={setStatusFilter}
+                      onFavoritesChange={() =>
+                        setFavoritesOnly((current) => !current)
+                      }
+                      onBelowHalfChange={() =>
+                        setBelowHalfOnly((current) => !current)
+                      }
+                      onExpiringChange={() =>
+                        setExpiringOnly((current) => !current)
+                      }
+                    />
+
+                    {isLoading ? (
+                      <div className="rounded-2xl border border-white/10 bg-white/[0.035] px-5 py-12 text-center text-sm text-slate-400">
+                        {t.loading}
+                      </div>
+                    ) : loadError ? (
+                      <div
+                        role="alert"
+                        className="rounded-2xl border border-red-400/30 bg-red-500/10 px-5 py-8 text-center"
+                      >
+                        <p className="text-sm text-red-200">{t.loadError}</p>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setReloadToken((current) => current + 1)
+                          }
+                          className="mt-3 text-sm font-semibold text-red-100 underline underline-offset-4"
+                        >
+                          {t.retry}
+                        </button>
+                      </div>
+                    ) : filteredProducts.length === 0 ? (
+                      <PantryEmptyState
+                        t={t}
+                        hasProducts={products.length > 0}
+                        onClearFilters={resetFilters}
                       />
-                    ))}
-                  </div>
-                )}
-              </section>
+                    ) : (
+                      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                        {filteredProducts.map((product) => (
+                          <PantryProductCard
+                            key={product.id}
+                            product={product}
+                            t={t}
+                            locale={locale}
+                            numberLocale={numberLocale}
+                            isBusy={busyProductId === product.id}
+                            onUpdate={(target, values) => {
+                              void updateProduct(target, values);
+                            }}
+                            onEdit={openEditForm}
+                            onDelete={setPendingDeleteProduct}
+                            onDiscard={setPendingDiscardProduct}
+                            onConsume={setPendingConsumedProduct}
+                            onViewImage={(product) => {
+                              if (product.bild_url) {
+                                setImagePreview({
+                                  name: product.namn,
+                                  url: product.bild_url,
+                                });
+                              }
+                            }}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </section>
+                </>
+              )}
             </>
           )}
         </div>
@@ -815,6 +1038,27 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
         isSaving={isSaving}
         isLookingUpProduct={isLookingUpProduct}
         lookupError={lookupError}
+        catalogProducts={
+          isFormOpen &&
+          !editingProduct &&
+          form.namn.trim().length >= 2 &&
+          catalogSearch.query === form.namn.trim()
+            ? catalogSearch.products
+            : []
+        }
+        isSearchingCatalog={
+          isFormOpen &&
+          !editingProduct &&
+          catalogSearch.query === form.namn.trim() &&
+          catalogSearch.isLoading
+        }
+        catalogSearchError={
+          isFormOpen &&
+          !editingProduct &&
+          catalogSearch.query === form.namn.trim()
+            ? catalogSearch.error
+            : ""
+        }
         scannerOpen={scannerOpen}
         t={t}
         locale={locale}
@@ -822,6 +1066,12 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
         onLookupProduct={() => {
           void lookupBarcode(form.streckkod);
         }}
+        onProductNameChange={(name) => {
+          setSelectedCatalogName("");
+          setCatalogSearch({ query: "", products: [], isLoading: false, error: "" });
+          setForm((current) => ({ ...current, namn: name }));
+        }}
+        onSelectCatalogProduct={selectCatalogProduct}
         onScanBarcode={() => {
           setLookupError("");
           setScannerOpen(true);

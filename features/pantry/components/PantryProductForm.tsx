@@ -1,4 +1,5 @@
-import type { FormEvent, Dispatch, SetStateAction } from "react";
+import { useState } from "react";
+import type { FormEvent, Dispatch, SetStateAction, KeyboardEvent } from "react";
 import { ScanLine, X } from "lucide-react";
 import Image from "next/image";
 
@@ -13,7 +14,11 @@ import { categoryOptions } from "@/features/pantry/constants";
 import type { PantryTranslation } from "@/features/pantry/i18n";
 import { PantryAddTypeTabs } from "@/features/pantry/components/PantryAddTypeTabs";
 import { PantryProductScanner } from "@/features/pantry/components/PantryProductScanner";
-import type { PantryProduct, ProductFormValues } from "@/features/pantry/types";
+import type {
+  PantryProduct,
+  ProductCatalogEntry,
+  ProductFormValues,
+} from "@/features/pantry/types";
 import { getLocalDateString } from "@/features/pantry/utils";
 
 type PantryProductFormProps = {
@@ -29,11 +34,16 @@ type PantryProductFormProps = {
   isSaving: boolean;
   isLookingUpProduct: boolean;
   lookupError: string;
+  catalogProducts: ProductCatalogEntry[];
+  isSearchingCatalog: boolean;
+  catalogSearchError: string;
   scannerOpen: boolean;
   t: PantryTranslation;
   locale: "sv" | "en";
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onProductNameChange: (name: string) => void;
   onLookupProduct: () => void;
+  onSelectCatalogProduct: (product: ProductCatalogEntry) => void;
   onScanBarcode: () => void;
   onScannerClose: () => void;
   onBarcodeDetected: (barcode: string) => void;
@@ -54,17 +64,63 @@ export function PantryProductForm({
   isSaving,
   isLookingUpProduct,
   lookupError,
+  catalogProducts,
+  isSearchingCatalog,
+  catalogSearchError,
   scannerOpen,
   t,
   locale,
   onSubmit,
+  onProductNameChange,
   onLookupProduct,
+  onSelectCatalogProduct,
   onScanBarcode,
   onScannerClose,
   onBarcodeDetected,
   onScannerError,
   onSwitchForm,
 }: PantryProductFormProps) {
+  const [isCatalogDropdownOpen, setIsCatalogDropdownOpen] = useState(true);
+  const [activeCatalogIndex, setActiveCatalogIndex] = useState(0);
+  const isCatalogDropdownVisible =
+    isCatalogDropdownOpen &&
+    (isSearchingCatalog ||
+      catalogProducts.length > 0 ||
+      Boolean(catalogSearchError));
+  const catalogListboxId = "pantry-product-catalog-options";
+
+  const handleProductNameKeyDown = (
+    event: KeyboardEvent<HTMLInputElement>,
+  ) => {
+    if (!isCatalogDropdownVisible || catalogProducts.length === 0) {
+      if (event.key === "Escape") setIsCatalogDropdownOpen(false);
+      return;
+    }
+
+    if (event.key === "ArrowDown") {
+      event.preventDefault();
+      setActiveCatalogIndex((index) =>
+        index >= catalogProducts.length - 1 ? 0 : index + 1,
+      );
+    } else if (event.key === "ArrowUp") {
+      event.preventDefault();
+      setActiveCatalogIndex((index) =>
+        index <= 0 ? catalogProducts.length - 1 : index - 1,
+      );
+    } else if (event.key === "Enter") {
+      event.preventDefault();
+      onSelectCatalogProduct(
+        catalogProducts[
+          Math.min(activeCatalogIndex, catalogProducts.length - 1)
+        ],
+      );
+      setIsCatalogDropdownOpen(false);
+    } else if (event.key === "Escape") {
+      event.preventDefault();
+      setIsCatalogDropdownOpen(false);
+    }
+  };
+
   return (
     <Drawer
       open={open}
@@ -164,19 +220,99 @@ export function PantryProductForm({
             />
           ) : null}
 
-          <label className="block space-y-1.5 text-sm">
-            <span className="font-medium text-slate-200">{t.name}</span>
+          <div className="relative space-y-1.5 text-sm">
+            <label
+              htmlFor="pantry-product-name"
+              className="block font-medium text-slate-200"
+            >
+              {t.name}
+            </label>
             <input
+              id="pantry-product-name"
+              role="combobox"
+              aria-autocomplete="list"
+              aria-expanded={isCatalogDropdownVisible}
+              aria-controls={catalogListboxId}
+              aria-activedescendant={
+                isCatalogDropdownVisible && catalogProducts.length > 0
+                  ? `${catalogListboxId}-${catalogProducts[Math.min(activeCatalogIndex, catalogProducts.length - 1)].catalog_id}`
+                  : undefined
+              }
               required
               autoFocus
               value={form.namn}
-              onChange={(event) =>
-                setForm((current) => ({ ...current, namn: event.target.value }))
-              }
+              onChange={(event) => {
+                setIsCatalogDropdownOpen(true);
+                setActiveCatalogIndex(0);
+                onProductNameChange(event.target.value);
+              }}
+              onKeyDown={handleProductNameKeyDown}
+              onFocus={() => setIsCatalogDropdownOpen(true)}
               placeholder={t.namePlaceholder}
               className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.06] px-3 text-white outline-none placeholder:text-slate-500 focus:border-emerald-400/60 focus:ring-2 focus:ring-emerald-400/15"
             />
-          </label>
+            {isCatalogDropdownVisible ? (
+              <div className="absolute inset-x-0 top-full z-30 mt-1 overflow-hidden rounded-xl border border-white/10 bg-slate-900 shadow-xl">
+                <p className="px-3 py-2 text-xs font-medium text-slate-400">
+                  {t.productSuggestions}
+                </p>
+                {isSearchingCatalog ? (
+                  <p role="status" className="px-3 pb-3 text-xs text-slate-400">
+                    {t.catalogSearchLoading}
+                  </p>
+                ) : null}
+                {catalogSearchError ? (
+                  <p role="alert" className="px-3 pb-3 text-xs text-amber-200">
+                    {catalogSearchError}
+                  </p>
+                ) : null}
+                {catalogProducts.length > 0 ? (
+                  <ul
+                    id={catalogListboxId}
+                    role="listbox"
+                    aria-label={t.productSuggestions}
+                    className="max-h-56 overflow-y-auto border-t border-white/10 py-1"
+                  >
+                    {catalogProducts.map((product, index) => (
+                      <li
+                        key={product.catalog_id}
+                        id={`${catalogListboxId}-${product.catalog_id}`}
+                        role="option"
+                        aria-selected={index === activeCatalogIndex}
+                        onMouseEnter={() => setActiveCatalogIndex(index)}
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={() => {
+                          onSelectCatalogProduct(product);
+                          setIsCatalogDropdownOpen(false);
+                        }}
+                        className={`flex cursor-pointer items-center justify-between gap-3 px-3 py-2 ${
+                          index === activeCatalogIndex
+                            ? "bg-emerald-400/10"
+                            : "hover:bg-white/5"
+                        }`}
+                      >
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm text-white">
+                            {product.namn}
+                          </span>
+                          {product.brand || product.kategori ? (
+                            <span className="block truncate text-xs text-slate-400">
+                              {[product.brand, product.kategori]
+                                .filter(Boolean)
+                                .join(" · ")}
+                            </span>
+                          ) : null}
+                        </span>
+                        <span className="shrink-0 text-xs font-medium text-emerald-200">
+                          {t.select}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
 
           <div className="grid grid-cols-2 gap-3">
             <label className="block space-y-1.5 text-sm">

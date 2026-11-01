@@ -39,6 +39,15 @@ export type ProductFormValues = {
   bild_url: string;
 };
 
+export type ProductCatalogEntry = {
+  catalog_id: string;
+  streckkod: string | null;
+  namn: string;
+  brand: string | null;
+  image_url: string | null;
+  kategori: string | null;
+};
+
 export type RecipeIngredient = {
   id: string;
   recept_id: string;

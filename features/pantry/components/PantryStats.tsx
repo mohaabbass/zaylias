@@ -1,4 +1,4 @@
-import { Archive, CircleAlert, Heart, Percent } from "lucide-react";
+import { Archive, BookOpen, CircleAlert, Percent } from "lucide-react";
 
 import type { PantryTranslation } from "@/features/pantry/i18n";
 
@@ -7,25 +7,34 @@ type PantryStatsProps = {
   totalItems: number;
   expiring: number;
   belowHalf: number;
-  favorites: number;
+  recipeCount: number | null;
+  isLoading: boolean;
+  isRecipeCountLoading: boolean;
   onSelect: (
-    filter: "in-stock" | "expiring" | "below-half" | "favorites",
+    filter: "in-stock" | "expiring" | "below-half" | "favorites" | "recipes",
   ) => void;
 };
 
-type PantryStatFilter = "in-stock" | "expiring" | "below-half" | "favorites";
+type PantryStatFilter =
+  | "in-stock"
+  | "expiring"
+  | "below-half"
+  | "recipes";
 
 export function PantryStats({
   t,
   totalItems,
   expiring,
   belowHalf,
-  favorites,
+  recipeCount,
+  isLoading,
+  isRecipeCountLoading,
   onSelect,
 }: PantryStatsProps) {
   const stats: {
     label: string;
-    value: number;
+    value: number | null;
+    isLoading: boolean;
     icon: typeof Archive;
     color: string;
     filter: PantryStatFilter;
@@ -33,6 +42,7 @@ export function PantryStats({
     {
       label: t.totalItems,
       value: totalItems,
+      isLoading,
       icon: Archive,
       color: "text-emerald-300",
       filter: "in-stock",
@@ -40,6 +50,7 @@ export function PantryStats({
     {
       label: t.expiring,
       value: expiring,
+      isLoading,
       icon: CircleAlert,
       color: "text-amber-300",
       filter: "expiring",
@@ -47,16 +58,18 @@ export function PantryStats({
     {
       label: t.belowHalf,
       value: belowHalf,
+      isLoading,
       icon: Percent,
       color: "text-sky-300",
       filter: "below-half",
     },
     {
-      label: t.favorites,
-      value: favorites,
-      icon: Heart,
-      color: "text-rose-300",
-      filter: "favorites",
+      label: t.recipes,
+      value: recipeCount,
+      isLoading: isRecipeCountLoading,
+      icon: BookOpen,
+      color: "text-violet-300",
+      filter: "recipes",
     },
   ];
 
@@ -72,7 +85,9 @@ export function PantryStats({
             key={stat.label}
             type="button"
             onClick={() => onSelect(stat.filter)}
-            className="cursor-pointer rounded-2xl border border-white/10 bg-white/[0.045] p-4 text-left transition hover:border-white/20 hover:bg-white/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 sm:p-5"
+            disabled={stat.isLoading}
+            aria-busy={stat.isLoading}
+            className="rounded-2xl border border-white/10 bg-white/[0.045] p-4 text-left transition hover:border-white/20 hover:bg-white/[0.07] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 disabled:cursor-wait sm:p-5"
           >
             <div className="flex items-center justify-between gap-2">
               <span className="text-xs font-medium text-slate-400 sm:text-sm">
@@ -83,8 +98,15 @@ export function PantryStats({
                 className={`h-4 w-4 shrink-0 ${stat.color}`}
               />
             </div>
-            <p className="mt-3 text-2xl font-semibold text-white">
-              {stat.value}
+            <p className="mt-3 h-8 text-2xl font-semibold text-white">
+              {stat.isLoading ? (
+                <span
+                  aria-hidden="true"
+                  className="mt-1 block h-6 w-10 animate-pulse rounded-md bg-white/10"
+                />
+              ) : (
+                stat.value ?? "—"
+              )}
             </p>
           </button>
         );

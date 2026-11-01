@@ -43,11 +43,13 @@ export function RecipeView({
   userId,
   addRequest,
   onAddRequestHandled,
+  onRecipeListChange,
   onSwitchForm,
 }: {
   userId: string;
   addRequest: number;
   onAddRequestHandled: () => void;
+  onRecipeListChange: () => void;
   onSwitchForm: (type: "product" | "recipe") => void;
 }) {
   const { locale } = useLocale();
@@ -342,6 +344,7 @@ export function RecipeView({
       }
 
       const createdRecipe = data as RecipeRow;
+      onRecipeListChange();
       if (ingredientValues.length > 0) {
         const { error: insertIngredientsError } = await supabase
           .from("recept_ingredienser")
@@ -429,6 +432,7 @@ export function RecipeView({
       setOperationError(t.recipeDeleteError);
     } else {
       setRecipes((current) => current.filter((item) => item.id !== recipe.id));
+      onRecipeListChange();
     }
     setBusyRecipeId(null);
   };
