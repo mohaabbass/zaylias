@@ -22,6 +22,8 @@ type PantryProductFormProps = {
   editingProduct: PantryProduct | null;
   form: ProductFormValues;
   setForm: Dispatch<SetStateAction<ProductFormValues>>;
+  selectedImage: File | null;
+  onImageChange: (file: File | null) => void;
   formError: string;
   operationError: string;
   isSaving: boolean;
@@ -45,6 +47,8 @@ export function PantryProductForm({
   editingProduct,
   form,
   setForm,
+  selectedImage,
+  onImageChange,
   formError,
   operationError,
   isSaving,
@@ -321,6 +325,24 @@ export function PantryProductForm({
               placeholder={t.storePlaceholder}
               className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.06] px-3 text-white outline-none placeholder:text-slate-500 focus:border-emerald-400/60"
             />
+          </label>
+          <label className="block space-y-1.5 text-sm">
+            <span className="font-medium text-slate-200">{t.productImage}</span>
+            <input
+              type="file"
+              accept="image/*"
+              disabled={isSaving}
+              onChange={(event) => {
+                onImageChange(event.target.files?.[0] ?? null);
+                event.currentTarget.value = "";
+              }}
+              className="block w-full text-sm text-slate-300 file:mr-3 file:rounded-lg file:border-0 file:bg-emerald-400/10 file:px-3 file:py-2 file:font-medium file:text-emerald-200 hover:file:bg-emerald-400/20"
+            />
+            {selectedImage ? (
+              <span className="block truncate text-xs text-slate-400">
+                {selectedImage.name}
+              </span>
+            ) : null}
           </label>
           {form.bild_url ? (
             <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.035] p-3">

@@ -22,7 +22,11 @@ import type {
   ProductFormValues,
   StatusFilter,
 } from "@/features/pantry/types";
-import { dateDifference, getLocalDateString } from "@/features/pantry/utils";
+import {
+  compressProductImage,
+  dateDifference,
+  getLocalDateString,
+} from "@/features/pantry/utils";
 import { supabase } from "@/lib/supabase";
 
 function createEmptyForm(locale: "sv" | "en"): ProductFormValues {
@@ -84,6 +88,7 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
   const [form, setForm] = useState<ProductFormValues>(() =>
     createEmptyForm(locale),
   );
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [formError, setFormError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [isLookingUpProduct, setIsLookingUpProduct] = useState(false);
@@ -193,6 +198,7 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
   const openNewForm = () => {
     setEditingProduct(null);
     setForm(createEmptyForm(locale));
+    setSelectedImage(null);
     setFormError("");
     setLookupError("");
     setScannerOpen(false);
@@ -214,6 +220,7 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
 
   const openEditForm = (product: PantryProduct) => {
     setEditingProduct(product);
+    setSelectedImage(null);
     setForm({
       namn: product.namn,
       kategori: product.kategori ?? "Other",
@@ -330,6 +337,51 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
       return;
     }
 
+    setIsSaving(true);
+
+    let imageUrl = form.bild_url.trim() || null;
+    if (selectedImage) {
+      let uploadImage: Blob;
+      try {
+        uploadImage = await compressProductImage(selectedImage);
+      } catch (error) {
+        console.error("Failed to compress pantry product image:", error);
+        setOperationError(t.imageUploadError);
+        setIsSaving(false);
+        return;
+      }
+
+      const extensionByMimeType: Record<string, string> = {
+        "image/avif": "avif",
+        "image/gif": "gif",
+        "image/jpeg": "jpg",
+        "image/png": "png",
+        "image/svg+xml": "svg",
+        "image/webp": "webp",
+      };
+      const extension = extensionByMimeType[uploadImage.type] ?? "image";
+      const imagePath = `${userId}/${crypto.randomUUID()}.${extension}`;
+      try {
+        const { error } = await supabase.storage
+          .from("pantry-product-images")
+          .upload(imagePath, uploadImage, {
+            contentType: uploadImage.type,
+            upsert: false,
+          });
+
+        if (error) throw error;
+      } catch (error) {
+        console.error("Failed to upload pantry product image:", error);
+        setOperationError(t.imageUploadError);
+        setIsSaving(false);
+        return;
+      }
+
+      imageUrl = supabase.storage
+        .from("pantry-product-images")
+        .getPublicUrl(imagePath).data.publicUrl;
+    }
+
     const values = {
       namn: form.namn.trim(),
       kategori: form.kategori || null,
@@ -345,10 +397,8 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
       butik: form.butik.trim() || null,
       streckkod: form.streckkod.trim() || null,
       varumarke: form.varumarke.trim() || null,
-      bild_url: form.bild_url.trim() || null,
+      bild_url: imageUrl,
     };
-
-    setIsSaving(true);
 
     if (values.streckkod) {
       const { error } = await supabase.from("produkt_katalog").upsert(
@@ -409,7 +459,19 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
     }
 
     setIsSaving(false);
+    setSelectedImage(null);
     setIsFormOpen(false);
+  };
+
+  const selectProductImage = (file: File | null) => {
+    setFormError("");
+    if (file && !file.type.startsWith("image/")) {
+      setSelectedImage(null);
+      setFormError(t.imageInvalid);
+      return;
+    }
+
+    setSelectedImage(file);
   };
 
   const updateProduct = async (
@@ -627,10 +689,15 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
 
       <PantryProductForm
         open={isFormOpen}
-        onOpenChange={setIsFormOpen}
+        onOpenChange={(open) => {
+          setIsFormOpen(open);
+          if (!open) setSelectedImage(null);
+        }}
         editingProduct={editingProduct}
         form={form}
         setForm={setForm}
+        selectedImage={selectedImage}
+        onImageChange={selectProductImage}
         formError={formError}
         operationError={operationError}
         isSaving={isSaving}
