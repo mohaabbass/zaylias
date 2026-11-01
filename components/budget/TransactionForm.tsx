@@ -5,7 +5,6 @@ import type { Account, TransactionType } from "@/types/finance";
 const localeMap: Record<Locale, string> = {
   sv: "sv-SE",
   en: "en-US",
-  ar: "ar-EG",
 };
 
 type TransactionFormProps = {

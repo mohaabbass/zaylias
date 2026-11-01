@@ -46,16 +46,6 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
 
     window.localStorage.setItem("zaylias-locale", locale);
     document.documentElement.lang = locale;
-    document.documentElement.dir = locale === "ar" ? "rtl" : "ltr";
-    document.documentElement.dataset.locale = locale;
-    document.documentElement.style.setProperty(
-      "--font-sans",
-      locale === "ar" ? "var(--font-cairo)" : "var(--font-inter)",
-    );
-    document.documentElement.style.setProperty(
-      "--font-heading",
-      locale === "ar" ? "var(--font-cairo)" : "var(--font-inter)",
-    );
   }, [isHydrated, locale]);
 
   const value = useMemo<LocaleContextValue>(

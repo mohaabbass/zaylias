@@ -24,7 +24,6 @@ type CashFlowForecastProps = {
 const localeMap: Record<Locale, string> = {
   sv: "sv-SE",
   en: "en-US",
-  ar: "ar-EG",
 };
 
 export function CashFlowForecast({

@@ -33,7 +33,6 @@ type AccountsViewProps = {
 const localeMap: Record<Locale, string> = {
   sv: "sv-SE",
   en: "en-US",
-  ar: "ar-EG",
 };
 
 const inputClassName =

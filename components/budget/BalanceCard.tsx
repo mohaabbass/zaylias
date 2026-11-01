@@ -46,8 +46,7 @@ export function BalanceCard({
   const activityTotal = totals.income + totals.expense;
   const incomeShare =
     activityTotal > 0 ? (totals.income / activityTotal) * 100 : 0;
-  const currencyLocale =
-    locale === "ar" ? "ar-EG" : locale === "en" ? "en-US" : "sv-SE";
+  const currencyLocale = locale === "en" ? "en-US" : "sv-SE";
 
   return (
     <section className="relative overflow-hidden rounded-2xl border border-border bg-gradient-to-br from-card via-card to-emerald-500/5 p-5">

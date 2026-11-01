@@ -4,6 +4,7 @@ import { SlidersHorizontal, X } from "lucide-react";
 import {
   getCategoryLabel,
   normalizeCategoryValue,
+  type Locale,
   type Translation,
 } from "@/lib/i18n";
 import { formatCurrency } from "@/lib/utils";
@@ -19,7 +20,7 @@ import {
 
 type DailySpendingChartProps = {
   transactions: Transaction[];
-  locale: "sv" | "en" | "ar";
+  locale: Locale;
   t: Translation;
 };
 
@@ -216,8 +217,7 @@ export function DailySpendingChart({
 
   const maxValue = Math.max(...data.map((entry) => entry.value), 1);
   const total = data.reduce((sum, entry) => sum + entry.value, 0);
-  const currencyLocale =
-    locale === "ar" ? "ar-EG" : locale === "en" ? "en-US" : "sv-SE";
+  const currencyLocale = locale === "en" ? "en-US" : "sv-SE";
 
   return (
     <Drawer open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>

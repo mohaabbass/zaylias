@@ -39,7 +39,6 @@ type DuePayment = {
 const localeMap = {
   sv: "sv-SE",
   en: "en-US",
-  ar: "ar-EG",
 } as const;
 
 function getLocalDateString(date: Date) {

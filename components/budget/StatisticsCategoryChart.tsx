@@ -68,8 +68,7 @@ export function StatisticsCategoryChart({
   }, [locale, t.expenseCategories, transactions]);
 
   const total = data.reduce((sum, entry) => sum + entry.value, 0);
-  const currencyLocale =
-    locale === "ar" ? "ar-EG" : locale === "en" ? "en-US" : "sv-SE";
+  const currencyLocale = locale === "en" ? "en-US" : "sv-SE";
 
   return (
     <section className="rounded-2xl border border-border bg-card p-5">

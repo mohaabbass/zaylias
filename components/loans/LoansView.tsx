@@ -40,7 +40,6 @@ type LoansViewProps = {
 const localeMap: Record<Locale, string> = {
   sv: "sv-SE",
   en: "en-US",
-  ar: "ar-EG",
 };
 
 function numericValue(value: number | string | null) {

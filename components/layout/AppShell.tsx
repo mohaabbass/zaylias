@@ -48,7 +48,6 @@ import type { Account, TransactionType } from "@/types/finance";
 const localeMap: Record<Locale, string> = {
   sv: "sv-SE",
   en: "en-US",
-  ar: "ar-EG",
 };
 
 export type AppView =
@@ -651,11 +650,7 @@ export function AppShell() {
                   <p className="mt-2 text-2xl font-semibold text-foreground">
                     {formatCurrency(
                       totalBalance,
-                      locale === "ar"
-                        ? "ar-EG"
-                        : locale === "en"
-                          ? "en-US"
-                          : "sv-SE",
+                      locale === "en" ? "en-US" : "sv-SE",
                     )}{" "}
                     {t.currency}
                   </p>
@@ -674,11 +669,7 @@ export function AppShell() {
                               sum + Number(transaction.amount || 0),
                             0,
                           ),
-                        locale === "ar"
-                          ? "ar-EG"
-                          : locale === "en"
-                            ? "en-US"
-                            : "sv-SE",
+                        locale === "en" ? "en-US" : "sv-SE",
                       )}{" "}
                       {t.currency}
                     </p>
@@ -696,11 +687,7 @@ export function AppShell() {
                               sum + Number(transaction.amount || 0),
                             0,
                           ),
-                        locale === "ar"
-                          ? "ar-EG"
-                          : locale === "en"
-                            ? "en-US"
-                            : "sv-SE",
+                        locale === "en" ? "en-US" : "sv-SE",
                       )}{" "}
                       {t.currency}
                     </p>

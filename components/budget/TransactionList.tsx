@@ -167,7 +167,6 @@ export function TransactionList({
     const localeMap: Record<string, string> = {
       sv: "sv-SE",
       en: "en-US",
-      ar: "ar-EG",
     };
 
     return new Intl.DateTimeFormat(localeMap[locale] ?? "sv-SE", {
@@ -209,7 +208,6 @@ export function TransactionList({
           account={accountFilter}
           accounts={accounts}
           resultCount={filteredTransactions.length}
-          locale={locale}
           t={t}
           onChange={handleFilterChange}
           onDateFromChange={(value) => {
@@ -317,11 +315,7 @@ export function TransactionList({
                         {transaction.type === "income" ? "+" : "-"}
                         {formatCurrency(
                           transaction.amount,
-                          locale === "ar"
-                            ? "ar-EG"
-                            : locale === "en"
-                              ? "en-US"
-                              : "sv-SE",
+                          locale === "en" ? "en-US" : "sv-SE",
                         )}{" "}
                         {t.currency}
                       </span>

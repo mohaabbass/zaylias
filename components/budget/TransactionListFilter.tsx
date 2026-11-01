@@ -25,7 +25,6 @@ type TransactionListFilterProps = {
   resultCount: number;
   onClear: () => void;
   hasActiveFilters: boolean;
-  locale?: string;
   t: Translation;
 };
 
@@ -47,7 +46,6 @@ export function TransactionListFilter({
   resultCount,
   onClear,
   hasActiveFilters,
-  locale = "sv",
   t,
 }: TransactionListFilterProps) {
   const [isOpen, setIsOpen] = useState(false);
@@ -212,7 +210,7 @@ export function TransactionListFilter({
   );
 
   return (
-    <div dir={locale === "ar" ? "rtl" : "ltr"} className="relative">
+    <div className="relative">
       <button
         type="button"
         aria-expanded={isOpen}
@@ -236,7 +234,6 @@ export function TransactionListFilter({
       {isOpen && typeof document !== "undefined"
         ? createPortal(
             <div
-              dir={locale === "ar" ? "rtl" : "ltr"}
               className="fixed inset-0 z-[60] bg-black/40 sm:hidden"
               onClick={() => setIsOpen(false)}
             >
@@ -278,9 +275,7 @@ export function TransactionListFilter({
       {isOpen ? (
         <div
           id="transaction-filter-panel"
-          className={`absolute top-full z-20 mt-2 hidden max-h-[calc(100dvh-2rem)] w-72 max-w-[calc(100vw-3rem)] overflow-y-auto rounded-xl border border-border bg-popover p-4 shadow-lg sm:block ${
-            locale === "ar" ? "left-0" : "right-0"
-          }`}
+          className="absolute right-0 top-full z-20 mt-2 hidden max-h-[calc(100dvh-2rem)] w-72 max-w-[calc(100vw-3rem)] overflow-y-auto rounded-xl border border-border bg-popover p-4 shadow-lg sm:block"
         >
           {renderFilterFields("desktop-transaction-filter")}
         </div>
