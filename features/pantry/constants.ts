@@ -1,3 +1,5 @@
+import type { Locale } from "@/lib/i18n";
+
 export const categoryOptions = [
   { value: "Dairy", sv: "Mejeri", en: "Dairy" },
   { value: "Produce", sv: "Frukt & grönt", en: "Produce" },
@@ -8,5 +10,12 @@ export const categoryOptions = [
   { value: "Other", sv: "Övrigt", en: "Other" },
 ] as const;
 
+export function getCategoryLabel(category: string, locale: Locale): string {
+  return (
+    categoryOptions.find((option) => option.value === category)?.[locale] ??
+    category
+  );
+}
+
 export const productColumns =
-  "id, user_id, namn, kategori, kvantitet, enhet, pris, kopdatum, sista_forbrukningsdag, ar_oppnad, oppnad_datum, butik, streckkod, status, is_favorite, created_at";
+  "id, user_id, namn, kategori, kvantitet, enhet, pris, kopdatum, sista_forbrukningsdag, ar_oppnad, oppnad_datum, butik, streckkod, varumarke, bild_url, status, is_favorite, created_at";

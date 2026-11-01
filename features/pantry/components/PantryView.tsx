@@ -1,16 +1,19 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Heart, House, LayoutGrid, Plus } from "lucide-react";
+import { BookOpen, Heart, House, LayoutGrid, Plus } from "lucide-react";
 import type { FormEvent } from "react";
+import { AlertDialog } from "@base-ui/react/alert-dialog";
 
 import { BottomNav } from "@/components/layout/BottomNav";
 import { useLocale } from "@/components/providers/LocaleProvider";
+import { Button } from "@/components/ui/button";
 import { PantryEmptyState } from "@/features/pantry/components/PantryEmptyState";
 import { PantryFilters } from "@/features/pantry/components/PantryFilters";
 import { PantryPageHeader } from "@/features/pantry/components/PantryPageHeader";
 import { PantryProductCard } from "@/features/pantry/components/PantryProductCard";
 import { PantryProductForm } from "@/features/pantry/components/PantryProductForm";
+import { RecipeView } from "@/features/pantry/components/RecipeView";
 import { PantryStats } from "@/features/pantry/components/PantryStats";
 import { productColumns } from "@/features/pantry/constants";
 import { pantryTranslations } from "@/features/pantry/i18n";
@@ -35,6 +38,8 @@ function createEmptyForm(locale: "sv" | "en"): ProductFormValues {
     oppnad_datum: "",
     butik: "",
     streckkod: "",
+    varumarke: "",
+    bild_url: "",
   };
 }
 
@@ -56,6 +61,10 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("i_lager");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [activeSection, setActiveSection] = useState<"inventory" | "recipes">(
+    "inventory",
+  );
+  const [recipeAddRequest, setRecipeAddRequest] = useState(0);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<PantryProduct | null>(
     null,
@@ -65,7 +74,12 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
   );
   const [formError, setFormError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [isLookingUpProduct, setIsLookingUpProduct] = useState(false);
+  const [lookupError, setLookupError] = useState("");
+  const [scannerOpen, setScannerOpen] = useState(false);
   const [busyProductId, setBusyProductId] = useState<string | null>(null);
+  const [pendingDeleteProduct, setPendingDeleteProduct] =
+    useState<PantryProduct | null>(null);
 
   useEffect(() => {
     let isCurrent = true;
@@ -116,7 +130,13 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
 
       return (
         !normalizedSearch ||
-        [product.namn, product.kategori, product.butik, product.streckkod]
+        [
+          product.namn,
+          product.kategori,
+          product.butik,
+          product.streckkod,
+          product.varumarke,
+        ]
           .filter(Boolean)
           .some((value) =>
             value!.toLocaleLowerCase(numberLocale).includes(normalizedSearch),
@@ -162,8 +182,22 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
     setEditingProduct(null);
     setForm(createEmptyForm(locale));
     setFormError("");
+    setLookupError("");
+    setScannerOpen(false);
     setOperationError("");
     setIsFormOpen(true);
+  };
+
+  const switchAddForm = (type: "product" | "recipe") => {
+    if (type === "product") {
+      setActiveSection("inventory");
+      openNewForm();
+      return;
+    }
+
+    setIsFormOpen(false);
+    setActiveSection("recipes");
+    setRecipeAddRequest((current) => current + 1);
   };
 
   const openEditForm = (product: PantryProduct) => {
@@ -180,10 +214,67 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
       oppnad_datum: product.oppnad_datum ?? "",
       butik: product.butik ?? "",
       streckkod: product.streckkod ?? "",
+      varumarke: product.varumarke ?? "",
+      bild_url: product.bild_url ?? "",
     });
     setFormError("");
+    setLookupError("");
+    setScannerOpen(false);
     setOperationError("");
     setIsFormOpen(true);
+  };
+
+  const lookupBarcode = async (barcode: string) => {
+    const normalizedBarcode = barcode.trim();
+    if (!normalizedBarcode) return;
+
+    setLookupError("");
+    setFormError("");
+    setIsLookingUpProduct(true);
+    setForm((current) => ({ ...current, streckkod: normalizedBarcode }));
+
+    try {
+      const response = await fetch(
+        `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(normalizedBarcode)}.json`,
+      );
+      if (!response.ok) {
+        throw new Error(`Open Food Facts returned ${response.status}.`);
+      }
+
+      const result = (await response.json()) as {
+        status?: number;
+        product?: {
+          product_name?: string;
+          brands?: string;
+          image_front_url?: string;
+          image_url?: string;
+        };
+      };
+
+      if (result.status !== 1 || !result.product) {
+        setLookupError(t.productNotFound);
+        return;
+      }
+
+      const productName = result.product.product_name?.trim();
+      const brand = result.product.brands?.trim();
+      const imageUrl =
+        result.product.image_front_url?.trim() ||
+        result.product.image_url?.trim();
+
+      setForm((current) => ({
+        ...current,
+        streckkod: normalizedBarcode,
+        namn: productName || current.namn,
+        varumarke: brand || current.varumarke,
+        bild_url: imageUrl || current.bild_url,
+      }));
+    } catch (error) {
+      console.error("Failed to look up product barcode:", error);
+      setLookupError(t.productLookupError);
+    } finally {
+      setIsLookingUpProduct(false);
+    }
   };
 
   const saveProduct = async (event: FormEvent<HTMLFormElement>) => {
@@ -218,6 +309,8 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
         : null,
       butik: form.butik.trim() || null,
       streckkod: form.streckkod.trim() || null,
+      varumarke: form.varumarke.trim() || null,
+      bild_url: form.bild_url.trim() || null,
     };
 
     setIsSaving(true);
@@ -266,7 +359,9 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
 
   const updateProduct = async (
     product: PantryProduct,
-    values: Partial<Pick<PantryProduct, "status" | "is_favorite">>,
+    values: Partial<
+      Pick<PantryProduct, "status" | "is_favorite" | "kvantitet">
+    >,
   ) => {
     setBusyProductId(product.id);
     setOperationError("");
@@ -292,8 +387,6 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
   };
 
   const deleteProduct = async (product: PantryProduct) => {
-    if (!window.confirm(t.deleteConfirm)) return;
-
     setBusyProductId(product.id);
     setOperationError("");
     const { error } = await supabase
@@ -314,6 +407,14 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
     setBusyProductId(null);
   };
 
+  const confirmDeleteProduct = () => {
+    if (!pendingDeleteProduct) return;
+
+    const product = pendingDeleteProduct;
+    setPendingDeleteProduct(null);
+    void deleteProduct(product);
+  };
+
   const resetFilters = () => {
     setSearch("");
     setStatusFilter("all");
@@ -326,23 +427,41 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
       id: "inventory",
       label: t.inventory,
       icon: House,
-      active: !favoritesOnly,
+      active: activeSection === "inventory" && !favoritesOnly,
       onClick: () => {
+        setActiveSection("inventory");
         setStatusFilter("i_lager");
         setFavoritesOnly(false);
       },
     },
     {
+      id: "recipes",
+      label: t.recipes,
+      icon: BookOpen,
+      active: activeSection === "recipes",
+      onClick: () => {
+        setActiveSection("recipes");
+        setFavoritesOnly(false);
+      },
+    },
+    {
+      id: "add",
+      label: t.addType,
+      icon: Plus,
+      onClick: () =>
+        switchAddForm(activeSection === "recipes" ? "recipe" : "product"),
+    },
+    {
       id: "favorites",
       label: t.favorites,
       icon: Heart,
-      active: favoritesOnly,
+      active: activeSection === "inventory" && favoritesOnly,
       onClick: () => {
+        setActiveSection("inventory");
         setStatusFilter("i_lager");
         setFavoritesOnly(true);
       },
     },
-    { id: "add", label: t.addItem, icon: Plus, onClick: openNewForm },
     {
       id: "apps",
       label: t.apps,
@@ -355,88 +474,98 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
     <>
       <main className="min-h-[calc(100dvh-4rem)] bg-slate-950 px-4 pb-28 pt-6 text-white sm:px-6">
         <div className="mx-auto max-w-6xl space-y-6 animate-view-in">
-          <PantryPageHeader t={t} onAddItem={openNewForm} />
-
-          {operationError ? (
-            <div
-              role="alert"
-              className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200"
-            >
-              {operationError}
-            </div>
-          ) : null}
-
-          <PantryStats
-            t={t}
-            totalItems={inStockProducts.length}
-            expiring={expiringCount}
-            opened={openedCount}
-            favorites={favoriteCount}
-          />
-
-          <PantryFilters
-            t={t}
-            search={search}
-            statusFilter={statusFilter}
-            categoryFilter={categoryFilter}
-            favoritesOnly={favoritesOnly}
-            categories={categories}
-            inStockCount={inStockProducts.length}
-            onSearchChange={setSearch}
-            onStatusChange={setStatusFilter}
-            onCategoryChange={setCategoryFilter}
-            onFavoritesChange={() =>
-              setFavoritesOnly((current) => !current)
-            }
-          />
-
-          {isLoading ? (
-            <div className="rounded-2xl border border-white/10 bg-white/[0.035] px-5 py-12 text-center text-sm text-slate-400">
-              {t.loading}
-            </div>
-          ) : loadError ? (
-            <div
-              role="alert"
-              className="rounded-2xl border border-red-400/30 bg-red-500/10 px-5 py-8 text-center"
-            >
-              <p className="text-sm text-red-200">{t.loadError}</p>
-              <button
-                type="button"
-                onClick={() => setReloadToken((current) => current + 1)}
-                className="mt-3 text-sm font-semibold text-red-100 underline underline-offset-4"
-              >
-                {t.retry}
-              </button>
-            </div>
-          ) : filteredProducts.length === 0 ? (
-            <PantryEmptyState
-              t={t}
-              hasProducts={products.length > 0}
-              onAddItem={openNewForm}
-              onClearFilters={resetFilters}
+          {activeSection === "recipes" ? (
+            <RecipeView
+              userId={userId}
+              addRequest={recipeAddRequest}
+              onAddRequestHandled={() => setRecipeAddRequest(0)}
+              onSwitchForm={switchAddForm}
             />
           ) : (
-            <section
-              aria-label={t.inStock}
-              className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3"
-            >
-              {filteredProducts.map((product) => (
-                <PantryProductCard
-                  key={product.id}
-                  product={product}
+            <>
+              <PantryPageHeader t={t} />
+
+              {operationError ? (
+                <div
+                  role="alert"
+                  className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-sm text-red-200"
+                >
+                  {operationError}
+                </div>
+              ) : null}
+
+              <PantryStats
+                t={t}
+                totalItems={inStockProducts.length}
+                expiring={expiringCount}
+                opened={openedCount}
+                favorites={favoriteCount}
+              />
+
+              <PantryFilters
+                t={t}
+                locale={locale}
+                search={search}
+                statusFilter={statusFilter}
+                categoryFilter={categoryFilter}
+                favoritesOnly={favoritesOnly}
+                categories={categories}
+                inStockCount={inStockProducts.length}
+                onSearchChange={setSearch}
+                onStatusChange={setStatusFilter}
+                onCategoryChange={setCategoryFilter}
+                onFavoritesChange={() =>
+                  setFavoritesOnly((current) => !current)
+                }
+              />
+
+              {isLoading ? (
+                <div className="rounded-2xl border border-white/10 bg-white/[0.035] px-5 py-12 text-center text-sm text-slate-400">
+                  {t.loading}
+                </div>
+              ) : loadError ? (
+                <div
+                  role="alert"
+                  className="rounded-2xl border border-red-400/30 bg-red-500/10 px-5 py-8 text-center"
+                >
+                  <p className="text-sm text-red-200">{t.loadError}</p>
+                  <button
+                    type="button"
+                    onClick={() => setReloadToken((current) => current + 1)}
+                    className="mt-3 text-sm font-semibold text-red-100 underline underline-offset-4"
+                  >
+                    {t.retry}
+                  </button>
+                </div>
+              ) : filteredProducts.length === 0 ? (
+                <PantryEmptyState
                   t={t}
-                  numberLocale={numberLocale}
-                  isBusy={busyProductId === product.id}
-                  onUpdate={(target, values) => {
-                    void updateProduct(target, values);
-                  }}
-                  onEdit={openEditForm}
-                  onDelete={(target) => {
-                    void deleteProduct(target);
-                  }}
+                  hasProducts={products.length > 0}
+                  onClearFilters={resetFilters}
                 />
-              ))}
-            </section>
+              ) : (
+                <section
+                  aria-label={t.inStock}
+                  className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3"
+                >
+                  {filteredProducts.map((product) => (
+                    <PantryProductCard
+                      key={product.id}
+                      product={product}
+                      t={t}
+                      locale={locale}
+                      numberLocale={numberLocale}
+                      isBusy={busyProductId === product.id}
+                      onUpdate={(target, values) => {
+                        void updateProduct(target, values);
+                      }}
+                      onEdit={openEditForm}
+                      onDelete={setPendingDeleteProduct}
+                    />
+                  ))}
+                </section>
+              )}
+            </>
           )}
         </div>
       </main>
@@ -450,12 +579,66 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
         formError={formError}
         operationError={operationError}
         isSaving={isSaving}
+        isLookingUpProduct={isLookingUpProduct}
+        lookupError={lookupError}
+        scannerOpen={scannerOpen}
         t={t}
         locale={locale}
+        onSwitchForm={switchAddForm}
+        onLookupProduct={() => {
+          void lookupBarcode(form.streckkod);
+        }}
+        onScanBarcode={() => {
+          setLookupError("");
+          setScannerOpen(true);
+        }}
+        onScannerClose={() => setScannerOpen(false)}
+        onBarcodeDetected={(barcode) => {
+          setScannerOpen(false);
+          void lookupBarcode(barcode);
+        }}
+        onScannerError={setLookupError}
         onSubmit={(event) => {
           void saveProduct(event);
         }}
       />
+
+      <AlertDialog.Root
+        open={pendingDeleteProduct !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingDeleteProduct(null);
+        }}
+      >
+        <AlertDialog.Portal>
+          <AlertDialog.Backdrop className="fixed inset-0 z-50 bg-black/50 transition-opacity data-ending-style:opacity-0 data-starting-style:opacity-0" />
+          <AlertDialog.Viewport className="fixed inset-0 z-50 grid place-items-center overflow-y-auto p-4">
+            <AlertDialog.Popup className="w-full max-w-md rounded-xl border border-border bg-card p-6 text-card-foreground shadow-lg outline-none transition-[opacity,transform] data-ending-style:scale-95 data-ending-style:opacity-0 data-starting-style:scale-95 data-starting-style:opacity-0">
+              <AlertDialog.Title className="text-lg font-semibold">
+                {t.deleteItemTitle}
+              </AlertDialog.Title>
+              <AlertDialog.Description className="mt-2 text-sm text-muted-foreground">
+                {t.deleteConfirm}
+              </AlertDialog.Description>
+              <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setPendingDeleteProduct(null)}
+                >
+                  {t.cancel}
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={confirmDeleteProduct}
+                >
+                  {t.delete}
+                </Button>
+              </div>
+            </AlertDialog.Popup>
+          </AlertDialog.Viewport>
+        </AlertDialog.Portal>
+      </AlertDialog.Root>
 
       <BottomNav items={navItems} />
     </>

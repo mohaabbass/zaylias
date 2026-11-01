@@ -1,18 +1,16 @@
-import { Plus, ShoppingBasket } from "lucide-react";
+import { ShoppingBasket } from "lucide-react";
 
 import type { PantryTranslation } from "@/features/pantry/i18n";
 
 type PantryEmptyStateProps = {
   t: PantryTranslation;
   hasProducts: boolean;
-  onAddItem: () => void;
   onClearFilters: () => void;
 };
 
 export function PantryEmptyState({
   t,
   hasProducts,
-  onAddItem,
   onClearFilters,
 }: PantryEmptyStateProps) {
   return (
@@ -34,16 +32,7 @@ export function PantryEmptyState({
         >
           {t.clearSearch}
         </button>
-      ) : (
-        <button
-          type="button"
-          onClick={onAddItem}
-          className="mt-5 inline-flex items-center gap-2 rounded-xl bg-emerald-400 px-4 py-2 text-sm font-semibold text-slate-950"
-        >
-          <Plus aria-hidden="true" className="h-4 w-4" />
-          {t.addItem}
-        </button>
-      )}
+      ) : null}
     </div>
   );
 }

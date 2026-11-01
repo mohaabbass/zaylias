@@ -1,5 +1,6 @@
 import type { FormEvent, Dispatch, SetStateAction } from "react";
-import { X } from "lucide-react";
+import { ScanLine, X } from "lucide-react";
+import Image from "next/image";
 
 import {
   Drawer,
@@ -10,6 +11,8 @@ import {
 } from "@/components/ui/drawer";
 import { categoryOptions } from "@/features/pantry/constants";
 import type { PantryTranslation } from "@/features/pantry/i18n";
+import { PantryAddTypeTabs } from "@/features/pantry/components/PantryAddTypeTabs";
+import { PantryProductScanner } from "@/features/pantry/components/PantryProductScanner";
 import type { PantryProduct, ProductFormValues } from "@/features/pantry/types";
 import { getLocalDateString } from "@/features/pantry/utils";
 
@@ -22,9 +25,18 @@ type PantryProductFormProps = {
   formError: string;
   operationError: string;
   isSaving: boolean;
+  isLookingUpProduct: boolean;
+  lookupError: string;
+  scannerOpen: boolean;
   t: PantryTranslation;
   locale: "sv" | "en";
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onLookupProduct: () => void;
+  onScanBarcode: () => void;
+  onScannerClose: () => void;
+  onBarcodeDetected: (barcode: string) => void;
+  onScannerError: (message: string) => void;
+  onSwitchForm?: (type: "product" | "recipe") => void;
 };
 
 export function PantryProductForm({
@@ -36,9 +48,18 @@ export function PantryProductForm({
   formError,
   operationError,
   isSaving,
+  isLookingUpProduct,
+  lookupError,
+  scannerOpen,
   t,
   locale,
   onSubmit,
+  onLookupProduct,
+  onScanBarcode,
+  onScannerClose,
+  onBarcodeDetected,
+  onScannerError,
+  onSwitchForm,
 }: PantryProductFormProps) {
   return (
     <Drawer
@@ -60,6 +81,13 @@ export function PantryProductForm({
             <X aria-hidden="true" className="h-5 w-5" />
           </DrawerClose>
         </DrawerHeader>
+        {!editingProduct && onSwitchForm ? (
+          <PantryAddTypeTabs
+            activeType="product"
+            onChange={onSwitchForm}
+            t={t}
+          />
+        ) : null}
         <form onSubmit={onSubmit} className="space-y-4 overflow-y-auto px-5 py-5">
           {formError ? (
             <p
@@ -76,6 +104,26 @@ export function PantryProductForm({
             >
               {operationError}
             </p>
+          ) : null}
+          {lookupError ? (
+            <p
+              role="alert"
+              className="rounded-xl border border-amber-300/20 bg-amber-300/10 px-3 py-2 text-sm text-amber-100"
+            >
+              {lookupError}
+            </p>
+          ) : null}
+
+          {scannerOpen ? (
+            <PantryProductScanner
+              onDetected={onBarcodeDetected}
+              onError={onScannerError}
+              onClose={onScannerClose}
+              cameraError={t.cameraError}
+              unsupportedError={t.scannerUnsupported}
+              cancelLabel={t.cancelScan}
+              instruction={t.scanningBarcode}
+            />
           ) : null}
 
           <label className="block space-y-1.5 text-sm">
@@ -182,6 +230,20 @@ export function PantryProductForm({
             </label>
           </div>
 
+          <label className="block space-y-1.5 text-sm">
+            <span className="font-medium text-slate-200">{t.brand}</span>
+            <input
+              value={form.varumarke}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  varumarke: event.target.value,
+                }))
+              }
+              className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.06] px-3 text-white outline-none focus:border-emerald-400/60"
+            />
+          </label>
+
           <div className="grid grid-cols-2 gap-3">
             <label className="block space-y-1.5 text-sm">
               <span className="font-medium text-slate-200">
@@ -240,7 +302,38 @@ export function PantryProductForm({
                 className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.06] px-3 text-white outline-none focus:border-emerald-400/60"
               />
             </label>
+            <div className="flex flex-col justify-end gap-2">
+              <button
+                type="button"
+                onClick={onScanBarcode}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-white/10 px-3 text-sm font-medium text-slate-200 transition hover:bg-white/5"
+              >
+                <ScanLine aria-hidden="true" className="h-4 w-4" />
+                {t.scanBarcode}
+              </button>
+              <button
+                type="button"
+                onClick={onLookupProduct}
+                disabled={!form.streckkod.trim() || isLookingUpProduct}
+                className="h-10 rounded-xl bg-emerald-400/10 px-3 text-xs font-semibold text-emerald-200 transition hover:bg-emerald-400/20 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {isLookingUpProduct ? t.lookingUpProduct : t.lookupProduct}
+              </button>
+            </div>
           </div>
+          {form.bild_url ? (
+            <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.035] p-3">
+              <Image
+                unoptimized
+                src={form.bild_url}
+                alt=""
+                width={64}
+                height={64}
+                className="h-16 w-16 rounded-lg bg-white object-contain"
+              />
+              <span className="text-sm text-slate-300">{form.namn}</span>
+            </div>
+          ) : null}
 
           <div className="rounded-xl border border-white/10 bg-white/[0.035] p-3">
             <label className="flex items-center gap-2 text-sm text-slate-200">

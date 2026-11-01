@@ -2,9 +2,12 @@ import { Heart, Search } from "lucide-react";
 
 import type { PantryTranslation } from "@/features/pantry/i18n";
 import type { StatusFilter } from "@/features/pantry/types";
+import { getCategoryLabel } from "@/features/pantry/constants";
+import type { Locale } from "@/lib/i18n";
 
 type PantryFiltersProps = {
   t: PantryTranslation;
+  locale: Locale;
   search: string;
   statusFilter: StatusFilter;
   categoryFilter: string;
@@ -19,6 +22,7 @@ type PantryFiltersProps = {
 
 export function PantryFilters({
   t,
+  locale,
   search,
   statusFilter,
   categoryFilter,
@@ -39,38 +43,20 @@ export function PantryFilters({
 
   return (
     <section className="space-y-4 rounded-2xl border border-white/10 bg-white/[0.035] p-4 sm:p-5">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <label className="relative block min-w-0 flex-1">
-          <Search
-            aria-hidden="true"
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500"
-          />
-          <input
-            type="search"
-            value={search}
-            onChange={(event) => onSearchChange(event.target.value)}
-            placeholder={t.search}
-            aria-label={t.search}
-            className="h-11 w-full rounded-xl border border-white/10 bg-slate-950/50 pl-10 pr-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-emerald-400/60 focus:ring-2 focus:ring-emerald-400/15"
-          />
-        </label>
-        <button
-          type="button"
-          onClick={onFavoritesChange}
-          aria-pressed={favoritesOnly}
-          className={`inline-flex h-11 items-center justify-center gap-2 rounded-xl border px-3 text-sm font-medium transition ${
-            favoritesOnly
-              ? "border-rose-300/40 bg-rose-300/10 text-rose-200"
-              : "border-white/10 bg-slate-950/40 text-slate-300 hover:bg-white/5"
-          }`}
-        >
-          <Heart
-            aria-hidden="true"
-            className={`h-4 w-4 ${favoritesOnly ? "fill-current" : ""}`}
-          />
-          {t.favorites}
-        </button>
-      </div>
+      <label className="relative block min-w-0">
+        <Search
+          aria-hidden="true"
+          className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500"
+        />
+        <input
+          type="search"
+          value={search}
+          onChange={(event) => onSearchChange(event.target.value)}
+          placeholder={t.search}
+          aria-label={t.search}
+          className="h-11 w-full rounded-xl border border-white/10 bg-slate-950/50 pl-10 pr-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-emerald-400/60 focus:ring-2 focus:ring-emerald-400/15"
+        />
+      </label>
 
       <div className="flex gap-2 overflow-x-auto pb-1">
         {statusTabs.map((tab) => (
@@ -91,6 +77,22 @@ export function PantryFilters({
             ) : null}
           </button>
         ))}
+        <button
+          type="button"
+          onClick={onFavoritesChange}
+          aria-pressed={favoritesOnly}
+          className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-medium transition ${
+            favoritesOnly
+              ? "bg-rose-300/15 text-rose-200"
+              : "bg-white/[0.06] text-slate-300 hover:bg-white/10"
+          }`}
+        >
+          <Heart
+            aria-hidden="true"
+            className={`h-3.5 w-3.5 ${favoritesOnly ? "fill-current" : ""}`}
+          />
+          {t.favorites}
+        </button>
       </div>
 
       {categories.length > 0 ? (
@@ -119,7 +121,7 @@ export function PantryFilters({
                   : "text-slate-400 hover:bg-white/[0.06] hover:text-white"
               }`}
             >
-              {category}
+              {getCategoryLabel(category, locale)}
             </button>
           ))}
         </div>

@@ -15,6 +15,8 @@ export type PantryProduct = {
   oppnad_datum: string | null;
   butik: string | null;
   streckkod: string | null;
+  varumarke: string | null;
+  bild_url: string | null;
   status: ProductStatus;
   is_favorite: boolean;
   created_at: string;
@@ -32,4 +34,41 @@ export type ProductFormValues = {
   oppnad_datum: string;
   butik: string;
   streckkod: string;
+  varumarke: string;
+  bild_url: string;
+};
+
+export type RecipeIngredient = {
+  id: string;
+  recept_id: string;
+  ingrediens_namn: string;
+  kvantitet: number | string | null;
+  enhet: string | null;
+};
+
+export type Recipe = {
+  id: string;
+  user_id: string | null;
+  titel: string;
+  beskrivning: string | null;
+  tid: number | null;
+  kategori: string | null;
+  is_favorite: boolean;
+  created_at: string;
+  ingredients: RecipeIngredient[];
+  is_favorited: boolean;
+};
+
+export type RecipeIngredientFormValues = {
+  ingrediens_namn: string;
+  kvantitet: string;
+  enhet: string;
+};
+
+export type RecipeFormValues = {
+  titel: string;
+  beskrivning: string;
+  tid: string;
+  kategori: string;
+  ingredients: RecipeIngredientFormValues[];
 };

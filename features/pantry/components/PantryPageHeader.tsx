@@ -1,14 +1,8 @@
-import { Plus, ShoppingBasket } from "lucide-react";
+import { ShoppingBasket } from "lucide-react";
 
 import type { PantryTranslation } from "@/features/pantry/i18n";
 
-export function PantryPageHeader({
-  t,
-  onAddItem,
-}: {
-  t: PantryTranslation;
-  onAddItem: () => void;
-}) {
+export function PantryPageHeader({ t }: { t: PantryTranslation }) {
   return (
     <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
       <div>
@@ -21,14 +15,6 @@ export function PantryPageHeader({
         </h2>
         <p className="mt-2 text-sm text-slate-400">{t.subtitle}</p>
       </div>
-      <button
-        type="button"
-        onClick={onAddItem}
-        className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-emerald-500 px-4 py-2.5 text-sm font-semibold text-slate-950 shadow-lg shadow-emerald-950/20 transition hover:bg-emerald-400 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-emerald-300/30"
-      >
-        <Plus aria-hidden="true" className="h-4 w-4" />
-        {t.addItem}
-      </button>
     </header>
   );
 }
