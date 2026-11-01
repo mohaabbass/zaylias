@@ -43,6 +43,18 @@ function createEmptyForm(locale: "sv" | "en"): ProductFormValues {
   };
 }
 
+function getBarcodeLookupValues(barcode: string): string[] {
+  const values = [barcode];
+
+  if (/^\d{13}$/.test(barcode) && barcode.startsWith("0")) {
+    values.push(barcode.slice(1));
+  } else if (/^\d{12}$/.test(barcode)) {
+    values.push(`0${barcode}`);
+  }
+
+  return values;
+}
+
 type PantryViewProps = {
   userId: string;
   onOpenApps: () => void;
@@ -234,10 +246,11 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
     setForm((current) => ({ ...current, streckkod: normalizedBarcode }));
 
     try {
+      const barcodeLookupValues = getBarcodeLookupValues(normalizedBarcode);
       const { data: catalogProduct, error: catalogError } = await supabase
         .from("produkt_katalog")
-        .select("namn, brand, image_url, kategori")
-        .eq("streckkod", normalizedBarcode)
+        .select("streckkod, namn, brand, image_url, kategori")
+        .in("streckkod", barcodeLookupValues)
         .maybeSingle();
 
       if (catalogError) {
@@ -247,7 +260,7 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
       if (catalogProduct) {
         setForm((current) => ({
           ...current,
-          streckkod: normalizedBarcode,
+          streckkod: catalogProduct.streckkod,
           namn: catalogProduct.namn,
           varumarke: catalogProduct.brand ?? "",
           bild_url: catalogProduct.image_url ?? "",
