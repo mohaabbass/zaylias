@@ -7,6 +7,8 @@ export type CategoryOption = {
 
 const legacyCategoryValueMap: Record<string, string> = {
   Mat: "food",
+  Snabbmat: "fast-food",
+  Försäkring: "insurance",
   Boende: "housing",
   Transport: "transport",
   Nöje: "entertainment",
@@ -19,6 +21,8 @@ const legacyCategoryValueMap: Record<string, string> = {
   Bidrag: "benefits",
   "Övriga inkomster": "other-income",
   Food: "food",
+  "Fast food": "fast-food",
+  Insurance: "insurance",
   Housing: "housing",
   Entertainment: "entertainment",
   Clothes: "clothes",
@@ -199,6 +203,8 @@ export const economyTranslations = {
       "Obetalda betalningar kunde inte hämtas; prognosen visas inte.",
     expenseCategories: [
       { value: "food", label: "Mat" },
+      { value: "fast-food", label: "Snabbmat" },
+      { value: "insurance", label: "Försäkring" },
       { value: "housing", label: "Boende" },
       { value: "transport", label: "Transport" },
       { value: "entertainment", label: "Nöje" },
@@ -365,6 +371,8 @@ export const economyTranslations = {
       "Unpaid payments could not be loaded, so the forecast is unavailable.",
     expenseCategories: [
       { value: "food", label: "Food" },
+      { value: "fast-food", label: "Fast food" },
+      { value: "insurance", label: "Insurance" },
       { value: "housing", label: "Housing" },
       { value: "transport", label: "Transport" },
       { value: "entertainment", label: "Entertainment" },
