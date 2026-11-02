@@ -48,6 +48,7 @@ import { formatCurrency, sortAccountsByFavorite } from "@/lib/utils";
 import { normalizeCategoryValue } from "@/features/economy/i18n";
 import type { Locale } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase";
+import { getBudgetPeriod } from "@/features/economy/utils/budgetPeriod";
 
 const localeMap: Record<Locale, string> = {
   sv: "sv-SE",
@@ -71,6 +72,15 @@ function getLocalDateString(date: Date) {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function getStoredBudgetStartDay(value: unknown) {
+  return typeof value === "number" &&
+    Number.isInteger(value) &&
+    value >= 1 &&
+    value <= 31
+    ? value
+    : 1;
 }
 
 export function AppShell() {
@@ -140,6 +150,20 @@ export function AppShell() {
   const [isMenuDrawerOpen, setIsMenuDrawerOpen] = useState(false);
   const [theme, setTheme] = useState<ThemeMode>("dark");
   const [hasHydratedTheme, setHasHydratedTheme] = useState(false);
+  const [budgetStartDayOverride, setBudgetStartDayOverride] = useState<{
+    userId: string;
+    value: number;
+  } | null>(null);
+  const [isSavingBudgetStartDay, setIsSavingBudgetStartDay] = useState(false);
+  const [budgetStartDayError, setBudgetStartDayError] = useState("");
+  const storedBudgetStartDay = getStoredBudgetStartDay(
+    session?.user.user_metadata?.budget_start_day,
+  );
+  const budgetStartDay =
+    budgetStartDayOverride &&
+    budgetStartDayOverride.userId === session?.user.id
+      ? budgetStartDayOverride.value
+      : storedBudgetStartDay;
   const [editingTransactionId, setEditingTransactionId] = useState<
     string | null
   >(null);
@@ -213,18 +237,16 @@ export function AppShell() {
       setForecastPaymentsLoading(true);
       setForecastPaymentsError("");
 
-      const now = new Date();
-      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const period = getBudgetPeriod(budgetStartDay);
       const toDateKey = (date: Date) =>
         `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-      const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
       const { data, error } = await supabase
         .from("payments")
         .select("amount, due_date")
         .eq("user_id", userId)
-        .gte("due_date", toDateKey(monthStart))
-        .lte("due_date", toDateKey(monthEnd));
+        .gte("due_date", toDateKey(period.start))
+        .lt("due_date", toDateKey(period.endExclusive));
 
       if (!isCurrent) return;
 
@@ -243,7 +265,7 @@ export function AppShell() {
     return () => {
       isCurrent = false;
     };
-  }, [session?.user.id, paymentsRefreshToken]);
+  }, [budgetStartDay, session?.user.id, paymentsRefreshToken]);
 
   useEffect(() => {
     const stored = window.localStorage.getItem("zaylias-theme");
@@ -322,6 +344,32 @@ export function AppShell() {
   const handleLogout = () => {
     setActiveApp(null);
     void logout();
+  };
+
+  const handleBudgetStartDayChange = async (
+    event: React.ChangeEvent<HTMLSelectElement>,
+  ) => {
+    const nextStartDay = Number(event.target.value);
+    setBudgetStartDayError("");
+    setIsSavingBudgetStartDay(true);
+
+    const { error } = await supabase.auth.updateUser({
+      data: { budget_start_day: nextStartDay },
+    });
+
+    setIsSavingBudgetStartDay(false);
+    if (error) {
+      console.error("Failed to save budget start day:", error);
+      setBudgetStartDayError(`${t.budgetStartDaySaveError} ${error.message}`);
+      return;
+    }
+
+    if (session?.user.id) {
+      setBudgetStartDayOverride({
+        userId: session.user.id,
+        value: nextStartDay,
+      });
+    }
   };
 
   const handleTypeChange = (nextType: TransactionType) => {
@@ -755,6 +803,7 @@ export function AppShell() {
               transactions={transactions}
               locale={locale}
               t={t}
+              budgetStartDay={budgetStartDay}
             />
             <TransactionList
               transactions={transactions}
@@ -1306,6 +1355,7 @@ export function AppShell() {
               error={forecastPaymentsError}
               locale={locale}
               t={t}
+              budgetStartDay={budgetStartDay}
             />
           </div>
         </DrawerContent>
@@ -1358,6 +1408,38 @@ export function AppShell() {
               <Landmark className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
               <span>{t.accounts}</span>
             </button>
+
+            <section className="rounded-xl border border-border bg-muted/50 p-3">
+              <label
+                htmlFor="budget-start-day"
+                className="block font-medium text-foreground"
+              >
+                {t.budgetStartDay}
+              </label>
+              <p className="mt-1 text-xs text-muted-foreground">
+                {t.budgetStartDayDescription}
+              </p>
+              <select
+                id="budget-start-day"
+                value={budgetStartDay}
+                disabled={isSavingBudgetStartDay}
+                onChange={(event) => void handleBudgetStartDayChange(event)}
+                className="mt-3 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground disabled:opacity-50"
+              >
+                {Array.from({ length: 31 }, (_, index) => index + 1).map(
+                  (day) => (
+                    <option key={day} value={day}>
+                      {day}
+                    </option>
+                  ),
+                )}
+              </select>
+              {budgetStartDayError ? (
+                <p role="alert" className="mt-2 text-xs text-red-600 dark:text-red-300">
+                  {budgetStartDayError}
+                </p>
+              ) : null}
+            </section>
 
             <div className="rounded-xl border border-border bg-muted/50 p-3">
               <p className="mb-3 text-xs uppercase tracking-[0.2em] text-muted-foreground">

@@ -6,6 +6,7 @@ import type { Locale } from "@/lib/i18n";
 import type { EconomyTranslation } from "@/features/economy/i18n";
 import { formatCurrency } from "@/lib/utils";
 import type { Transaction } from "@/features/economy/types/finance";
+import { getBudgetPeriod } from "@/features/economy/utils/budgetPeriod";
 
 export type ScheduledForecastPayment = {
   amount: number | string;
@@ -20,6 +21,7 @@ type CashFlowForecastProps = {
   error: string;
   locale: Locale;
   t: EconomyTranslation;
+  budgetStartDay: number;
 };
 
 const localeMap: Record<Locale, string> = {
@@ -35,16 +37,20 @@ export function CashFlowForecast({
   error,
   locale,
   t,
+  budgetStartDay,
 }: CashFlowForecastProps) {
   const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth();
-  const monthLabel = new Intl.DateTimeFormat(localeMap[locale], {
-    month: "long",
-    year: "numeric",
-  }).format(now);
+  const budgetPeriod = getBudgetPeriod(budgetStartDay, now);
+  const dateFormatter = new Intl.DateTimeFormat(localeMap[locale], {
+    dateStyle: "medium",
+  });
+  const periodEnd = new Date(budgetPeriod.endExclusive);
+  periodEnd.setDate(periodEnd.getDate() - 1);
+  const periodLabel = `${dateFormatter.format(budgetPeriod.start)} – ${dateFormatter.format(periodEnd)}`;
+  const periodStartKey = `${budgetPeriod.start.getFullYear()}-${String(budgetPeriod.start.getMonth() + 1).padStart(2, "0")}-${String(budgetPeriod.start.getDate()).padStart(2, "0")}`;
+  const periodEndKey = `${budgetPeriod.endExclusive.getFullYear()}-${String(budgetPeriod.endExclusive.getMonth() + 1).padStart(2, "0")}-${String(budgetPeriod.endExclusive.getDate()).padStart(2, "0")}`;
 
-  const monthlyTotals = useMemo(() => {
+  const periodTotals = useMemo(() => {
     let income = 0;
     let expenses = 0;
 
@@ -52,8 +58,8 @@ export function CashFlowForecast({
       const amount = Number(transaction.amount);
       if (
         !transaction.transaction_date ||
-        transaction.transaction_date.slice(0, 7) !==
-          `${currentYear}-${String(currentMonth + 1).padStart(2, "0")}` ||
+        transaction.transaction_date < periodStartKey ||
+        transaction.transaction_date >= periodEndKey ||
         !Number.isFinite(amount)
       ) {
         continue;
@@ -67,14 +73,14 @@ export function CashFlowForecast({
     }
 
     return { income, expenses };
-  }, [currentMonth, currentYear, transactions]);
+  }, [periodEndKey, periodStartKey, transactions]);
 
   const scheduledTotal = payments.reduce((sum, payment) => {
     const amount = Number(payment.amount);
     return Number.isFinite(amount) && amount > 0 ? sum + amount : sum;
   }, 0);
   const projectedCashFlow =
-    monthlyTotals.income - monthlyTotals.expenses - scheduledTotal;
+    periodTotals.income - periodTotals.expenses - scheduledTotal;
   const projectedBalance = totalBalance - scheduledTotal;
   const currencyLocale = localeMap[locale];
   const formatAmount = (amount: number) =>
@@ -89,7 +95,7 @@ export function CashFlowForecast({
             {t.monthlyCashFlowForecast}
           </h2>
           <p className="mt-1 text-sm capitalize text-muted-foreground">
-            {monthLabel}
+            {t.budgetPeriod}: {periodLabel}
           </p>
         </div>
       </div>
@@ -113,18 +119,18 @@ export function CashFlowForecast({
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 text-sm">
           <dt className="min-w-0 text-muted-foreground">{t.income}</dt>
           <dd className="whitespace-nowrap text-end font-medium tabular-nums text-emerald-600 dark:text-emerald-400">
-            {formatAmount(monthlyTotals.income)}
+            {formatAmount(periodTotals.income)}
           </dd>
         </div>
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 text-sm">
           <dt className="min-w-0 text-muted-foreground">{t.expense}</dt>
           <dd className="whitespace-nowrap text-end font-medium tabular-nums text-red-500">
-            {formatAmount(monthlyTotals.expenses)}
+            {formatAmount(periodTotals.expenses)}
           </dd>
         </div>
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 text-sm">
           <dt className="min-w-0 text-muted-foreground">
-            {t.unpaidPaymentsThisMonth}
+            {t.unpaidPaymentsInPeriod}
           </dt>
           <dd className="whitespace-nowrap text-end font-medium tabular-nums text-foreground">
             {loading
@@ -136,7 +142,7 @@ export function CashFlowForecast({
         </div>
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-3 border-t border-border pt-3 text-sm">
           <dt className="min-w-0 font-medium leading-snug text-foreground">
-            {t.projectedCashFlowThisMonth}
+            {t.projectedCashFlowInPeriod}
           </dt>
           <dd
             className={`whitespace-nowrap text-end font-semibold tabular-nums ${

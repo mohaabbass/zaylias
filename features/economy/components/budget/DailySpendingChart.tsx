@@ -9,6 +9,7 @@ import type { Locale } from "@/lib/i18n";
 import type { EconomyTranslation } from "@/features/economy/i18n";
 import { formatCurrency } from "@/lib/utils";
 import type { Transaction } from "@/features/economy/types/finance";
+import { getBudgetPeriod } from "@/features/economy/utils/budgetPeriod";
 import {
   Drawer,
   DrawerClose,
@@ -22,6 +23,7 @@ type DailySpendingChartProps = {
   transactions: Transaction[];
   locale: Locale;
   t: EconomyTranslation;
+  budgetStartDay: number;
 };
 
 type SpendingRange = "day" | "week" | "month" | "year";
@@ -49,6 +51,7 @@ export function DailySpendingChart({
   transactions,
   locale,
   t,
+  budgetStartDay,
 }: DailySpendingChartProps) {
   const [range, setRange] = useState<SpendingRange>("week");
   const [excludedCategories, setExcludedCategories] = useState<string[]>([
@@ -132,6 +135,7 @@ export function DailySpendingChart({
   const data = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    const budgetPeriod = getBudgetPeriod(budgetStartDay, today);
 
     const entries =
       range === "day"
@@ -163,25 +167,36 @@ export function DailySpendingChart({
                 value: 0,
               };
             })
-          : Array.from({ length: range === "week" ? 7 : 30 }, (_, index) => {
-              const date = new Date(today);
-              date.setDate(
-                today.getDate() - (range === "week" ? 6 : 29) + index,
-              );
+          : range === "month"
+            ? (() => {
+                const dates: Date[] = [];
+                const date = new Date(budgetPeriod.start);
 
-              return {
-                key: getLocalDateKey(date),
-                label:
-                  range === "week"
-                    ? new Intl.DateTimeFormat(locale, {
-                        weekday: "short",
-                      }).format(date)
-                    : new Intl.DateTimeFormat(locale, {
-                        day: "numeric",
-                      }).format(date),
-                value: 0,
-              };
-            });
+                while (date <= today) {
+                  dates.push(new Date(date));
+                  date.setDate(date.getDate() + 1);
+                }
+
+                return dates.map((date) => ({
+                  key: getLocalDateKey(date),
+                  label: new Intl.DateTimeFormat(locale, {
+                    day: "numeric",
+                  }).format(date),
+                  value: 0,
+                }));
+              })()
+            : Array.from({ length: 7 }, (_, index) => {
+                const date = new Date(today);
+                date.setDate(today.getDate() - 6 + index);
+
+                return {
+                  key: getLocalDateKey(date),
+                  label: new Intl.DateTimeFormat(locale, {
+                    weekday: "short",
+                  }).format(date),
+                  value: 0,
+                };
+              });
 
     for (const transaction of transactions) {
       if (transaction.type !== "expense") continue;
@@ -213,7 +228,7 @@ export function DailySpendingChart({
     }
 
     return entries;
-  }, [excludedCategories, locale, range, transactions]);
+  }, [budgetStartDay, excludedCategories, locale, range, transactions]);
 
   const maxValue = Math.max(...data.map((entry) => entry.value), 1);
   const total = data.reduce((sum, entry) => sum + entry.value, 0);
@@ -270,7 +285,11 @@ export function DailySpendingChart({
               }`}
               style={{
                 minWidth:
-                  range === "day" ? 960 : range === "month" ? 900 : undefined,
+                  range === "day"
+                    ? 960
+                    : range === "month"
+                      ? data.length * 30
+                      : undefined,
               }}
             >
               <div
@@ -306,7 +325,7 @@ export function DailySpendingChart({
                         aria-label={`${entry.label}: ${formatCurrency(entry.value, currencyLocale)} ${t.currency}`}
                         role="img"
                         title={`${entry.label}: ${formatCurrency(entry.value, currencyLocale)} ${t.currency}`}
-                        className={`w-full rounded-t-lg transition-[height,filter] duration-300 ${
+                        className={`w-full max-w-8 rounded-t-lg transition-[height,filter] duration-300 ${
                           entry.value > 0
                             ? "bg-linear-to-t from-sky-600 to-sky-400 hover:brightness-110"
                             : "bg-transparent"
