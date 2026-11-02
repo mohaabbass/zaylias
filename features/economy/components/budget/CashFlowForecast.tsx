@@ -2,9 +2,10 @@
 
 import { useMemo } from "react";
 
-import type { Locale, Translation } from "@/lib/i18n";
+import type { Locale } from "@/lib/i18n";
+import type { EconomyTranslation } from "@/features/economy/i18n";
 import { formatCurrency } from "@/lib/utils";
-import type { Transaction } from "@/types/finance";
+import type { Transaction } from "@/features/economy/types/finance";
 
 export type ScheduledForecastPayment = {
   amount: number | string;
@@ -18,7 +19,7 @@ type CashFlowForecastProps = {
   loading: boolean;
   error: string;
   locale: Locale;
-  t: Translation;
+  t: EconomyTranslation;
 };
 
 const localeMap: Record<Locale, string> = {

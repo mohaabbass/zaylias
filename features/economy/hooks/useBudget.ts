@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { supabase } from "@/lib/supabase";
-import type { Transaction, TransactionType } from "@/types/finance";
+import type { Transaction, TransactionType } from "@/features/economy/types/finance";
 
 type Session = Awaited<
   ReturnType<typeof supabase.auth.getSession>

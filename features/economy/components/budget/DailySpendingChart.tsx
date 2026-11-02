@@ -4,11 +4,11 @@ import { SlidersHorizontal, X } from "lucide-react";
 import {
   getCategoryLabel,
   normalizeCategoryValue,
-  type Locale,
-  type Translation,
-} from "@/lib/i18n";
+} from "@/features/economy/i18n";
+import type { Locale } from "@/lib/i18n";
+import type { EconomyTranslation } from "@/features/economy/i18n";
 import { formatCurrency } from "@/lib/utils";
-import type { Transaction } from "@/types/finance";
+import type { Transaction } from "@/features/economy/types/finance";
 import {
   Drawer,
   DrawerClose,
@@ -21,7 +21,7 @@ import {
 type DailySpendingChartProps = {
   transactions: Transaction[];
   locale: Locale;
-  t: Translation;
+  t: EconomyTranslation;
 };
 
 type SpendingRange = "day" | "week" | "month" | "year";

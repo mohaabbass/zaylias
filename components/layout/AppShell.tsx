@@ -16,20 +16,25 @@ import {
   X,
 } from "lucide-react";
 
-import { TransactionForm } from "@/components/budget/TransactionForm";
-import { BalanceCard } from "@/components/budget/BalanceCard";
 import {
+  AccountsView,
+  BalanceCard,
   CashFlowForecast,
+  DailySpendingChart,
+  LoansView,
+  PaymentsView,
+  StatisticsCategoryChart,
+  TransactionForm,
+  TransactionList,
+  useBudget,
+  type Account,
   type ScheduledForecastPayment,
-} from "@/components/budget/CashFlowForecast";
-import { DailySpendingChart } from "@/components/budget/DailySpendingChart";
-import { StatisticsCategoryChart } from "@/components/budget/StatisticsCategoryChart";
-import { TransactionList } from "@/components/budget/TransactionList";
-import { PaymentsView } from "@/components/budget/PaymentsView";
-import { LoansView } from "@/components/loans/LoansView";
-import { AccountsView } from "@/components/accounts/AccountsView";
+  type TransactionType,
+} from "@/features/economy";
+import { PantryApp } from "@/features/pantry";
 import { AuthScreen } from "@/components/auth/AuthScreen";
 import { AppHeader } from "@/components/layout/AppHeader";
+import { AppSelectionScreen } from "@/components/layout/AppSelectionScreen";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { useLocale } from "@/components/providers/LocaleProvider";
 import {
@@ -40,10 +45,9 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { formatCurrency, sortAccountsByFavorite } from "@/lib/utils";
-import { normalizeCategoryValue, type Locale } from "@/lib/i18n";
+import { normalizeCategoryValue } from "@/features/economy/i18n";
+import type { Locale } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase";
-import { useBudget } from "@/hooks/useBudget";
-import type { Account, TransactionType } from "@/types/finance";
 
 const localeMap: Record<Locale, string> = {
   sv: "sv-SE",
@@ -59,6 +63,7 @@ export type AppView =
   | "locale"
   | "menu";
 type ThemeMode = "light" | "dark";
+type AppSection = "economy" | "pantry" | null;
 type AddMode = "expense" | "payment" | "loan" | "account";
 
 function getLocalDateString(date: Date) {
@@ -119,6 +124,7 @@ export function AppShell() {
   const [creationError, setCreationError] = useState("");
   const [isSavingRecord, setIsSavingRecord] = useState(false);
   const [activeView, setActiveView] = useState<AppView>("home");
+  const [activeApp, setActiveApp] = useState<AppSection>(null);
   const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false);
   const [isCashFlowDrawerOpen, setIsCashFlowDrawerOpen] = useState(false);
   const [paymentsRefreshToken, setPaymentsRefreshToken] = useState(0);
@@ -300,6 +306,7 @@ export function AppShell() {
 
   const handleAuth = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    setActiveApp(null);
 
     if (isSignUp) {
       const success = await signUp(email, password);
@@ -310,6 +317,11 @@ export function AppShell() {
     }
 
     await signIn(email, password);
+  };
+
+  const handleLogout = () => {
+    setActiveApp(null);
+    void logout();
   };
 
   const handleTypeChange = (nextType: TransactionType) => {
@@ -596,6 +608,32 @@ export function AppShell() {
     );
   }
 
+  if (activeApp === null) {
+    return (
+      <AppSelectionScreen
+        onSelectEconomy={() => setActiveApp("economy")}
+        onSelectPantry={() => setActiveApp("pantry")}
+        onLogout={handleLogout}
+        t={t}
+      />
+    );
+  }
+
+  if (activeApp === "pantry") {
+    return (
+      <PantryApp
+        userId={session.user.id}
+        paymentsRefreshToken={paymentsRefreshToken}
+        onLogout={handleLogout}
+        onSwitchApps={() => setActiveApp(null)}
+        onOpenEconomyPayments={() => {
+          setActiveView("payments");
+          setActiveApp("economy");
+        }}
+      />
+    );
+  }
+
   const renderView = () => {
     switch (activeView) {
       case "payments":
@@ -747,7 +785,8 @@ export function AppShell() {
         title={t.appTitle}
         userId={session.user.id}
         paymentsRefreshToken={paymentsRefreshToken}
-        onLogout={() => void logout()}
+        onLogout={handleLogout}
+        onSwitchApps={() => setActiveApp(null)}
         onOpenPayments={() => setActiveView("payments")}
       />
 
@@ -1382,7 +1421,7 @@ export function AppShell() {
 
             <button
               type="button"
-              onClick={() => void logout()}
+              onClick={handleLogout}
               className="flex w-full items-center justify-between rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-red-500 transition-all duration-200 hover:bg-red-500/15 dark:text-red-300"
             >
               <span>{t.logout}</span>

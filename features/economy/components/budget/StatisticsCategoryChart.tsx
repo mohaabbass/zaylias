@@ -1,14 +1,18 @@
 import { useMemo } from "react";
 
-import type { Translation, Locale } from "@/lib/i18n";
-import { getCategoryLabel, normalizeCategoryValue } from "@/lib/i18n";
+import type { Locale } from "@/lib/i18n";
+import type { EconomyTranslation } from "@/features/economy/i18n";
+import {
+  getCategoryLabel,
+  normalizeCategoryValue,
+} from "@/features/economy/i18n";
 import { formatCurrency } from "@/lib/utils";
-import type { Transaction } from "@/types/finance";
+import type { Transaction } from "@/features/economy/types/finance";
 
 type StatisticsCategoryChartProps = {
   transactions: Transaction[];
   locale: Locale;
-  t: Translation;
+  t: EconomyTranslation;
 };
 
 const categoryColors = [

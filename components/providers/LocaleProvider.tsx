@@ -9,12 +9,13 @@ import {
   type ReactNode,
 } from "react";
 
-import { localeLabels, locales, translations, type Locale } from "@/lib/i18n";
+import { translations, type Translation } from "@/app/i18n";
+import { localeLabels, locales, type Locale } from "@/lib/i18n";
 
 type LocaleContextValue = {
   locale: Locale;
   setLocale: (value: Locale) => void;
-  t: (typeof translations)[Locale];
+  t: Translation;
   localeLabels: typeof localeLabels;
   locales: typeof locales;
 };

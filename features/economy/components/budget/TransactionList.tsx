@@ -5,11 +5,11 @@ import { Button } from "@/components/ui/button";
 import {
   getCategoryLabel,
   normalizeCategoryValue,
-  type Locale,
-  type Translation,
-} from "@/lib/i18n";
+} from "@/features/economy/i18n";
+import type { Locale } from "@/lib/i18n";
+import type { EconomyTranslation } from "@/features/economy/i18n";
 import { formatCurrency } from "@/lib/utils";
-import type { Account, Transaction } from "@/types/finance";
+import type { Account, Transaction } from "@/features/economy/types/finance";
 
 import {
   TransactionListFilter,
@@ -24,7 +24,7 @@ type TransactionListProps = {
   onDelete: (id: string) => void;
   onEdit: (transaction: Transaction) => void;
   locale?: Locale;
-  t: Translation;
+  t: EconomyTranslation;
 };
 
 export function TransactionList({
@@ -304,7 +304,9 @@ export function TransactionList({
                                 normalizeCategoryValue(transaction.category) ===
                                   "gifts" ||
                                 normalizeCategoryValue(transaction.category) ===
-                                  "housing"
+                                  "housing" ||
+                                normalizeCategoryValue(transaction.category) ===
+                                  "insurance"
                               ? "text-amber-500 dark:text-amber-400"
                               : normalizeCategoryValue(transaction.category) ===
                                   "subscriptions"

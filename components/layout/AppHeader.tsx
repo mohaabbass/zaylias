@@ -4,6 +4,7 @@ import {
   CalendarDays,
   CircleAlert,
   Frame,
+  LayoutGrid,
   LogOut,
   Wallet,
   X,
@@ -26,6 +27,7 @@ type AppHeaderProps = {
   userId: string;
   paymentsRefreshToken: number;
   onLogout: () => void;
+  onSwitchApps: () => void;
   onOpenPayments: () => void;
 };
 
@@ -62,6 +64,7 @@ export function AppHeader({
   userId,
   paymentsRefreshToken,
   onLogout,
+  onSwitchApps,
   onOpenPayments,
 }: AppHeaderProps) {
   const { t, locale } = useLocale();
@@ -125,6 +128,15 @@ export function AppHeader({
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={onSwitchApps}
+            aria-label={t.switchApps}
+            title={t.switchApps}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-muted text-foreground transition hover:border-ring hover:bg-accent"
+          >
+            <LayoutGrid className="h-4 w-4" strokeWidth={2.2} />
+          </button>
           <button
             type="button"
             onClick={() => setIsReminderOpen(true)}
