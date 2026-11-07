@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ChartNoAxesColumn, ChartPie } from "lucide-react";
 
 import {
   Drawer,
@@ -31,15 +32,15 @@ type StatisticsCategoryChartProps = {
 };
 
 const categoryColors = [
-  "bg-blue-600",
-  "bg-emerald-500",
-  "bg-amber-500",
-  "bg-purple-500",
-  "bg-pink-500",
-  "bg-cyan-500",
-  "bg-indigo-500",
-  "bg-teal-500",
-  "bg-orange-500",
+  { className: "bg-blue-600", chartColor: "#2563eb" },
+  { className: "bg-emerald-500", chartColor: "#10b981" },
+  { className: "bg-amber-500", chartColor: "#f59e0b" },
+  { className: "bg-purple-500", chartColor: "#a855f7" },
+  { className: "bg-pink-500", chartColor: "#ec4899" },
+  { className: "bg-cyan-500", chartColor: "#06b6d4" },
+  { className: "bg-indigo-500", chartColor: "#6366f1" },
+  { className: "bg-teal-500", chartColor: "#14b8a6" },
+  { className: "bg-orange-500", chartColor: "#f97316" },
 ];
 
 function getDateKey(date: Date) {
@@ -57,6 +58,7 @@ export function StatisticsCategoryChart({
   budgetPeriods,
 }: StatisticsCategoryChartProps) {
   const [isComparing, setIsComparing] = useState(false);
+  const [isCircularChart, setIsCircularChart] = useState(false);
   const [comparePeriodOffset, setComparePeriodOffset] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const currentPeriod = budgetPeriod;
@@ -127,14 +129,19 @@ export function StatisticsCategoryChart({
     }
 
     return categories
-      .map((category, index) => ({
-        key: category.value,
-        label: category.label,
-        count: currentTotals.get(category.value)?.count ?? 0,
-        currentAmount: currentTotals.get(category.value)?.amount ?? 0,
-        comparisonAmount: comparisonTotals.get(category.value) ?? 0,
-        color: categoryColors[index % categoryColors.length],
-      }))
+      .map((category, index) => {
+        const color = categoryColors[index % categoryColors.length];
+
+        return {
+          key: category.value,
+          label: category.label,
+          count: currentTotals.get(category.value)?.count ?? 0,
+          currentAmount: currentTotals.get(category.value)?.amount ?? 0,
+          comparisonAmount: comparisonTotals.get(category.value) ?? 0,
+          colorClass: color.className,
+          chartColor: color.chartColor,
+        };
+      })
       .filter((entry) =>
         isComparing
           ? entry.currentAmount > 0 || entry.comparisonAmount > 0
@@ -190,21 +197,46 @@ export function StatisticsCategoryChart({
               {t.expensesByCategoryDescription}
             </p>
           </div>
-          <button
-            type="button"
-            aria-pressed={isComparing}
-            disabled={comparisonPeriods.length === 0}
-            onClick={() => setIsComparing((current) => !current)}
-            className={`min-h-10 rounded-lg border px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
-              comparisonPeriods.length === 0
-                ? "cursor-not-allowed border-border bg-muted text-muted-foreground opacity-50"
-                : isComparing
-                ? "border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-                : "border-border bg-muted text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {isComparing ? t.hideMonthComparison : t.compareMonths}
-          </button>
+          <div className="flex w-full items-center gap-2 sm:w-auto">
+            <button
+              type="button"
+              aria-pressed={isComparing}
+              disabled={comparisonPeriods.length === 0}
+              onClick={() => setIsComparing((current) => !current)}
+              className={`min-h-10 rounded-lg border px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+                comparisonPeriods.length === 0
+                  ? "cursor-not-allowed border-border bg-muted text-muted-foreground opacity-50"
+                  : isComparing
+                    ? "border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                    : "border-border bg-muted text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {isComparing ? t.hideMonthComparison : t.compareMonths}
+            </button>
+            <button
+              type="button"
+              aria-label={
+                isCircularChart
+                  ? t.showCategoryBarChart
+                  : t.showCategoryDonutChart
+              }
+              aria-pressed={isCircularChart}
+              title={
+                isCircularChart
+                  ? t.showCategoryBarChart
+                  : t.showCategoryDonutChart
+              }
+              disabled={isComparing || data.length === 0}
+              onClick={() => setIsCircularChart((current) => !current)}
+              className="ml-auto flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-muted text-muted-foreground transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:cursor-not-allowed disabled:opacity-50 sm:ml-0"
+            >
+              {isCircularChart ? (
+                <ChartNoAxesColumn aria-hidden="true" className="h-5 w-5" />
+              ) : (
+                <ChartPie aria-hidden="true" className="h-5 w-5" />
+              )}
+            </button>
+          </div>
         </div>
 
         {isComparing ? (
@@ -311,25 +343,95 @@ export function StatisticsCategoryChart({
           </>
         ) : data.length > 0 ? (
           <>
-            <div
-              className="mt-6 flex h-3 overflow-hidden rounded-full bg-muted"
-              role="img"
-              aria-label={t.expensesByCategory}
-            >
-              {data.map((entry) => {
-                const percentage =
-                  (entry.currentAmount / currentPeriodTotal) * 100;
+            {isCircularChart ? (
+              <div className="mt-6 flex justify-center">
+                <div className="relative h-44 w-44">
+                  <svg
+                    className="h-full w-full"
+                    viewBox="0 0 100 100"
+                    role="img"
+                    aria-label={`${t.expensesByCategory}: ${data
+                      .map(
+                        (entry) =>
+                          `${entry.label} ${(
+                            (entry.currentAmount / currentPeriodTotal) *
+                            100
+                          ).toFixed(0)}%`,
+                      )
+                      .join(", ")}`}
+                  >
+                    <circle
+                      cx="50"
+                      cy="50"
+                      r="40"
+                      fill="none"
+                      className="stroke-muted"
+                      strokeWidth="16"
+                    />
+                    {data.map((entry, index) => {
+                      const circumference = 2 * Math.PI * 40;
+                      const segmentLength =
+                        (entry.currentAmount / currentPeriodTotal) *
+                        circumference;
+                      const offset = data
+                        .slice(0, index)
+                        .reduce(
+                          (sum, previous) =>
+                            sum +
+                            (previous.currentAmount / currentPeriodTotal) *
+                              circumference,
+                          0,
+                        );
 
-                return (
-                  <div
-                    key={entry.key}
-                    className={`h-full ${entry.color}`}
-                    style={{ width: `${percentage}%` }}
-                    title={`${entry.label}: ${percentage.toFixed(0)}%`}
-                  />
-                );
-              })}
-            </div>
+                      return (
+                        <circle
+                          key={entry.key}
+                          cx="50"
+                          cy="50"
+                          r="40"
+                          fill="none"
+                          stroke={entry.chartColor}
+                          strokeWidth="16"
+                          strokeDasharray={`${segmentLength} ${
+                            circumference - segmentLength
+                          }`}
+                          strokeDashoffset={-offset}
+                          transform="rotate(-90 50 50)"
+                        />
+                      );
+                    })}
+                  </svg>
+                  <span className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center text-center">
+                    <span className="text-sm font-semibold text-foreground">
+                      {formatCurrency(currentPeriodTotal, currencyLocale)}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {t.currency}
+                    </span>
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div
+                className="mt-6 flex h-3 overflow-hidden rounded-full bg-muted"
+                role="img"
+                aria-label={t.expensesByCategory}
+              >
+                {data.map((entry) => {
+                  const percentage =
+                    (entry.currentAmount / currentPeriodTotal) * 100;
+
+                  return (
+                    <div
+                      key={entry.key}
+                      className={`h-full ${entry.colorClass}`}
+                      style={{ width: `${percentage}%` }}
+                      title={`${entry.label}: ${percentage.toFixed(0)}%`}
+                    />
+                  );
+                })}
+              </div>
+            )}
 
             <div className="mt-7 space-y-5">
               {data.map((entry) => {
@@ -348,7 +450,7 @@ export function StatisticsCategoryChart({
                     <span className="flex min-w-0 items-center gap-3">
                       <span
                         aria-hidden="true"
-                        className={`h-4 w-4 shrink-0 rounded-full ${entry.color}`}
+                        className={`h-4 w-4 shrink-0 rounded-full ${entry.colorClass}`}
                       />
                       <span className="min-w-0">
                         <span className="block truncate text-base font-medium text-foreground">
