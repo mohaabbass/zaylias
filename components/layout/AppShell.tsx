@@ -785,6 +785,7 @@ export function AppShell() {
               transactions={transactions}
               locale={locale}
               t={t}
+              budgetStartDay={budgetStartDay}
             />
           </div>
         );

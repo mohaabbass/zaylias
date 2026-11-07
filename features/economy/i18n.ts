@@ -89,6 +89,11 @@ export const economyTranslations = {
       "Räkningar och prenumerationer ingår i de totala utgifterna.",
     expensesByCategory: "Utgifter per kategori",
     expensesByCategoryDescription: "Fördelning av dina registrerade utgifter.",
+    compareMonths: "Jämför månader",
+    hideMonthComparison: "Dölj jämförelse",
+    compareWith: "Jämför med",
+    currentBudgetPeriod: "Nuvarande budgetperiod",
+    comparisonBudgetPeriod: "Jämförelseperiod",
     expenseCount: (count: number) =>
       count === 1 ? "1 utgift" : `${count} utgifter`,
     home: "Hem",
@@ -184,7 +189,7 @@ export const economyTranslations = {
     settings: "Inställningar",
     budgetStartDay: "Budgeten börjar den",
     budgetStartDayDescription:
-      "Välj vilken dag din budgetperiod börjar varje månad.",
+      "Välj vilken dag budgetperioden börjar. Om dagen är en helgdag eller helg börjar perioden föregående arbetsdag.",
     budgetStartDaySaveError: "Det gick inte att spara budgetens startdag:",
     budgetPeriod: "Budgetperiod",
     dailySpending: "Dagliga utgifter",
@@ -263,6 +268,11 @@ export const economyTranslations = {
       "Bills and subscriptions are included in total expenses.",
     expensesByCategory: "Expenses by category",
     expensesByCategoryDescription: "A breakdown of your recorded expenses.",
+    compareMonths: "Compare months",
+    hideMonthComparison: "Hide comparison",
+    compareWith: "Compare with",
+    currentBudgetPeriod: "Current budget period",
+    comparisonBudgetPeriod: "Comparison period",
     expenseCount: (count: number) =>
       count === 1 ? "1 expense" : `${count} expenses`,
     home: "Home",
@@ -357,7 +367,7 @@ export const economyTranslations = {
     settings: "Settings",
     budgetStartDay: "Budget starts on day",
     budgetStartDayDescription:
-      "Choose the day your budget period begins each month.",
+      "Choose the day your budget period begins. If it falls on a weekend or Swedish holiday, the period starts on the previous working day.",
     budgetStartDaySaveError: "Could not save the budget start day:",
     budgetPeriod: "Budget period",
     dailySpending: "Daily spending",
