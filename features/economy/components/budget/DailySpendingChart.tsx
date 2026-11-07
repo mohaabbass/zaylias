@@ -9,7 +9,7 @@ import type { Locale } from "@/lib/i18n";
 import type { EconomyTranslation } from "@/features/economy/i18n";
 import { formatCurrency } from "@/lib/utils";
 import type { Transaction } from "@/features/economy/types/finance";
-import { getBudgetPeriod } from "@/features/economy/utils/budgetPeriod";
+import type { BudgetPeriod } from "@/features/economy/utils/budgetPeriod";
 import {
   Drawer,
   DrawerClose,
@@ -23,7 +23,7 @@ type DailySpendingChartProps = {
   transactions: Transaction[];
   locale: Locale;
   t: EconomyTranslation;
-  budgetStartDay: number;
+  budgetPeriod: BudgetPeriod;
 };
 
 type SpendingRange = "day" | "week" | "month" | "year";
@@ -51,7 +51,7 @@ export function DailySpendingChart({
   transactions,
   locale,
   t,
-  budgetStartDay,
+  budgetPeriod,
 }: DailySpendingChartProps) {
   const [range, setRange] = useState<SpendingRange>("week");
   const [excludedCategories, setExcludedCategories] = useState<string[]>([
@@ -137,7 +137,6 @@ export function DailySpendingChart({
   const data = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const budgetPeriod = getBudgetPeriod(budgetStartDay, today);
 
     const entries =
       range === "day"
@@ -174,7 +173,7 @@ export function DailySpendingChart({
                 const dates: Date[] = [];
                 const date = new Date(budgetPeriod.start);
 
-                while (date <= today) {
+                while (date < budgetPeriod.endExclusive) {
                   dates.push(new Date(date));
                   date.setDate(date.getDate() + 1);
                 }
@@ -230,18 +229,34 @@ export function DailySpendingChart({
     }
 
     return entries;
-  }, [budgetStartDay, excludedCategories, locale, range, transactions]);
+  }, [budgetPeriod, excludedCategories, locale, range, transactions]);
+
+  const maxValue = Math.max(...data.map((entry) => entry.value), 1);
+  const total = data.reduce((sum, entry) => sum + entry.value, 0);
+  const hasSpendingData = data.some((entry) => entry.value !== 0);
+  const budgetPeriodStart = budgetPeriod.start.getTime();
+  const budgetPeriodEnd = budgetPeriod.endExclusive.getTime();
+  const currencyLocale = locale === "en" ? "en-US" : "sv-SE";
 
   useEffect(() => {
     if (range !== "month") return;
 
     const chart = chartScrollRef.current;
-    if (chart) chart.scrollLeft = chart.scrollWidth;
-  }, [data, range]);
+    if (!chart || !hasSpendingData) return;
 
-  const maxValue = Math.max(...data.map((entry) => entry.value), 1);
-  const total = data.reduce((sum, entry) => sum + entry.value, 0);
-  const currencyLocale = locale === "en" ? "en-US" : "sv-SE";
+    const todayKey = getLocalDateKey(new Date());
+    const today = chart.querySelector<HTMLElement>(
+      `[data-chart-date="${todayKey}"]`,
+    );
+    if (!today) return;
+
+    chart.scrollLeft = Math.max(
+      0,
+      chart.scrollLeft +
+        today.getBoundingClientRect().right -
+        chart.getBoundingClientRect().right,
+    );
+  }, [budgetPeriodEnd, budgetPeriodStart, hasSpendingData, range]);
 
   return (
     <Drawer open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
@@ -282,7 +297,7 @@ export function DailySpendingChart({
           </div>
         </div>
 
-        {data.every((entry) => entry.value === 0) ? (
+        {!hasSpendingData ? (
           <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-border bg-muted/30 px-4 text-center text-sm text-muted-foreground">
             {t.noSpendData}
           </div>
@@ -327,6 +342,7 @@ export function DailySpendingChart({
                 return (
                   <div
                     key={entry.key}
+                    data-chart-date={entry.key}
                     className={`relative flex min-w-0 flex-1 flex-col items-center justify-end gap-2 ${
                       selectedBarKey === entry.key ? "z-30" : "z-10"
                     }`}

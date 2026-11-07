@@ -16,13 +16,18 @@ import {
 } from "@/features/economy/i18n";
 import { formatCurrency } from "@/lib/utils";
 import type { Transaction } from "@/features/economy/types/finance";
-import { getBudgetPeriod } from "@/features/economy/utils/budgetPeriod";
+import {
+  getPreviousBudgetPeriod,
+  type BudgetPeriod,
+  type StoredBudgetPeriod,
+} from "@/features/economy/utils/budgetPeriod";
 
 type StatisticsCategoryChartProps = {
   transactions: Transaction[];
   locale: Locale;
   t: EconomyTranslation;
-  budgetStartDay: number;
+  budgetPeriod: BudgetPeriod;
+  budgetPeriods: StoredBudgetPeriod[];
 };
 
 const categoryColors = [
@@ -48,22 +53,21 @@ export function StatisticsCategoryChart({
   transactions,
   locale,
   t,
-  budgetStartDay,
+  budgetPeriod,
+  budgetPeriods,
 }: StatisticsCategoryChartProps) {
   const [isComparing, setIsComparing] = useState(false);
   const [comparePeriodOffset, setComparePeriodOffset] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const currentPeriod = getBudgetPeriod(budgetStartDay);
+  const currentPeriod = budgetPeriod;
   const comparisonPeriods = (() => {
     const periods = [];
-    let periodStart = currentPeriod.start;
+    let previousPeriod = currentPeriod;
 
     for (let offset = 1; offset <= 12; offset += 1) {
-      const previousPeriodDate = new Date(periodStart);
-      previousPeriodDate.setDate(previousPeriodDate.getDate() - 1);
-      const period = getBudgetPeriod(budgetStartDay, previousPeriodDate);
+      const period = getPreviousBudgetPeriod(previousPeriod, budgetPeriods);
       periods.push({ offset, ...period });
-      periodStart = period.start;
+      previousPeriod = period;
     }
 
     return periods;
@@ -215,7 +219,7 @@ export function StatisticsCategoryChart({
               <span className="font-medium text-foreground">
                 {t.currentBudgetPeriod}:
               </span>{" "}
-              {monthFormatter.format(currentPeriod.start)}
+              {currentPeriod.name || monthFormatter.format(currentPeriod.start)}
             </p>
             <label className="flex items-center gap-2 text-sm text-muted-foreground">
               <span>{t.compareWith}</span>
@@ -229,7 +233,7 @@ export function StatisticsCategoryChart({
               >
                 {comparisonPeriods.map((period) => (
                   <option key={period.offset} value={period.offset}>
-                    {monthFormatter.format(period.start)}
+                    {period.name || monthFormatter.format(period.start)}
                   </option>
                 ))}
               </select>
@@ -245,7 +249,8 @@ export function StatisticsCategoryChart({
               <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground/50" />
               <span>
                 {t.comparisonBudgetPeriod}:{" "}
-                {monthFormatter.format(comparisonPeriod.start)}
+                {comparisonPeriod.name ||
+                  monthFormatter.format(comparisonPeriod.start)}
               </span>
             </div>
           </div>

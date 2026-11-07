@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowRight,
   BarChart3,
+  ChevronLeft,
+  ChevronRight,
   CreditCard,
   HandCoins,
   House,
@@ -48,7 +50,15 @@ import { formatCurrency, sortAccountsByFavorite } from "@/lib/utils";
 import { normalizeCategoryValue } from "@/features/economy/i18n";
 import type { Locale } from "@/lib/i18n";
 import { supabase } from "@/lib/supabase";
-import { getBudgetPeriod } from "@/features/economy/utils/budgetPeriod";
+import {
+  getBudgetPeriodForDate,
+  getCalendarBudgetPeriod,
+  getDateKey,
+  parseStoredBudgetPeriods,
+  toBudgetPeriod,
+  type BudgetPeriod,
+  type StoredBudgetPeriod,
+} from "@/features/economy/utils/budgetPeriod";
 
 const localeMap: Record<Locale, string> = {
   sv: "sv-SE",
@@ -72,15 +82,6 @@ function getLocalDateString(date: Date) {
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
-}
-
-function getStoredBudgetStartDay(value: unknown) {
-  return typeof value === "number" &&
-    Number.isInteger(value) &&
-    value >= 1 &&
-    value <= 31
-    ? value
-    : 1;
 }
 
 export function AppShell() {
@@ -150,20 +151,53 @@ export function AppShell() {
   const [isMenuDrawerOpen, setIsMenuDrawerOpen] = useState(false);
   const [theme, setTheme] = useState<ThemeMode>("dark");
   const [hasHydratedTheme, setHasHydratedTheme] = useState(false);
-  const [budgetStartDayOverride, setBudgetStartDayOverride] = useState<{
+  const [budgetPeriodsOverride, setBudgetPeriodsOverride] = useState<{
     userId: string;
-    value: number;
+    value: StoredBudgetPeriod[];
   } | null>(null);
-  const [isSavingBudgetStartDay, setIsSavingBudgetStartDay] = useState(false);
-  const [budgetStartDayError, setBudgetStartDayError] = useState("");
-  const storedBudgetStartDay = getStoredBudgetStartDay(
-    session?.user.user_metadata?.budget_start_day,
+  const [isSavingBudgetPeriods, setIsSavingBudgetPeriods] = useState(false);
+  const [budgetPeriodsError, setBudgetPeriodsError] = useState("");
+  const [budgetPeriodName, setBudgetPeriodName] = useState("");
+  const [budgetPeriodStartDate, setBudgetPeriodStartDate] = useState("");
+  const [budgetPeriodEndDate, setBudgetPeriodEndDate] = useState("");
+  const [selectedBudgetPeriodSelection, setSelectedBudgetPeriodSelection] =
+    useState<{ userId: string; id: string } | null>(null);
+  const [today, setToday] = useState(() => new Date(2000, 0, 1));
+  const selectedBudgetPeriodId =
+    selectedBudgetPeriodSelection &&
+    selectedBudgetPeriodSelection.userId === session?.user.id
+      ? selectedBudgetPeriodSelection.id
+      : null;
+  const storedBudgetPeriods = parseStoredBudgetPeriods(
+    session?.user.user_metadata?.budget_periods,
   );
-  const budgetStartDay =
-    budgetStartDayOverride &&
-    budgetStartDayOverride.userId === session?.user.id
-      ? budgetStartDayOverride.value
-      : storedBudgetStartDay;
+  const budgetPeriods =
+    budgetPeriodsOverride &&
+    budgetPeriodsOverride.userId === session?.user.id
+      ? budgetPeriodsOverride.value
+      : storedBudgetPeriods;
+  const defaultBudgetPeriod = getBudgetPeriodForDate(today, budgetPeriods);
+  const selectedCustomBudgetPeriod = budgetPeriods.find(
+    (period) => period.id === selectedBudgetPeriodId,
+  );
+  const selectedBudgetPeriod =
+    selectedCustomBudgetPeriod
+      ? toBudgetPeriod(selectedCustomBudgetPeriod)
+      : selectedBudgetPeriodId?.startsWith("calendar-")
+        ? getCalendarBudgetPeriod(
+            new Date(`${selectedBudgetPeriodId.slice("calendar-".length)}T00:00:00`),
+          )
+        : defaultBudgetPeriod;
+  const budgetPeriodOptions = [
+    ...budgetPeriods.map(toBudgetPeriod),
+    defaultBudgetPeriod,
+    selectedBudgetPeriod,
+  ].filter(
+    (period, index, periods) =>
+      periods.findIndex((candidate) => candidate.id === period.id) === index,
+  );
+  const selectedPeriodStartKey = getDateKey(selectedBudgetPeriod.start);
+  const selectedPeriodEndKey = getDateKey(selectedBudgetPeriod.endExclusive);
   const [editingTransactionId, setEditingTransactionId] = useState<
     string | null
   >(null);
@@ -174,6 +208,10 @@ export function AppShell() {
   const otherAccounts = sortedAccounts.filter(
     (account) => !account.is_favorite,
   );
+
+  useEffect(() => {
+    queueMicrotask(() => setToday(new Date()));
+  }, []);
 
   useEffect(() => {
     let isCurrent = true;
@@ -237,16 +275,12 @@ export function AppShell() {
       setForecastPaymentsLoading(true);
       setForecastPaymentsError("");
 
-      const period = getBudgetPeriod(budgetStartDay);
-      const toDateKey = (date: Date) =>
-        `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-
       const { data, error } = await supabase
         .from("payments")
         .select("amount, due_date")
         .eq("user_id", userId)
-        .gte("due_date", toDateKey(period.start))
-        .lt("due_date", toDateKey(period.endExclusive));
+        .gte("due_date", selectedPeriodStartKey)
+        .lt("due_date", selectedPeriodEndKey);
 
       if (!isCurrent) return;
 
@@ -265,7 +299,12 @@ export function AppShell() {
     return () => {
       isCurrent = false;
     };
-  }, [budgetStartDay, session?.user.id, paymentsRefreshToken]);
+  }, [
+    selectedPeriodEndKey,
+    selectedPeriodStartKey,
+    session?.user.id,
+    paymentsRefreshToken,
+  ]);
 
   useEffect(() => {
     const stored = window.localStorage.getItem("zaylias-theme");
@@ -346,31 +385,178 @@ export function AppShell() {
     void logout();
   };
 
-  const handleBudgetStartDayChange = async (
-    event: React.ChangeEvent<HTMLSelectElement>,
-  ) => {
-    const nextStartDay = Number(event.target.value);
-    setBudgetStartDayError("");
-    setIsSavingBudgetStartDay(true);
+  const saveBudgetPeriods = async (nextPeriods: StoredBudgetPeriod[]) => {
+    if (!session?.user.id) return false;
 
+    setBudgetPeriodsError("");
+    setIsSavingBudgetPeriods(true);
     const { error } = await supabase.auth.updateUser({
-      data: { budget_start_day: nextStartDay },
+      data: { budget_periods: nextPeriods },
     });
-
-    setIsSavingBudgetStartDay(false);
+    setIsSavingBudgetPeriods(false);
     if (error) {
-      console.error("Failed to save budget start day:", error);
-      setBudgetStartDayError(`${t.budgetStartDaySaveError} ${error.message}`);
+      console.error("Failed to save budget periods:", error);
+      setBudgetPeriodsError(`${t.budgetPeriodsSaveError} ${error.message}`);
+      return false;
+    }
+
+    setBudgetPeriodsOverride({
+      userId: session.user.id,
+      value: nextPeriods,
+    });
+    return true;
+  };
+
+  const handleAddBudgetPeriod = async (
+    event: React.FormEvent<HTMLFormElement>,
+  ) => {
+    event.preventDefault();
+    const name = budgetPeriodName.trim();
+    const hasInvalidRange =
+      !budgetPeriodStartDate ||
+      !budgetPeriodEndDate ||
+      budgetPeriodStartDate > budgetPeriodEndDate;
+    const overlapsExistingPeriod = budgetPeriods.some(
+      (period) =>
+        budgetPeriodStartDate <= period.endDate &&
+        budgetPeriodEndDate >= period.startDate,
+    );
+
+    if (!name || hasInvalidRange || overlapsExistingPeriod) {
+      setBudgetPeriodsError(t.budgetPeriodValidationError);
       return;
     }
 
+    const nextPeriods = parseStoredBudgetPeriods([
+      ...budgetPeriods,
+      {
+        id: budgetPeriodStartDate,
+        name,
+        startDate: budgetPeriodStartDate,
+        endDate: budgetPeriodEndDate,
+      },
+    ]);
+
+    if (await saveBudgetPeriods(nextPeriods)) {
+      setBudgetPeriodName("");
+      setBudgetPeriodStartDate("");
+      setBudgetPeriodEndDate("");
+    }
+  };
+
+  const handleRemoveBudgetPeriod = async (periodId: string) => {
+    const nextPeriods = budgetPeriods.filter((period) => period.id !== periodId);
+    if (await saveBudgetPeriods(nextPeriods)) {
+      if (selectedBudgetPeriodId === periodId) {
+        setSelectedBudgetPeriodSelection(null);
+      }
+    }
+  };
+
+  const handleSelectBudgetPeriod = (periodId: string) => {
     if (session?.user.id) {
-      setBudgetStartDayOverride({
+      setSelectedBudgetPeriodSelection({
         userId: session.user.id,
-        value: nextStartDay,
+        id: periodId,
       });
     }
   };
+
+  const handleBudgetPeriodNavigation = (direction: -1 | 1) => {
+    if (budgetPeriods.length === 0) {
+      const nextMonth = new Date(selectedBudgetPeriod.start);
+      nextMonth.setMonth(nextMonth.getMonth() + direction);
+      handleSelectBudgetPeriod(getCalendarBudgetPeriod(nextMonth).id);
+      return;
+    }
+
+    const selectedIndex = budgetPeriods.findIndex(
+      (period) => period.id === selectedBudgetPeriod.id,
+    );
+    if (selectedIndex >= 0) {
+      const nextPeriod = budgetPeriods[selectedIndex + direction];
+      if (nextPeriod) handleSelectBudgetPeriod(nextPeriod.id);
+      return;
+    }
+
+    const candidates = budgetPeriods
+      .filter((period) =>
+        direction < 0
+          ? period.startDate < selectedPeriodStartKey
+          : period.startDate > selectedPeriodStartKey,
+      )
+      .sort((a, b) =>
+        direction < 0
+          ? b.startDate.localeCompare(a.startDate)
+          : a.startDate.localeCompare(b.startDate),
+      );
+    if (candidates[0]) {
+      handleSelectBudgetPeriod(candidates[0].id);
+    }
+  };
+
+  const canNavigateBudgetPeriod = (direction: -1 | 1) => {
+    if (budgetPeriods.length === 0) return true;
+    const selectedIndex = budgetPeriods.findIndex(
+      (period) => period.id === selectedBudgetPeriod.id,
+    );
+    if (selectedIndex >= 0) {
+      return Boolean(budgetPeriods[selectedIndex + direction]);
+    }
+    return budgetPeriods.some((period) =>
+      direction < 0
+        ? period.startDate < selectedPeriodStartKey
+        : period.startDate > selectedPeriodStartKey,
+    );
+  };
+
+  const formatBudgetPeriodOption = (period: BudgetPeriod) => {
+    const dateFormatter = new Intl.DateTimeFormat(localeMap[locale], {
+      dateStyle: "medium",
+    });
+    const periodEnd = new Date(period.endExclusive);
+    periodEnd.setDate(periodEnd.getDate() - 1);
+    const range = `${dateFormatter.format(period.start)} – ${dateFormatter.format(periodEnd)}`;
+    return period.name ? `${period.name} · ${range}` : range;
+  };
+
+  const renderBudgetPeriodSelector = () => (
+    <section className="flex items-center gap-2 rounded-2xl border border-border bg-card p-3">
+      <button
+        type="button"
+        aria-label={t.previousBudgetPeriod}
+        disabled={!canNavigateBudgetPeriod(-1)}
+        onClick={() => handleBudgetPeriodNavigation(-1)}
+        className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl border border-border bg-muted text-foreground transition hover:border-emerald-500/50 disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        <ChevronLeft aria-hidden="true" className="size-5" />
+      </button>
+      <label className="min-w-0 flex-1">
+        <span className="sr-only">{t.selectBudgetPeriod}</span>
+        <select
+          aria-label={t.selectBudgetPeriod}
+          value={selectedBudgetPeriod.id}
+          onChange={(event) => handleSelectBudgetPeriod(event.target.value)}
+          className="w-full truncate bg-transparent text-center text-sm font-semibold text-foreground outline-none"
+        >
+          {budgetPeriodOptions.map((period) => (
+            <option key={period.id} value={period.id}>
+              {formatBudgetPeriodOption(period)}
+            </option>
+          ))}
+        </select>
+      </label>
+      <button
+        type="button"
+        aria-label={t.nextBudgetPeriod}
+        disabled={!canNavigateBudgetPeriod(1)}
+        onClick={() => handleBudgetPeriodNavigation(1)}
+        className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl border border-border bg-muted text-foreground transition hover:border-emerald-500/50 disabled:cursor-not-allowed disabled:opacity-40"
+      >
+        <ChevronRight aria-hidden="true" className="size-5" />
+      </button>
+    </section>
+  );
 
   const handleTypeChange = (nextType: TransactionType) => {
     setType(nextType);
@@ -724,6 +910,7 @@ export function AppShell() {
       case "locale":
         return (
           <div className="space-y-4">
+            {renderBudgetPeriodSelector()}
             <section className="rounded-2xl border border-border bg-card p-5">
               <h2 className="mb-4 text-lg font-semibold text-foreground">
                 {t.statistics}
@@ -785,7 +972,8 @@ export function AppShell() {
               transactions={transactions}
               locale={locale}
               t={t}
-              budgetStartDay={budgetStartDay}
+              budgetPeriod={selectedBudgetPeriod}
+              budgetPeriods={budgetPeriods}
             />
           </div>
         );
@@ -793,6 +981,7 @@ export function AppShell() {
       default:
         return (
           <div className="space-y-6">
+            {renderBudgetPeriodSelector()}
             <BalanceCard
               totalBalance={totalBalance}
               transactions={transactions}
@@ -804,7 +993,7 @@ export function AppShell() {
               transactions={transactions}
               locale={locale}
               t={t}
-              budgetStartDay={budgetStartDay}
+              budgetPeriod={selectedBudgetPeriod}
             />
             <TransactionList
               transactions={transactions}
@@ -1356,7 +1545,7 @@ export function AppShell() {
               error={forecastPaymentsError}
               locale={locale}
               t={t}
-              budgetStartDay={budgetStartDay}
+              budgetPeriod={selectedBudgetPeriod}
             />
           </div>
         </DrawerContent>
@@ -1411,35 +1600,108 @@ export function AppShell() {
             </button>
 
             <section className="rounded-xl border border-border bg-muted/50 p-3">
-              <label
-                htmlFor="budget-start-day"
-                className="block font-medium text-foreground"
-              >
-                {t.budgetStartDay}
-              </label>
+              <h2 className="font-medium text-foreground">
+                {t.budgetPeriods}
+              </h2>
               <p className="mt-1 text-xs text-muted-foreground">
-                {t.budgetStartDayDescription}
+                {t.budgetPeriodsDescription}
               </p>
-              <select
-                id="budget-start-day"
-                value={budgetStartDay}
-                disabled={isSavingBudgetStartDay}
-                onChange={(event) => void handleBudgetStartDayChange(event)}
-                className="mt-3 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground disabled:opacity-50"
-              >
-                {Array.from({ length: 31 }, (_, index) => index + 1).map(
-                  (day) => (
-                    <option key={day} value={day}>
-                      {day}
-                    </option>
-                  ),
-                )}
-              </select>
-              {budgetStartDayError ? (
-                <p role="alert" className="mt-2 text-xs text-red-600 dark:text-red-300">
-                  {budgetStartDayError}
+
+              {budgetPeriods.length > 0 ? (
+                <ul className="mt-3 space-y-2">
+                  {budgetPeriods.map((period) => (
+                    <li
+                      key={period.id}
+                      className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background px-3 py-2"
+                    >
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-medium text-foreground">
+                          {period.name}
+                        </span>
+                        <span className="block text-xs text-muted-foreground">
+                          {formatBudgetPeriodOption(toBudgetPeriod(period)).replace(
+                            `${period.name} · `,
+                            "",
+                          )}
+                        </span>
+                      </span>
+                      <button
+                        type="button"
+                        aria-label={`${t.removeBudgetPeriod}: ${period.name}`}
+                        disabled={isSavingBudgetPeriods}
+                        onClick={() =>
+                          void handleRemoveBudgetPeriod(period.id)
+                        }
+                        className="shrink-0 rounded-lg px-2 py-1 text-xs font-medium text-red-600 transition hover:bg-red-500/10 disabled:opacity-50 dark:text-red-300"
+                      >
+                        {t.removeBudgetPeriod}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-3 text-xs text-muted-foreground">
+                  {t.noCustomBudgetPeriods}
                 </p>
-              ) : null}
+              )}
+
+              <form
+                onSubmit={(event) => void handleAddBudgetPeriod(event)}
+                className="mt-4 space-y-3 border-t border-border pt-3"
+              >
+                <label className="block text-xs text-muted-foreground">
+                  {t.budgetPeriodName}
+                  <input
+                    required
+                    maxLength={60}
+                    value={budgetPeriodName}
+                    placeholder={t.budgetPeriodNamePlaceholder}
+                    onChange={(event) => setBudgetPeriodName(event.target.value)}
+                    className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                  />
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <label className="block text-xs text-muted-foreground">
+                    {t.budgetPeriodStart}
+                    <input
+                      required
+                      type="date"
+                      value={budgetPeriodStartDate}
+                      onChange={(event) =>
+                        setBudgetPeriodStartDate(event.target.value)
+                      }
+                      className="mt-1 w-full min-w-0 rounded-lg border border-border bg-background px-2 py-2 text-sm text-foreground"
+                    />
+                  </label>
+                  <label className="block text-xs text-muted-foreground">
+                    {t.budgetPeriodEnd}
+                    <input
+                      required
+                      type="date"
+                      value={budgetPeriodEndDate}
+                      onChange={(event) =>
+                        setBudgetPeriodEndDate(event.target.value)
+                      }
+                      className="mt-1 w-full min-w-0 rounded-lg border border-border bg-background px-2 py-2 text-sm text-foreground"
+                    />
+                  </label>
+                </div>
+                {budgetPeriodsError ? (
+                  <p
+                    role="alert"
+                    className="text-xs text-red-600 dark:text-red-300"
+                  >
+                    {budgetPeriodsError}
+                  </p>
+                ) : null}
+                <button
+                  type="submit"
+                  disabled={isSavingBudgetPeriods}
+                  className="w-full rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-emerald-500 disabled:opacity-50"
+                >
+                  {isSavingBudgetPeriods ? t.loading : t.addBudgetPeriod}
+                </button>
+              </form>
             </section>
 
             <div className="rounded-xl border border-border bg-muted/50 p-3">

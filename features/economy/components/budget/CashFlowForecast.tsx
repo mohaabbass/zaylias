@@ -6,7 +6,10 @@ import type { Locale } from "@/lib/i18n";
 import type { EconomyTranslation } from "@/features/economy/i18n";
 import { formatCurrency } from "@/lib/utils";
 import type { Transaction } from "@/features/economy/types/finance";
-import { getBudgetPeriod } from "@/features/economy/utils/budgetPeriod";
+import {
+  getDateKey,
+  type BudgetPeriod,
+} from "@/features/economy/utils/budgetPeriod";
 
 export type ScheduledForecastPayment = {
   amount: number | string;
@@ -21,7 +24,7 @@ type CashFlowForecastProps = {
   error: string;
   locale: Locale;
   t: EconomyTranslation;
-  budgetStartDay: number;
+  budgetPeriod: BudgetPeriod;
 };
 
 const localeMap: Record<Locale, string> = {
@@ -37,18 +40,16 @@ export function CashFlowForecast({
   error,
   locale,
   t,
-  budgetStartDay,
+  budgetPeriod,
 }: CashFlowForecastProps) {
-  const now = new Date();
-  const budgetPeriod = getBudgetPeriod(budgetStartDay, now);
   const dateFormatter = new Intl.DateTimeFormat(localeMap[locale], {
     dateStyle: "medium",
   });
   const periodEnd = new Date(budgetPeriod.endExclusive);
   periodEnd.setDate(periodEnd.getDate() - 1);
-  const periodLabel = `${dateFormatter.format(budgetPeriod.start)} – ${dateFormatter.format(periodEnd)}`;
-  const periodStartKey = `${budgetPeriod.start.getFullYear()}-${String(budgetPeriod.start.getMonth() + 1).padStart(2, "0")}-${String(budgetPeriod.start.getDate()).padStart(2, "0")}`;
-  const periodEndKey = `${budgetPeriod.endExclusive.getFullYear()}-${String(budgetPeriod.endExclusive.getMonth() + 1).padStart(2, "0")}-${String(budgetPeriod.endExclusive.getDate()).padStart(2, "0")}`;
+  const periodLabel = `${budgetPeriod.name ? `${budgetPeriod.name}: ` : ""}${dateFormatter.format(budgetPeriod.start)} – ${dateFormatter.format(periodEnd)}`;
+  const periodStartKey = getDateKey(budgetPeriod.start);
+  const periodEndKey = getDateKey(budgetPeriod.endExclusive);
 
   const periodTotals = useMemo(() => {
     let income = 0;
