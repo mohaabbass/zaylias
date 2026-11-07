@@ -6,8 +6,11 @@ export type CategoryOption = {
 };
 
 const legacyCategoryValueMap: Record<string, string> = {
-  Mat: "food",
-  Livsmedel: "food",
+  Mat: "Livsmedel",
+  Livsmedel: "Livsmedel",
+  food: "Livsmedel",
+  Food: "Livsmedel",
+  Groceries: "Livsmedel",
   Snabbmat: "fast-food",
   Försäkring: "insurance",
   Boende: "housing",
@@ -21,7 +24,6 @@ const legacyCategoryValueMap: Record<string, string> = {
   Lön: "salary",
   Bidrag: "benefits",
   "Övriga inkomster": "other-income",
-  Food: "food",
   "Fast food": "fast-food",
   Insurance: "insurance",
   Housing: "housing",
@@ -34,7 +36,6 @@ const legacyCategoryValueMap: Record<string, string> = {
   Salary: "salary",
   Benefits: "benefits",
   "Other income": "other-income",
-  طعام: "food",
   إيجار: "housing",
   نقل: "transport",
   ترفيه: "entertainment",
@@ -208,7 +209,7 @@ export const economyTranslations = {
     cashFlowForecastLoadError:
       "Obetalda betalningar kunde inte hämtas; prognosen visas inte.",
     expenseCategories: [
-      { value: "food", label: "Livsmedel" },
+      { value: "Livsmedel", label: "Livsmedel" },
       { value: "fast-food", label: "Snabbmat" },
       { value: "insurance", label: "Försäkring" },
       { value: "housing", label: "Boende" },
@@ -381,7 +382,7 @@ export const economyTranslations = {
     cashFlowForecastLoadError:
       "Unpaid payments could not be loaded, so the forecast is unavailable.",
     expenseCategories: [
-      { value: "food", label: "Groceries" },
+      { value: "Livsmedel", label: "Groceries" },
       { value: "fast-food", label: "Fast food" },
       { value: "insurance", label: "Insurance" },
       { value: "housing", label: "Housing" },
