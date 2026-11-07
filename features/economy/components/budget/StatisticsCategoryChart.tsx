@@ -100,7 +100,10 @@ export function StatisticsCategoryChart({
       const transactionDate = transaction.transaction_date;
       if (!transactionDate) continue;
 
-      if (transactionDate >= currentStartKey && transactionDate < currentEndKey) {
+      if (
+        transactionDate >= currentStartKey &&
+        transactionDate < currentEndKey
+      ) {
         const current = currentTotals.get(category) ?? { amount: 0, count: 0 };
         currentTotals.set(category, {
           amount: current.amount + amount,
@@ -185,207 +188,210 @@ export function StatisticsCategoryChart({
       }}
     >
       <section className="rounded-2xl border border-border bg-card p-5">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h3 className="text-lg font-semibold text-foreground">
-            {t.expensesByCategory}
-          </h3>
-          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-            {t.expensesByCategoryDescription}
-          </p>
-        </div>
-        <button
-          type="button"
-          aria-pressed={isComparing}
-          onClick={() => setIsComparing((current) => !current)}
-          className={`min-h-10 rounded-lg border px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
-            isComparing
-              ? "border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-              : "border-border bg-muted text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          {isComparing ? t.hideMonthComparison : t.compareMonths}
-        </button>
-      </div>
-
-      {isComparing ? (
-        <>
-          <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-            <p className="text-xs text-muted-foreground">
-              <span className="font-medium text-foreground">
-                {t.currentBudgetPeriod}:
-              </span>{" "}
-              {currentPeriod.name || monthFormatter.format(currentPeriod.start)}
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h3 className="text-lg font-semibold text-foreground">
+              {t.expensesByCategory}
+            </h3>
+            <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+              {t.expensesByCategoryDescription}
             </p>
-            <label className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>{t.compareWith}</span>
-              <select
-                aria-label={t.compareWith}
-                className="min-h-10 max-w-48 rounded-lg border border-border bg-muted px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-                value={comparePeriodOffset}
-                onChange={(event) =>
-                  setComparePeriodOffset(Number(event.target.value))
-                }
-              >
-                {comparisonPeriods.map((period) => (
-                  <option key={period.offset} value={period.offset}>
-                    {period.name || monthFormatter.format(period.start)}
-                  </option>
-                ))}
-              </select>
-            </label>
           </div>
+          <button
+            type="button"
+            aria-pressed={isComparing}
+            onClick={() => setIsComparing((current) => !current)}
+            className={`min-h-10 rounded-lg border px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+              isComparing
+                ? "border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                : "border-border bg-muted text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {isComparing ? t.hideMonthComparison : t.compareMonths}
+          </button>
+        </div>
 
-          <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
-              <span>{t.currentBudgetPeriod}</span>
+        {isComparing ? (
+          <>
+            <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
+              <p className="text-xs text-muted-foreground">
+                <span className="font-medium text-foreground">
+                  {t.currentBudgetPeriod}:
+                </span>{" "}
+                {currentPeriod.name ||
+                  monthFormatter.format(currentPeriod.start)}
+              </p>
+              <label className="flex items-center gap-2 text-sm text-muted-foreground">
+                <span>{t.compareWith}</span>
+                <select
+                  aria-label={t.compareWith}
+                  className="min-h-10 max-w-48 rounded-lg border border-border bg-muted px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                  value={comparePeriodOffset}
+                  onChange={(event) =>
+                    setComparePeriodOffset(Number(event.target.value))
+                  }
+                >
+                  {comparisonPeriods.map((period) => (
+                    <option key={period.offset} value={period.offset}>
+                      {period.name || monthFormatter.format(period.start)}
+                    </option>
+                  ))}
+                </select>
+              </label>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground/50" />
-              <span>
-                {t.comparisonBudgetPeriod}:{" "}
-                {comparisonPeriod.name ||
-                  monthFormatter.format(comparisonPeriod.start)}
-              </span>
-            </div>
-          </div>
 
-          {data.length > 0 ? (
-            <div className="mt-6 space-y-5">
-              {data.map((entry) => (
-                <div key={entry.key} className="space-y-2">
-                  <p className="truncate text-sm font-medium text-foreground">
-                    {entry.label}
-                  </p>
-                  {(
-                    [
+            <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-xs text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                <span>{t.currentBudgetPeriod}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="h-2.5 w-2.5 rounded-full bg-muted-foreground/50" />
+                <span>
+                  {t.comparisonBudgetPeriod}:{" "}
+                  {comparisonPeriod.name ||
+                    monthFormatter.format(comparisonPeriod.start)}
+                </span>
+              </div>
+            </div>
+
+            {data.length > 0 ? (
+              <div className="mt-6 space-y-5">
+                {data.map((entry) => (
+                  <div key={entry.key} className="space-y-2">
+                    <p className="truncate text-sm font-medium text-foreground">
+                      {entry.label}
+                    </p>
+                    {(
                       [
-                        t.currentBudgetPeriod,
-                        entry.currentAmount,
-                        "bg-emerald-500",
-                      ],
-                      [
-                        t.comparisonBudgetPeriod,
-                        entry.comparisonAmount,
-                        "bg-muted-foreground/50",
-                      ],
-                    ] as const
-                  ).map(([label, amount, color]) => (
-                    <div
-                      key={label}
-                      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3"
-                    >
+                        [
+                          t.currentBudgetPeriod,
+                          entry.currentAmount,
+                          "bg-emerald-500",
+                        ],
+                        [
+                          t.comparisonBudgetPeriod,
+                          entry.comparisonAmount,
+                          "bg-muted-foreground/50",
+                        ],
+                      ] as const
+                    ).map(([label, amount, color]) => (
                       <div
-                        className="h-2.5 overflow-hidden rounded-full bg-muted"
-                        role="meter"
-                        aria-label={`${entry.label} — ${label}`}
-                        aria-valuemin={0}
-                        aria-valuemax={maxPeriodAmount}
-                        aria-valuenow={amount}
+                        key={label}
+                        className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3"
                       >
                         <div
-                          className={`h-full rounded-full ${color}`}
-                          style={{
-                            width: `${
-                              maxPeriodAmount > 0
-                                ? (amount / maxPeriodAmount) * 100
-                                : 0
-                            }%`,
-                          }}
-                        />
+                          className="h-2.5 overflow-hidden rounded-full bg-muted"
+                          role="meter"
+                          aria-label={`${entry.label} — ${label}`}
+                          aria-valuemin={0}
+                          aria-valuemax={maxPeriodAmount}
+                          aria-valuenow={amount}
+                        >
+                          <div
+                            className={`h-full rounded-full ${color}`}
+                            style={{
+                              width: `${
+                                maxPeriodAmount > 0
+                                  ? (amount / maxPeriodAmount) * 100
+                                  : 0
+                              }%`,
+                            }}
+                          />
+                        </div>
+                        <span className="min-w-20 text-end text-xs tabular-nums text-muted-foreground">
+                          {formatCurrency(amount, currencyLocale)} {t.currency}
+                        </span>
                       </div>
-                      <span className="min-w-20 text-end text-xs tabular-nums text-muted-foreground">
-                        {formatCurrency(amount, currencyLocale)} {t.currency}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              ))}
+                    ))}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="mt-6 text-sm text-muted-foreground">
+                {t.noSpendData}
+              </p>
+            )}
+          </>
+        ) : data.length > 0 ? (
+          <>
+            <div
+              className="mt-6 flex h-3 overflow-hidden rounded-full bg-muted"
+              role="img"
+              aria-label={t.expensesByCategory}
+            >
+              {data.map((entry) => {
+                const percentage =
+                  (entry.currentAmount / currentPeriodTotal) * 100;
+
+                return (
+                  <div
+                    key={entry.key}
+                    className={`h-full ${entry.color}`}
+                    style={{ width: `${percentage}%` }}
+                    title={`${entry.label}: ${percentage.toFixed(0)}%`}
+                  />
+                );
+              })}
             </div>
-          ) : (
-            <p className="mt-6 text-sm text-muted-foreground">{t.noSpendData}</p>
-          )}
-        </>
-      ) : data.length > 0 ? (
-        <>
-          <div
-            className="mt-6 flex h-3 overflow-hidden rounded-full bg-muted"
-            role="img"
-            aria-label={t.expensesByCategory}
-          >
-            {data.map((entry) => {
-              const percentage =
-                (entry.currentAmount / currentPeriodTotal) * 100;
 
-              return (
-                <div
-                  key={entry.key}
-                  className={`h-full ${entry.color}`}
-                  style={{ width: `${percentage}%` }}
-                  title={`${entry.label}: ${percentage.toFixed(0)}%`}
-                />
-              );
-            })}
-          </div>
+            <div className="mt-7 space-y-5">
+              {data.map((entry) => {
+                const percentage =
+                  (entry.currentAmount / currentPeriodTotal) * 100;
 
-          <div className="mt-7 space-y-5">
-            {data.map((entry) => {
-              const percentage =
-                (entry.currentAmount / currentPeriodTotal) * 100;
-
-              return (
-                <button
-                  key={entry.key}
-                  type="button"
-                  aria-haspopup="dialog"
-                  aria-expanded={selectedCategory === entry.key}
-                  onClick={() => setSelectedCategory(entry.key)}
-                  className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
-                >
-                  <span className="flex min-w-0 items-center gap-3">
-                    <span
-                      aria-hidden="true"
-                      className={`h-4 w-4 shrink-0 rounded-full ${entry.color}`}
-                    />
-                    <span className="min-w-0">
-                      <span className="block truncate text-base font-medium text-foreground">
-                        {entry.label}
-                      </span>
-                      <span className="block truncate text-sm text-muted-foreground">
-                        {t.expenseCount(entry.count)} ·{" "}
-                        {formatCurrency(entry.currentAmount, currencyLocale)}{" "}
-                        {t.currency}
-                      </span>
-                    </span>
-                  </span>
-
-                  <span className="flex items-center gap-2.5">
-                    <span
-                      className="h-2.5 w-16 overflow-hidden rounded-full bg-muted sm:w-20"
-                      role="meter"
-                      aria-label={entry.label}
-                      aria-valuemin={0}
-                      aria-valuemax={100}
-                      aria-valuenow={percentage}
-                    >
+                return (
+                  <button
+                    key={entry.key}
+                    type="button"
+                    aria-haspopup="dialog"
+                    aria-expanded={selectedCategory === entry.key}
+                    onClick={() => setSelectedCategory(entry.key)}
+                    className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                  >
+                    <span className="flex min-w-0 items-center gap-3">
                       <span
-                        className="block h-full rounded-full bg-foreground/80"
-                        style={{ width: `${percentage}%` }}
+                        aria-hidden="true"
+                        className={`h-4 w-4 shrink-0 rounded-full ${entry.color}`}
                       />
+                      <span className="min-w-0">
+                        <span className="block truncate text-base font-medium text-foreground">
+                          {entry.label}
+                        </span>
+                        <span className="block truncate text-sm text-muted-foreground">
+                          {t.expenseCount(entry.count)} ·{" "}
+                          {formatCurrency(entry.currentAmount, currencyLocale)}{" "}
+                          {t.currency}
+                        </span>
+                      </span>
                     </span>
-                    <span className="w-9 text-end text-sm text-muted-foreground">
-                      {percentage.toFixed(0)}%
+
+                    <span className="flex items-center gap-2.5">
+                      <span
+                        className="h-2.5 w-16 overflow-hidden rounded-full bg-muted sm:w-20"
+                        role="meter"
+                        aria-label={entry.label}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                        aria-valuenow={percentage}
+                      >
+                        <span
+                          className="block h-full rounded-full bg-foreground/80"
+                          style={{ width: `${percentage}%` }}
+                        />
+                      </span>
+                      <span className="w-9 text-end text-sm text-muted-foreground">
+                        {percentage.toFixed(0)}%
+                      </span>
                     </span>
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </>
-      ) : (
-        <p className="mt-6 text-sm text-muted-foreground">{t.noSpendData}</p>
-      )}
+                  </button>
+                );
+              })}
+            </div>
+          </>
+        ) : (
+          <p className="mt-6 text-sm text-muted-foreground">{t.noSpendData}</p>
+        )}
       </section>
       <DrawerContent className="mx-auto max-h-[85dvh] max-w-md rounded-t-2xl border border-border bg-popover p-0 text-popover-foreground shadow-2xl">
         <DrawerHeader className="border-b border-border px-5 pb-4 pt-5">
@@ -396,9 +402,6 @@ export function StatisticsCategoryChart({
             {t.expenseCount(selectedExpenses.length)} ·{" "}
             {formatCurrency(selectedExpenseTotal, currencyLocale)} {t.currency}
           </DrawerDescription>
-          <DrawerClose className="mt-3 self-end rounded-lg border border-border px-3 py-2 text-sm text-muted-foreground transition hover:bg-muted hover:text-foreground">
-            {t.close}
-          </DrawerClose>
         </DrawerHeader>
         <ul className="max-h-[65dvh] space-y-2 overflow-y-auto px-5 py-4">
           {selectedExpenses.map((transaction) => {
