@@ -192,8 +192,12 @@ export const economyTranslations = {
     budgetPeriods: "Budgetperioder",
     budgetPeriodsDescription:
       "Lägg till dina egna budgetmånader med namn och start- och slutdatum.",
+    confirmBudgetPeriodDelete: (periodName: string) =>
+      `Är du säker på att du vill ta bort perioden ${periodName}?`,
     noCustomBudgetPeriods: "Inga egna budgetperioder har lagts till ännu.",
     budgetPeriodName: "Månadens namn",
+    selectBudgetPeriodMonth: "Välj en månad",
+    customBudgetPeriodName: "Anpassat namn",
     budgetPeriodStart: "Startdatum",
     budgetPeriodEnd: "Slutdatum",
     addBudgetPeriod: "Lägg till period",
@@ -385,8 +389,12 @@ export const economyTranslations = {
     budgetPeriods: "Budget periods",
     budgetPeriodsDescription:
       "Add your own budget months with a name, start date, and end date.",
+    confirmBudgetPeriodDelete: (periodName: string) =>
+      `Are you sure you want to remove period ${periodName}?`,
     noCustomBudgetPeriods: "No custom budget periods have been added yet.",
-    budgetPeriodName: "Period name",
+    budgetPeriodName: "Month name",
+    selectBudgetPeriodMonth: "Select a month",
+    customBudgetPeriodName: "Custom name",
     budgetPeriodStart: "Start date",
     budgetPeriodEnd: "End date",
     addBudgetPeriod: "Add period",

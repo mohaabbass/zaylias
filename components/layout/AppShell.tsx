@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { AlertDialog } from "@base-ui/react/alert-dialog";
 import {
   ArrowRight,
   BarChart3,
@@ -46,6 +47,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from "@/components/ui/drawer";
+import { Button } from "@/components/ui/button";
 import { formatCurrency, sortAccountsByFavorite } from "@/lib/utils";
 import { normalizeCategoryValue } from "@/features/economy/i18n";
 import type { Locale } from "@/lib/i18n";
@@ -86,6 +88,15 @@ function getLocalDateString(date: Date) {
 
 export function AppShell() {
   const { t, locale, setLocale, locales, localeLabels } = useLocale();
+  const budgetMonthNames = useMemo(() => {
+    const formatter = new Intl.DateTimeFormat(localeMap[locale], {
+      month: "long",
+      timeZone: "UTC",
+    });
+    return Array.from({ length: 12 }, (_, month) =>
+      formatter.format(new Date(Date.UTC(2020, month, 1))),
+    );
+  }, [locale]);
   const {
     session,
     loading,
@@ -159,8 +170,15 @@ export function AppShell() {
   const [isSavingBudgetPeriods, setIsSavingBudgetPeriods] = useState(false);
   const [budgetPeriodsError, setBudgetPeriodsError] = useState("");
   const [budgetPeriodName, setBudgetPeriodName] = useState("");
+  const [budgetPeriodMonth, setBudgetPeriodMonth] = useState<number | null>(
+    null,
+  );
+  const [isCustomBudgetPeriodName, setIsCustomBudgetPeriodName] =
+    useState(false);
   const [budgetPeriodStartDate, setBudgetPeriodStartDate] = useState("");
   const [budgetPeriodEndDate, setBudgetPeriodEndDate] = useState("");
+  const [pendingBudgetPeriodRemoval, setPendingBudgetPeriodRemoval] =
+    useState<StoredBudgetPeriod | null>(null);
   const [selectedBudgetPeriodSelection, setSelectedBudgetPeriodSelection] =
     useState<{ userId: string; id: string | null } | null>(null);
   const [today, setToday] = useState(() => new Date(2000, 0, 1));
@@ -173,22 +191,22 @@ export function AppShell() {
     session?.user.user_metadata?.budget_periods,
   );
   const budgetPeriods =
-    budgetPeriodsOverride &&
-    budgetPeriodsOverride.userId === session?.user.id
+    budgetPeriodsOverride && budgetPeriodsOverride.userId === session?.user.id
       ? budgetPeriodsOverride.value
       : storedBudgetPeriods;
   const defaultBudgetPeriod = getBudgetPeriodForDate(today, budgetPeriods);
   const selectedCustomBudgetPeriod = budgetPeriods.find(
     (period) => period.id === selectedBudgetPeriodId,
   );
-  const selectedBudgetPeriod =
-    selectedCustomBudgetPeriod
-      ? toBudgetPeriod(selectedCustomBudgetPeriod)
-      : selectedBudgetPeriodId?.startsWith("calendar-")
-        ? getCalendarBudgetPeriod(
-            new Date(`${selectedBudgetPeriodId.slice("calendar-".length)}T00:00:00`),
-          )
-        : defaultBudgetPeriod;
+  const selectedBudgetPeriod = selectedCustomBudgetPeriod
+    ? toBudgetPeriod(selectedCustomBudgetPeriod)
+    : selectedBudgetPeriodId?.startsWith("calendar-")
+      ? getCalendarBudgetPeriod(
+          new Date(
+            `${selectedBudgetPeriodId.slice("calendar-".length)}T00:00:00`,
+          ),
+        )
+      : defaultBudgetPeriod;
   const budgetPeriodOptions = [
     ...budgetPeriods.map(toBudgetPeriod),
     defaultBudgetPeriod,
@@ -535,7 +553,9 @@ export function AppShell() {
     event: React.FormEvent<HTMLFormElement>,
   ) => {
     event.preventDefault();
-    const name = budgetPeriodName.trim();
+    const name = isCustomBudgetPeriodName
+      ? budgetPeriodName.trim()
+      : budgetMonthNames[budgetPeriodMonth ?? -1] ?? "";
     const hasInvalidRange =
       !budgetPeriodStartDate ||
       !budgetPeriodEndDate ||
@@ -563,13 +583,17 @@ export function AppShell() {
 
     if (await saveBudgetPeriods(nextPeriods)) {
       setBudgetPeriodName("");
+      setBudgetPeriodMonth(null);
+      setIsCustomBudgetPeriodName(false);
       setBudgetPeriodStartDate("");
       setBudgetPeriodEndDate("");
     }
   };
 
   const handleRemoveBudgetPeriod = async (periodId: string) => {
-    const nextPeriods = budgetPeriods.filter((period) => period.id !== periodId);
+    const nextPeriods = budgetPeriods.filter(
+      (period) => period.id !== periodId,
+    );
     const nextSelectedPeriodId =
       selectedBudgetPeriodId === periodId ? null : selectedBudgetPeriodId;
     await saveBudgetPeriods(nextPeriods, nextSelectedPeriodId);
@@ -822,9 +846,7 @@ export function AppShell() {
     setIsAddDrawerOpen(false);
   };
 
-  const handleCreateLoan = async (
-    event: React.FormEvent<HTMLFormElement>,
-  ) => {
+  const handleCreateLoan = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setCreationError("");
 
@@ -1537,7 +1559,10 @@ export function AppShell() {
                   />
                 </label>
                 {creationError ? (
-                  <p role="alert" className="text-sm text-red-600 dark:text-red-300">
+                  <p
+                    role="alert"
+                    className="text-sm text-red-600 dark:text-red-300"
+                  >
                     {creationError}
                   </p>
                 ) : null}
@@ -1605,7 +1630,10 @@ export function AppShell() {
                   />
                 </label>
                 {creationError ? (
-                  <p role="alert" className="text-sm text-red-600 dark:text-red-300">
+                  <p
+                    role="alert"
+                    className="text-sm text-red-600 dark:text-red-300"
+                  >
                     {creationError}
                   </p>
                 ) : null}
@@ -1690,7 +1718,7 @@ export function AppShell() {
           setIsMenuDrawerOpen(open);
         }}
       >
-        <DrawerContent className="mx-auto max-w-md rounded-t-2xl border border-border bg-popover p-0 text-popover-foreground shadow-2xl">
+        <DrawerContent className="mx-auto h-[calc(100dvh-env(safe-area-inset-top))] max-h-none max-w-md rounded-t-2xl border border-border bg-popover p-0 text-popover-foreground shadow-2xl sm:h-auto sm:max-h-[calc(100dvh-6rem)]">
           <DrawerHeader className="border-b border-border px-4 pb-3 pt-4">
             <div className="flex items-center justify-between gap-3">
               <DrawerTitle className="text-lg font-semibold text-foreground">
@@ -1706,7 +1734,7 @@ export function AppShell() {
             </div>
           </DrawerHeader>
 
-          <div className="space-y-4 px-4 pb-6 pt-4 text-sm text-foreground">
+          <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-4 text-sm text-foreground">
             <button
               type="button"
               onClick={() => {
@@ -1732,45 +1760,44 @@ export function AppShell() {
             </button>
 
             <section className="rounded-xl border border-border bg-muted/50 p-3">
-              <h2 className="font-medium text-foreground">
-                {t.budgetPeriods}
-              </h2>
+              <h2 className="font-medium text-foreground">{t.budgetPeriods}</h2>
               <p className="mt-1 text-xs text-muted-foreground">
                 {t.budgetPeriodsDescription}
               </p>
 
               {budgetPeriods.length > 0 ? (
-                <ul className="mt-3 space-y-2">
-                  {budgetPeriods.map((period) => (
-                    <li
-                      key={period.id}
-                      className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background px-3 py-2"
-                    >
-                      <span className="min-w-0">
-                        <span className="block truncate text-sm font-medium text-foreground">
-                          {period.name}
-                        </span>
-                        <span className="block text-xs text-muted-foreground">
-                          {formatBudgetPeriodOption(toBudgetPeriod(period)).replace(
-                            `${period.name} · `,
-                            "",
-                          )}
-                        </span>
-                      </span>
-                      <button
-                        type="button"
-                        aria-label={`${t.removeBudgetPeriod}: ${period.name}`}
-                        disabled={isLoadingBudgetPeriods || isSavingBudgetPeriods}
-                        onClick={() =>
-                          void handleRemoveBudgetPeriod(period.id)
-                        }
-                        className="shrink-0 rounded-lg px-2 py-1 text-xs font-medium text-red-600 transition hover:bg-red-500/10 disabled:opacity-50 dark:text-red-300"
+                <div className="mt-3 max-h-60 overflow-y-auto overscroll-contain rounded-lg border border-border/70 p-2">
+                  <ul aria-label={t.budgetPeriods} className="space-y-2">
+                    {budgetPeriods.map((period) => (
+                      <li
+                        key={period.id}
+                        className="flex items-center justify-between gap-3 rounded-lg border border-border bg-background px-3 py-2"
                       >
-                        {t.removeBudgetPeriod}
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+                        <span className="min-w-0">
+                          <span className="block truncate text-sm font-medium text-foreground">
+                            {period.name}
+                          </span>
+                          <span className="block text-xs text-muted-foreground">
+                            {formatBudgetPeriodOption(
+                              toBudgetPeriod(period),
+                            ).replace(`${period.name} · `, "")}
+                          </span>
+                        </span>
+                        <button
+                          type="button"
+                          aria-label={`${t.removeBudgetPeriod}: ${period.name}`}
+                          disabled={
+                            isLoadingBudgetPeriods || isSavingBudgetPeriods
+                          }
+                          onClick={() => setPendingBudgetPeriodRemoval(period)}
+                          className="shrink-0 rounded-lg px-2 py-1 text-xs font-medium text-red-600 transition hover:bg-red-500/10 disabled:opacity-50 dark:text-red-300"
+                        >
+                          {t.removeBudgetPeriod}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               ) : (
                 <p className="mt-3 text-xs text-muted-foreground">
                   {t.noCustomBudgetPeriods}
@@ -1783,14 +1810,46 @@ export function AppShell() {
               >
                 <label className="block text-xs text-muted-foreground">
                   {t.budgetPeriodName}
-                  <input
-                    required
-                    maxLength={60}
-                    value={budgetPeriodName}
-                    placeholder={t.budgetPeriodNamePlaceholder}
-                    onChange={(event) => setBudgetPeriodName(event.target.value)}
+                  <select
+                    required={!isCustomBudgetPeriodName}
+                    value={
+                      isCustomBudgetPeriodName
+                        ? "custom"
+                        : budgetPeriodMonth?.toString() ?? ""
+                    }
+                    onChange={(event) => {
+                      const value = event.target.value;
+                      const isCustom = value === "custom";
+                      setIsCustomBudgetPeriodName(isCustom);
+                      setBudgetPeriodName("");
+                      setBudgetPeriodMonth(
+                        isCustom || value === "" ? null : Number(value),
+                      );
+                    }}
                     className="mt-1 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
-                  />
+                  >
+                    <option value="" disabled>
+                      {t.selectBudgetPeriodMonth}
+                    </option>
+                    {budgetMonthNames.map((month, index) => (
+                      <option key={month} value={index}>
+                        {month}
+                      </option>
+                    ))}
+                    <option value="custom">{t.customBudgetPeriodName}</option>
+                  </select>
+                  {isCustomBudgetPeriodName ? (
+                    <input
+                      required
+                      maxLength={60}
+                      value={budgetPeriodName}
+                      placeholder={t.budgetPeriodNamePlaceholder}
+                      onChange={(event) =>
+                        setBudgetPeriodName(event.target.value)
+                      }
+                      className="mt-2 w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground"
+                    />
+                  ) : null}
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   <label className="block text-xs text-muted-foreground">
@@ -1910,6 +1969,55 @@ export function AppShell() {
           </div>
         </DrawerContent>
       </Drawer>
+
+      <AlertDialog.Root
+        open={pendingBudgetPeriodRemoval !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingBudgetPeriodRemoval(null);
+        }}
+      >
+        <AlertDialog.Portal>
+          <AlertDialog.Backdrop className="fixed inset-0 z-50 bg-black/50 transition-opacity data-ending-style:opacity-0 data-starting-style:opacity-0" />
+          <AlertDialog.Viewport className="fixed inset-0 z-50 grid place-items-center overflow-y-auto p-4">
+            <AlertDialog.Popup className="w-full max-w-md rounded-xl border border-border bg-card p-6 text-card-foreground shadow-lg outline-none transition-[opacity,transform] data-ending-style:scale-95 data-ending-style:opacity-0 data-starting-style:scale-95 data-starting-style:opacity-0">
+              <AlertDialog.Title className="text-lg font-semibold">
+                {t.deleteTitle}
+              </AlertDialog.Title>
+              <AlertDialog.Description className="mt-2 text-sm text-muted-foreground">
+                {pendingBudgetPeriodRemoval
+                  ? t.confirmBudgetPeriodDelete(
+                      pendingBudgetPeriodRemoval.name,
+                    )
+                  : ""}
+              </AlertDialog.Description>
+              <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setPendingBudgetPeriodRemoval(null)}
+                >
+                  {t.cancel}
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  disabled={isSavingBudgetPeriods}
+                  onClick={() => {
+                    if (pendingBudgetPeriodRemoval) {
+                      void handleRemoveBudgetPeriod(
+                        pendingBudgetPeriodRemoval.id,
+                      );
+                      setPendingBudgetPeriodRemoval(null);
+                    }
+                  }}
+                >
+                  {t.remove}
+                </Button>
+              </div>
+            </AlertDialog.Popup>
+          </AlertDialog.Viewport>
+        </AlertDialog.Portal>
+      </AlertDialog.Root>
 
       <BottomNav
         items={navItems.map((item) => ({
