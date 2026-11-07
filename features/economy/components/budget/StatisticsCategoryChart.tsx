@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChartNoAxesColumn, ChartPie } from "lucide-react";
+import { ChartNoAxesColumn, ChartPie, ListFilter, X } from "lucide-react";
 
 import {
   Drawer,
@@ -31,6 +31,12 @@ type StatisticsCategoryChartProps = {
   budgetPeriods: StoredBudgetPeriod[];
 };
 
+type CategorySortOption = "amount" | "count" | "name";
+
+function isCategorySortOption(value: string): value is CategorySortOption {
+  return value === "amount" || value === "count" || value === "name";
+}
+
 const categoryColors = [
   { className: "bg-blue-600", chartColor: "#2563eb" },
   { className: "bg-emerald-500", chartColor: "#10b981" },
@@ -59,6 +65,10 @@ export function StatisticsCategoryChart({
 }: StatisticsCategoryChartProps) {
   const [isComparing, setIsComparing] = useState(false);
   const [isCircularChart, setIsCircularChart] = useState(false);
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [categoryFilters, setCategoryFilters] = useState<string[] | null>(null);
+  const [categorySearch, setCategorySearch] = useState("");
+  const [sortBy, setSortBy] = useState<CategorySortOption>("amount");
   const [comparePeriodOffset, setComparePeriodOffset] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const currentPeriod = budgetPeriod;
@@ -77,11 +87,16 @@ export function StatisticsCategoryChart({
     year: "numeric",
   });
   const currencyLocale = localeCode;
+  const percentageFormatter = new Intl.NumberFormat(localeCode, {
+    style: "percent",
+    maximumFractionDigits: 0,
+    signDisplay: "always",
+  });
   const currentEndKey = getDateKey(currentPeriod.endExclusive);
   const compareStartKey = getDateKey(comparisonPeriod.start);
   const compareEndKey = getDateKey(comparisonPeriod.endExclusive);
 
-  const data = (() => {
+  const allData = (() => {
     const currentTotals = new Map<string, { amount: number; count: number }>();
     const comparisonTotals = new Map<string, number>();
 
@@ -146,14 +161,28 @@ export function StatisticsCategoryChart({
         isComparing
           ? entry.currentAmount > 0 || entry.comparisonAmount > 0
           : entry.currentAmount > 0,
-      )
-      .sort((a, b) => b.currentAmount - a.currentAmount);
+      );
   })();
 
+  const data = allData
+    .filter(
+      (entry) => categoryFilters === null || categoryFilters.includes(entry.key),
+    )
+    .sort((a, b) => {
+      if (sortBy === "count") {
+        return b.count - a.count || b.currentAmount - a.currentAmount;
+      }
+      if (sortBy === "name") {
+        return a.label.localeCompare(b.label, localeCode);
+      }
+      return b.currentAmount - a.currentAmount || b.count - a.count;
+    });
   const currentPeriodTotal = data.reduce(
     (sum, entry) => sum + entry.currentAmount,
     0,
   );
+  const activeCategoryFilterCount =
+    categoryFilters === null ? 0 : allData.length - data.length;
   const maxPeriodAmount = Math.max(
     0,
     ...data.flatMap((entry) => [entry.currentAmount, entry.comparisonAmount]),
@@ -179,12 +208,20 @@ export function StatisticsCategoryChart({
     (sum, transaction) => sum + Number(transaction.amount),
     0,
   );
+  const searchableCategories = allData.filter((entry) =>
+    entry.label
+      .toLocaleLowerCase(localeCode)
+      .includes(categorySearch.trim().toLocaleLowerCase(localeCode)),
+  );
 
   return (
     <Drawer
-      open={selectedCategory !== null}
+      open={selectedCategory !== null || isFilterOpen}
       onOpenChange={(open) => {
-        if (!open) setSelectedCategory(null);
+        if (!open) {
+          setSelectedCategory(null);
+          setIsFilterOpen(false);
+        }
       }}
     >
       <section className="rounded-2xl border border-border bg-card p-5">
@@ -236,6 +273,28 @@ export function StatisticsCategoryChart({
                 <ChartPie aria-hidden="true" className="h-5 w-5" />
               )}
             </button>
+            <button
+              type="button"
+              aria-label={t.filters}
+              aria-pressed={categoryFilters !== null}
+              title={t.filters}
+              onClick={() => {
+                setCategorySearch("");
+                setIsFilterOpen(true);
+              }}
+              className={`relative flex h-10 w-10 items-center justify-center rounded-lg border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+                categoryFilters !== null
+                  ? "border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
+                  : "border-border bg-muted text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <ListFilter aria-hidden="true" className="h-5 w-5" />
+              {activeCategoryFilterCount > 0 && (
+                <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-emerald-600 px-1 text-[10px] font-semibold text-white">
+                  {activeCategoryFilterCount}
+                </span>
+              )}
+            </button>
           </div>
         </div>
 
@@ -285,56 +344,86 @@ export function StatisticsCategoryChart({
 
             {data.length > 0 ? (
               <div className="mt-6 space-y-5">
-                {data.map((entry) => (
-                  <div key={entry.key} className="space-y-2">
-                    <p className="truncate text-sm font-medium text-foreground">
-                      {entry.label}
-                    </p>
-                    {(
-                      [
-                        [
-                          t.currentBudgetPeriod,
-                          entry.currentAmount,
-                          "bg-emerald-500",
-                        ],
-                        [
-                          t.comparisonBudgetPeriod,
-                          entry.comparisonAmount,
-                          "bg-muted-foreground/50",
-                        ],
-                      ] as const
-                    ).map(([label, amount, color]) => (
-                      <div
-                        key={label}
-                        className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3"
-                      >
-                        <div
-                          className="h-2.5 overflow-hidden rounded-full bg-muted"
-                          role="meter"
-                          aria-label={`${entry.label} — ${label}`}
-                          aria-valuemin={0}
-                          aria-valuemax={maxPeriodAmount}
-                          aria-valuenow={amount}
+                {data.map((entry) => {
+                  const change =
+                    entry.comparisonAmount > 0
+                      ? (entry.currentAmount - entry.comparisonAmount) /
+                        entry.comparisonAmount
+                      : null;
+                  const changeLabel =
+                    change === null
+                      ? t.newSpending
+                      : percentageFormatter.format(change);
+                  const changeColor =
+                    change === null || change > 0
+                      ? "text-red-600 dark:text-red-400"
+                      : change < 0
+                        ? "text-emerald-700 dark:text-emerald-400"
+                        : "text-muted-foreground";
+
+                  return (
+                    <div key={entry.key} className="space-y-2">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="truncate text-sm font-medium text-foreground">
+                          {entry.label}
+                        </p>
+                        <span
+                          aria-label={`${t.spendingChangeFromComparison}: ${changeLabel}`}
+                          className={`shrink-0 text-xs font-semibold tabular-nums ${changeColor}`}
                         >
-                          <div
-                            className={`h-full rounded-full ${color}`}
-                            style={{
-                              width: `${
-                                maxPeriodAmount > 0
-                                  ? (amount / maxPeriodAmount) * 100
-                                  : 0
-                              }%`,
-                            }}
-                          />
-                        </div>
-                        <span className="min-w-20 text-end text-xs tabular-nums text-muted-foreground">
-                          {formatCurrency(amount, currencyLocale)} {t.currency}
+                          {changeLabel}
                         </span>
                       </div>
-                    ))}
-                  </div>
-                ))}
+                      {(
+                        [
+                          [
+                            t.currentBudgetPeriod,
+                            entry.currentAmount,
+                            "bg-emerald-500",
+                          ],
+                          [
+                            t.comparisonBudgetPeriod,
+                            entry.comparisonAmount,
+                            "bg-muted-foreground/50",
+                          ],
+                        ] as const
+                      ).map(([label, amount, color]) => (
+                        <div
+                          key={label}
+                          className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3"
+                        >
+                          <div
+                            className="h-2.5 overflow-hidden rounded-full bg-muted"
+                            role="meter"
+                            aria-label={`${entry.label} — ${label}`}
+                            aria-valuemin={0}
+                            aria-valuemax={maxPeriodAmount}
+                            aria-valuenow={amount}
+                          >
+                            <div
+                              className={`h-full rounded-full ${color}`}
+                              style={{
+                                width: `${
+                                  maxPeriodAmount > 0
+                                    ? (amount / maxPeriodAmount) * 100
+                                    : 0
+                                }%`,
+                              }}
+                            />
+                          </div>
+                          <span className="min-w-20 text-end text-xs tabular-nums text-muted-foreground">
+                            {formatCurrency(amount, currencyLocale)} {t.currency}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })}
               </div>
+            ) : allData.length > 0 ? (
+              <p className="mt-6 text-sm text-muted-foreground">
+                {t.noMatchingCategories}
+              </p>
             ) : (
               <p className="mt-6 text-sm text-muted-foreground">
                 {t.noSpendData}
@@ -487,11 +576,126 @@ export function StatisticsCategoryChart({
               })}
             </div>
           </>
+        ) : allData.length > 0 ? (
+          <p className="mt-6 text-sm text-muted-foreground">
+            {t.noMatchingCategories}
+          </p>
         ) : (
           <p className="mt-6 text-sm text-muted-foreground">{t.noSpendData}</p>
         )}
       </section>
-      <DrawerContent className="mx-auto max-h-[85dvh] max-w-md rounded-t-2xl border border-border bg-popover p-0 text-popover-foreground shadow-2xl">
+      {isFilterOpen ? (
+        <DrawerContent className="mx-auto max-h-[85dvh] max-w-md rounded-t-2xl border border-border bg-popover p-0 text-popover-foreground shadow-2xl">
+          <DrawerHeader className="border-b border-border px-5 pb-4 pt-5 text-left">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <DrawerTitle className="text-lg font-semibold text-foreground">
+                  {t.filterCategories}
+                </DrawerTitle>
+                <DrawerDescription className="mt-1">
+                  {t.filterCategoriesDescription}
+                </DrawerDescription>
+              </div>
+              <DrawerClose
+                type="button"
+                aria-label={t.close}
+                className="rounded-full border border-border bg-muted p-2 text-muted-foreground transition hover:border-ring hover:text-foreground"
+              >
+                <X aria-hidden="true" className="size-4" />
+              </DrawerClose>
+            </div>
+          </DrawerHeader>
+          <div className="border-b border-border px-5 py-3">
+            <label className="flex min-h-10 items-center justify-between gap-3 text-sm text-muted-foreground">
+              <span>{t.sortCategories}</span>
+              <select
+                aria-label={t.sortCategories}
+                className="min-h-10 rounded-lg border border-border bg-muted px-2 text-sm text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                value={sortBy}
+                onChange={(event) => {
+                  if (isCategorySortOption(event.target.value)) {
+                    setSortBy(event.target.value);
+                  }
+                }}
+              >
+                <option value="amount">{t.sortCategoriesAmount}</option>
+                <option value="count">{t.sortCategoriesCount}</option>
+                <option value="name">{t.sortCategoriesName}</option>
+              </select>
+            </label>
+          </div>
+          <div className="border-b border-border px-5 py-3">
+            <label className="sr-only" htmlFor="category-filter-search">
+              {t.searchCategories}
+            </label>
+            <input
+              id="category-filter-search"
+              type="search"
+              value={categorySearch}
+              onChange={(event) => setCategorySearch(event.target.value)}
+              placeholder={t.searchCategories}
+              className="min-h-10 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+            />
+          </div>
+          <div className="max-h-[50dvh] space-y-1 overflow-y-auto px-5 py-3">
+            {searchableCategories.map((entry) => {
+                const isIncluded =
+                  categoryFilters === null ||
+                  categoryFilters.includes(entry.key);
+
+                return (
+                  <label
+                    key={entry.key}
+                    className="flex cursor-pointer items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-foreground transition-colors hover:bg-muted/70"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isIncluded}
+                      onChange={() =>
+                        setCategoryFilters((current) => {
+                          const included =
+                            current ?? allData.map((item) => item.key);
+                          return isIncluded
+                            ? included.filter((key) => key !== entry.key)
+                            : [...included, entry.key];
+                        })
+                      }
+                      className="size-4 accent-emerald-600"
+                    />
+                    <span
+                      aria-hidden="true"
+                      className={`h-3 w-3 shrink-0 rounded-full ${entry.colorClass}`}
+                    />
+                    <span>{entry.label}</span>
+                  </label>
+                );
+              })}
+            {allData.length === 0 ? (
+              <p className="px-3 py-4 text-sm text-muted-foreground">
+                {t.noSpendData}
+              </p>
+            ) : searchableCategories.length === 0 ? (
+              <p className="px-3 py-4 text-sm text-muted-foreground">
+                {t.noMatchingCategories}
+              </p>
+            ) : null}
+          </div>
+          <div className="flex gap-3 border-t border-border px-5 py-4">
+            <button
+              type="button"
+              onClick={() => setCategoryFilters(null)}
+              disabled={categoryFilters === null}
+              className="min-h-10 flex-1 rounded-xl border border-border px-4 py-2.5 text-sm font-semibold text-foreground transition-colors hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {t.clearCategoryFilters}
+            </button>
+            <DrawerClose className="min-h-10 flex-1 rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/40">
+              {t.close}
+            </DrawerClose>
+          </div>
+        </DrawerContent>
+      ) : (
+        <DrawerContent className="mx-auto max-h-[85dvh] max-w-md rounded-t-2xl border border-border bg-popover p-0 text-popover-foreground shadow-2xl">
         <DrawerHeader className="border-b border-border px-5 pb-4 pt-5">
           <DrawerTitle className="text-lg font-semibold text-foreground">
             {selectedEntry?.label ?? t.expensesByCategory}
@@ -536,7 +740,8 @@ export function StatisticsCategoryChart({
             );
           })}
         </ul>
-      </DrawerContent>
+        </DrawerContent>
+      )}
     </Drawer>
   );
 }
