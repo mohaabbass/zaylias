@@ -87,8 +87,7 @@ export function StatisticsCategoryChart({
   const compareEndKey = getDateKey(comparisonPeriod.endExclusive);
 
   const data = (() => {
-    const allTimeTotals = new Map<string, { amount: number; count: number }>();
-    const currentTotals = new Map<string, number>();
+    const currentTotals = new Map<string, { amount: number; count: number }>();
     const comparisonTotals = new Map<string, number>();
 
     for (const transaction of transactions) {
@@ -98,17 +97,15 @@ export function StatisticsCategoryChart({
       if (!Number.isFinite(amount)) continue;
 
       const category = normalizeCategoryValue(transaction.category);
-      const allTime = allTimeTotals.get(category) ?? { amount: 0, count: 0 };
-      allTimeTotals.set(category, {
-        amount: allTime.amount + amount,
-        count: allTime.count + 1,
-      });
-
       const transactionDate = transaction.transaction_date;
       if (!transactionDate) continue;
 
       if (transactionDate >= currentStartKey && transactionDate < currentEndKey) {
-        currentTotals.set(category, (currentTotals.get(category) ?? 0) + amount);
+        const current = currentTotals.get(category) ?? { amount: 0, count: 0 };
+        currentTotals.set(category, {
+          amount: current.amount + amount,
+          count: current.count + 1,
+        });
       } else if (
         transactionDate >= compareStartKey &&
         transactionDate < compareEndKey
@@ -122,7 +119,6 @@ export function StatisticsCategoryChart({
 
     const categories = [...t.expenseCategories];
     for (const category of [
-      ...allTimeTotals.keys(),
       ...currentTotals.keys(),
       ...comparisonTotals.keys(),
     ]) {
@@ -138,25 +134,23 @@ export function StatisticsCategoryChart({
       .map((category, index) => ({
         key: category.value,
         label: category.label,
-        value: allTimeTotals.get(category.value)?.amount ?? 0,
-        count: allTimeTotals.get(category.value)?.count ?? 0,
-        currentAmount: currentTotals.get(category.value) ?? 0,
+        count: currentTotals.get(category.value)?.count ?? 0,
+        currentAmount: currentTotals.get(category.value)?.amount ?? 0,
         comparisonAmount: comparisonTotals.get(category.value) ?? 0,
         color: categoryColors[index % categoryColors.length],
       }))
       .filter((entry) =>
         isComparing
           ? entry.currentAmount > 0 || entry.comparisonAmount > 0
-          : entry.value > 0,
+          : entry.currentAmount > 0,
       )
-      .sort((a, b) =>
-        isComparing
-          ? b.currentAmount - a.currentAmount
-          : b.value - a.value,
-      );
+      .sort((a, b) => b.currentAmount - a.currentAmount);
   })();
 
-  const allTimeTotal = data.reduce((sum, entry) => sum + entry.value, 0);
+  const currentPeriodTotal = data.reduce(
+    (sum, entry) => sum + entry.currentAmount,
+    0,
+  );
   const maxPeriodAmount = Math.max(
     0,
     ...data.flatMap((entry) => [entry.currentAmount, entry.comparisonAmount]),
@@ -168,6 +162,8 @@ export function StatisticsCategoryChart({
           (transaction) =>
             transaction.type === "expense" &&
             normalizeCategoryValue(transaction.category) === selectedCategory &&
+            transaction.transaction_date >= currentStartKey &&
+            transaction.transaction_date < currentEndKey &&
             Number.isFinite(Number(transaction.amount)),
         )
         .sort(
@@ -319,7 +315,8 @@ export function StatisticsCategoryChart({
             aria-label={t.expensesByCategory}
           >
             {data.map((entry) => {
-              const percentage = (entry.value / allTimeTotal) * 100;
+              const percentage =
+                (entry.currentAmount / currentPeriodTotal) * 100;
 
               return (
                 <div
@@ -334,7 +331,8 @@ export function StatisticsCategoryChart({
 
           <div className="mt-7 space-y-5">
             {data.map((entry) => {
-              const percentage = (entry.value / allTimeTotal) * 100;
+              const percentage =
+                (entry.currentAmount / currentPeriodTotal) * 100;
 
               return (
                 <button
@@ -356,7 +354,7 @@ export function StatisticsCategoryChart({
                       </span>
                       <span className="block truncate text-sm text-muted-foreground">
                         {t.expenseCount(entry.count)} ·{" "}
-                        {formatCurrency(entry.value, currencyLocale)}{" "}
+                        {formatCurrency(entry.currentAmount, currencyLocale)}{" "}
                         {t.currency}
                       </span>
                     </span>

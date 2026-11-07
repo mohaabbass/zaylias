@@ -198,6 +198,21 @@ export function AppShell() {
   );
   const selectedPeriodStartKey = getDateKey(selectedBudgetPeriod.start);
   const selectedPeriodEndKey = getDateKey(selectedBudgetPeriod.endExclusive);
+  const selectedPeriodTransactions = transactions.filter(
+    (transaction) =>
+      transaction.transaction_date >= selectedPeriodStartKey &&
+      transaction.transaction_date < selectedPeriodEndKey,
+  );
+  const selectedPeriodBalance = selectedPeriodTransactions.reduce(
+    (balance, transaction) => {
+      const amount = Number(transaction.amount);
+      if (!Number.isFinite(amount)) return balance;
+      return transaction.type === "income"
+        ? balance + amount
+        : balance - amount;
+    },
+    0,
+  );
   const [editingTransactionId, setEditingTransactionId] = useState<
     string | null
   >(null);
@@ -918,11 +933,11 @@ export function AppShell() {
               <div className="space-y-3">
                 <div className="rounded-xl border border-border bg-muted/50 p-4">
                   <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                    {t.totalBalance}
+                    {t.budgetPeriodBalance}
                   </p>
                   <p className="mt-2 text-2xl font-semibold text-foreground">
                     {formatCurrency(
-                      totalBalance,
+                      selectedPeriodBalance,
                       locale === "en" ? "en-US" : "sv-SE",
                     )}{" "}
                     {t.currency}
@@ -933,7 +948,7 @@ export function AppShell() {
                     <p className="text-xs text-muted-foreground">{t.expense}</p>
                     <p className="mt-2 text-lg font-semibold text-red-500">
                       {formatCurrency(
-                        transactions
+                        selectedPeriodTransactions
                           .filter(
                             (transaction) => transaction.type === "expense",
                           )
@@ -951,7 +966,7 @@ export function AppShell() {
                     <p className="text-xs text-muted-foreground">{t.income}</p>
                     <p className="mt-2 text-lg font-semibold text-emerald-500">
                       {formatCurrency(
-                        transactions
+                        selectedPeriodTransactions
                           .filter(
                             (transaction) => transaction.type === "income",
                           )
@@ -983,20 +998,20 @@ export function AppShell() {
           <div className="space-y-6">
             {renderBudgetPeriodSelector()}
             <BalanceCard
-              totalBalance={totalBalance}
-              transactions={transactions}
+              periodBalance={selectedPeriodBalance}
+              transactions={selectedPeriodTransactions}
               locale={locale}
               t={t}
               onOpenCashFlow={() => setIsCashFlowDrawerOpen(true)}
             />
             <DailySpendingChart
-              transactions={transactions}
+              transactions={selectedPeriodTransactions}
               locale={locale}
               t={t}
               budgetPeriod={selectedBudgetPeriod}
             />
             <TransactionList
-              transactions={transactions}
+              transactions={selectedPeriodTransactions}
               onDelete={(id) => void deleteTransaction(id)}
               onEdit={openEditDrawer}
               accounts={accounts}

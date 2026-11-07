@@ -5,7 +5,7 @@ import { formatCurrency } from "@/lib/utils";
 import type { Transaction } from "@/features/economy/types/finance";
 
 type BalanceCardProps = {
-  totalBalance: number;
+  periodBalance: number;
   transactions: Transaction[];
   locale?: string;
   t: EconomyTranslation;
@@ -13,7 +13,7 @@ type BalanceCardProps = {
 };
 
 export function BalanceCard({
-  totalBalance,
+  periodBalance,
   transactions,
   locale = "sv",
   t,
@@ -34,13 +34,13 @@ export function BalanceCard({
     },
     { income: 0, expense: 0 },
   );
-  const isNegative = totalBalance < 0;
+  const isNegative = periodBalance < 0;
   const status =
     transactions.length === 0
       ? t.balanceNoActivity
       : isNegative
         ? t.balanceExpensesAhead
-        : totalBalance > 0
+        : periodBalance > 0
           ? t.balanceIncomeAhead
           : t.balanceEven;
   const activityTotal = totals.income + totals.expense;
@@ -53,7 +53,7 @@ export function BalanceCard({
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-medium text-muted-foreground">
-            {t.totalBalance}
+            {t.budgetPeriodBalance}
           </p>
           <p
             className={`mt-1 text-3xl font-bold tabular-nums tracking-tight ${
@@ -62,14 +62,14 @@ export function BalanceCard({
                 : "text-emerald-600 dark:text-emerald-400"
             }`}
           >
-            {formatCurrency(totalBalance, currencyLocale)} {t.currency}
+            {formatCurrency(periodBalance, currencyLocale)} {t.currency}
           </p>
           <p
             className={`mt-2 flex items-center gap-1.5 text-sm ${
               isNegative ? "text-red-500" : "text-muted-foreground"
             }`}
           >
-            {totalBalance > 0 ? (
+            {periodBalance > 0 ? (
               <ArrowUpRight aria-hidden="true" className="h-4 w-4" />
             ) : isNegative ? (
               <ArrowDownRight aria-hidden="true" className="h-4 w-4" />

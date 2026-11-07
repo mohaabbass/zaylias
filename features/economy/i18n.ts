@@ -55,6 +55,7 @@ export const economyTranslations = {
   sv: {
     editTransaction: "Redigera transaktion",
     totalBalance: "Total balans",
+    budgetPeriodBalance: "Periodens balans",
     allTime: "Totalt",
     balanceIncomeAhead: "Inkomsterna överstiger utgifterna",
     balanceExpensesAhead: "Utgifterna överstiger inkomsterna",
@@ -88,7 +89,8 @@ export const economyTranslations = {
     statisticsChartDescription:
       "Räkningar och prenumerationer ingår i de totala utgifterna.",
     expensesByCategory: "Utgifter per kategori",
-    expensesByCategoryDescription: "Fördelning av dina registrerade utgifter.",
+    expensesByCategoryDescription:
+      "Fördelning av dina registrerade utgifter under vald budgetperiod.",
     compareMonths: "Jämför månader",
     hideMonthComparison: "Dölj jämförelse",
     compareWith: "Jämför med",
@@ -245,6 +247,7 @@ export const economyTranslations = {
   en: {
     editTransaction: "Edit transaction",
     totalBalance: "Total balance",
+    budgetPeriodBalance: "Budget period balance",
     allTime: "All time",
     balanceIncomeAhead: "Income is ahead of expenses",
     balanceExpensesAhead: "Expenses are ahead of income",
@@ -279,7 +282,8 @@ export const economyTranslations = {
     statisticsChartDescription:
       "Bills and subscriptions are included in total expenses.",
     expensesByCategory: "Expenses by category",
-    expensesByCategoryDescription: "A breakdown of your recorded expenses.",
+    expensesByCategoryDescription:
+      "A breakdown of your recorded expenses in the selected budget period.",
     compareMonths: "Compare months",
     hideMonthComparison: "Hide comparison",
     compareWith: "Compare with",
