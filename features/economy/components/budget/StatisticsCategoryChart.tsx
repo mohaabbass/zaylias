@@ -17,7 +17,7 @@ import {
 import { formatCurrency } from "@/lib/utils";
 import type { Transaction } from "@/features/economy/types/finance";
 import {
-  getPreviousBudgetPeriod,
+  toBudgetPeriod,
   type BudgetPeriod,
   type StoredBudgetPeriod,
 } from "@/features/economy/utils/budgetPeriod";
@@ -60,28 +60,21 @@ export function StatisticsCategoryChart({
   const [comparePeriodOffset, setComparePeriodOffset] = useState(1);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const currentPeriod = budgetPeriod;
-  const comparisonPeriods = (() => {
-    const periods = [];
-    let previousPeriod = currentPeriod;
-
-    for (let offset = 1; offset <= 12; offset += 1) {
-      const period = getPreviousBudgetPeriod(previousPeriod, budgetPeriods);
-      periods.push({ offset, ...period });
-      previousPeriod = period;
-    }
-
-    return periods;
-  })();
+  const currentStartKey = getDateKey(currentPeriod.start);
+  const comparisonPeriods = budgetPeriods
+    .filter((period) => period.endDate < currentStartKey)
+    .sort((a, b) => b.startDate.localeCompare(a.startDate))
+    .map((period, index) => ({ offset: index + 1, ...toBudgetPeriod(period) }));
   const comparisonPeriod =
     comparisonPeriods.find(({ offset }) => offset === comparePeriodOffset) ??
-    comparisonPeriods[0];
+    comparisonPeriods[0] ??
+    currentPeriod;
   const localeCode = locale === "en" ? "en-US" : "sv-SE";
   const monthFormatter = new Intl.DateTimeFormat(localeCode, {
     month: "long",
     year: "numeric",
   });
   const currencyLocale = localeCode;
-  const currentStartKey = getDateKey(currentPeriod.start);
   const currentEndKey = getDateKey(currentPeriod.endExclusive);
   const compareStartKey = getDateKey(comparisonPeriod.start);
   const compareEndKey = getDateKey(comparisonPeriod.endExclusive);
@@ -200,9 +193,12 @@ export function StatisticsCategoryChart({
           <button
             type="button"
             aria-pressed={isComparing}
+            disabled={comparisonPeriods.length === 0}
             onClick={() => setIsComparing((current) => !current)}
             className={`min-h-10 rounded-lg border px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
-              isComparing
+              comparisonPeriods.length === 0
+                ? "cursor-not-allowed border-border bg-muted text-muted-foreground opacity-50"
+                : isComparing
                 ? "border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
                 : "border-border bg-muted text-muted-foreground hover:text-foreground"
             }`}
