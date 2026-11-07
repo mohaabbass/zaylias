@@ -56,6 +56,31 @@ export type RecipeIngredient = {
   enhet: string | null;
 };
 
+export const recipeMainIngredientValues = [
+  "chicken",
+  "meat",
+  "minced_meat",
+  "shrimp",
+  "fish",
+  "vegetarian",
+  "other",
+] as const;
+
+export type RecipeMainIngredient =
+  | (typeof recipeMainIngredientValues)[number]
+  | "tofu";
+export type RecipeMainIngredientFilter =
+  (typeof recipeMainIngredientValues)[number];
+
+export function isRecipeMainIngredient(
+  value: string,
+): value is RecipeMainIngredient {
+  return (
+    value === "tofu" ||
+    recipeMainIngredientValues.some((option) => option === value)
+  );
+}
+
 export type Recipe = {
   id: string;
   user_id: string | null;
@@ -63,6 +88,7 @@ export type Recipe = {
   beskrivning: string | null;
   tid: number | null;
   kategori: string | null;
+  main_ingredient: RecipeMainIngredient;
   bild_url: string | null;
   is_favorite: boolean;
   created_at: string;
@@ -81,5 +107,6 @@ export type RecipeFormValues = {
   beskrivning: string;
   tid: string;
   kategori: string;
+  main_ingredient: RecipeMainIngredient | "";
   ingredients: RecipeIngredientFormValues[];
 };

@@ -9,9 +9,13 @@ import {
   Clock3,
   CircleAlert,
   CircleX,
+  Filter,
   Heart,
   ImageIcon,
+  LayoutGrid,
+  List,
   Pencil,
+  Rows3,
   Search,
   Trash2,
 } from "lucide-react";
@@ -26,13 +30,15 @@ import type {
   Recipe,
   RecipeFormValues,
   RecipeIngredient,
+  RecipeMainIngredientFilter,
   PantryProduct,
 } from "@/features/pantry/types";
+import { recipeMainIngredientValues } from "@/features/pantry/types";
 import { compressProductImage } from "@/features/pantry/utils";
 import { supabase } from "@/lib/supabase";
 
 const recipeColumns =
-  "id, user_id, titel, beskrivning, tid, kategori, bild_url, is_favorite, created_at";
+  "id, user_id, titel, beskrivning, tid, kategori, main_ingredient, bild_url, is_favorite, created_at";
 const recipeImageBucket = "recipe-images";
 const maxRecipeImageSize = 5 * 1024 * 1024;
 const recipeImageExtensions: Record<string, string> = {
@@ -49,6 +55,7 @@ function createEmptyForm(defaultCategory: string): RecipeFormValues {
     beskrivning: "",
     tid: "",
     kategori: defaultCategory,
+    main_ingredient: "",
     ingredients: [{ ingrediens_namn: "", kvantitet: "", enhet: "" }],
   };
 }
@@ -74,6 +81,7 @@ type IngredientAvailability =
   | { status: "partial"; missingQuantity: number; unitFactor: number };
 
 type RecipeAvailabilityFilter = "all" | "ready" | "partial" | "missing";
+type RecipeImageDisplay = "large" | "small" | "none";
 
 function normalizeIngredientName(name: string) {
   return name
@@ -291,9 +299,15 @@ export function RecipeView({
   const [reloadToken, setReloadToken] = useState(0);
   const [operationError, setOperationError] = useState("");
   const [search, setSearch] = useState("");
+  const [areFiltersOpen, setAreFiltersOpen] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedMainIngredient, setSelectedMainIngredient] =
+    useState<RecipeMainIngredientFilter | null>(null);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [availabilityFilter, setAvailabilityFilter] =
     useState<RecipeAvailabilityFilter>("all");
+  const [recipeImageDisplay, setRecipeImageDisplay] =
+    useState<RecipeImageDisplay>("large");
   const [expandedRecipeId, setExpandedRecipeId] = useState<string | null>(null);
   const [openAvailabilityId, setOpenAvailabilityId] = useState<string | null>(
     null,
@@ -413,10 +427,35 @@ export function RecipeView({
     };
   }, [reloadToken, userId]);
 
+  const recipeCategories = useMemo(
+    () =>
+      [
+        ...new Set(
+          recipes
+            .map((recipe) => recipe.kategori?.trim() ?? "")
+            .filter(Boolean),
+        ),
+      ].sort((a, b) => a.localeCompare(b, numberLocale)),
+    [numberLocale, recipes],
+  );
+  const availableMainIngredientFilters = useMemo(
+    () =>
+      recipeMainIngredientValues.filter((value) =>
+        recipes.some((recipe) => recipe.main_ingredient === value),
+      ),
+    [recipes],
+  );
+
   const filteredRecipes = useMemo(() => {
     const normalizedSearch = search.trim().toLocaleLowerCase(numberLocale);
 
     return recipes.filter((recipe) => {
+      if (selectedCategory && recipe.kategori?.trim() !== selectedCategory) {
+        return false;
+      }
+      if (selectedMainIngredient && recipe.main_ingredient !== selectedMainIngredient) {
+        return false;
+      }
       if (favoritesOnly && !recipe.is_favorited) return false;
       if (
         availabilityFilter !== "all" &&
@@ -447,6 +486,8 @@ export function RecipeView({
     products,
     recipes,
     search,
+    selectedCategory,
+    selectedMainIngredient,
   ]);
 
   const openNewRecipe = useCallback(() => {
@@ -474,6 +515,7 @@ export function RecipeView({
       beskrivning: recipe.beskrivning ?? "",
       tid: recipe.tid == null ? "" : String(recipe.tid),
       kategori: recipe.kategori?.trim() || defaultCategory,
+      main_ingredient: recipe.main_ingredient,
       ingredients:
         recipe.ingredients.length > 0
           ? recipe.ingredients.map((ingredient) => ({
@@ -497,6 +539,7 @@ export function RecipeView({
     setOperationError("");
 
     const time = form.tid.trim() ? Number(form.tid) : null;
+    const mainIngredient = form.main_ingredient;
     const hasInvalidTime =
       time !== null && (!Number.isInteger(time) || time <= 0);
     const hasInvalidIngredient = form.ingredients.some((ingredient) => {
@@ -514,6 +557,10 @@ export function RecipeView({
 
     if (!form.titel.trim() || hasInvalidTime || hasInvalidIngredient) {
       setFormError(t.recipeValidationError);
+      return;
+    }
+    if (!mainIngredient) {
+      setFormError(t.mainIngredientRequired);
       return;
     }
     if (!selectedImage && !editingRecipe?.bild_url) {
@@ -589,6 +636,7 @@ export function RecipeView({
       beskrivning: form.beskrivning.trim() || null,
       tid: time,
       kategori: form.kategori.trim() || defaultCategory,
+      main_ingredient: mainIngredient,
       bild_url: imageUrl,
     };
 
@@ -820,6 +868,26 @@ export function RecipeView({
       activeClass: "bg-rose-300/15 text-rose-200",
     },
   ];
+  const mainIngredientFilterLabels: Record<
+    RecipeMainIngredientFilter,
+    string
+  > = {
+    chicken: t.recipeMainIngredientChicken,
+    meat: t.recipeMainIngredientMeat,
+    minced_meat: t.recipeMainIngredientMincedMeat,
+    shrimp: t.recipeMainIngredientShrimp,
+    fish: t.recipeMainIngredientFish,
+    vegetarian: t.recipeMainIngredientVegetarian,
+    other: t.recipeMainIngredientOther,
+  };
+  const activeRecipeFilterCount =
+    Number(selectedCategory !== null) +
+    Number(selectedMainIngredient !== null);
+  const recipeImageDisplayOptions = [
+    { value: "large", label: t.recipeImageDisplayLarge, Icon: LayoutGrid },
+    { value: "small", label: t.recipeImageDisplaySmall, Icon: Rows3 },
+    { value: "none", label: t.recipeImageDisplayNone, Icon: List },
+  ] as const;
 
   return (
     <>
@@ -847,20 +915,92 @@ export function RecipeView({
         ) : null}
 
         <div className="space-y-3">
-          <label className="relative block min-w-0">
-            <Search
-              aria-hidden="true"
-              className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
-            />
-            <span className="sr-only">{t.searchRecipes}</span>
-            <input
-              type="search"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder={t.searchRecipes}
-              className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.04] pl-10 pr-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-emerald-400/60"
-            />
-          </label>
+          <div>
+            <label className="relative block min-w-0">
+              <Search
+                aria-hidden="true"
+                className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+              />
+              <span className="sr-only">{t.searchRecipes}</span>
+              <input
+                type="search"
+                value={search}
+                onChange={(event) => setSearch(event.target.value)}
+                placeholder={t.searchRecipes}
+                className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.04] pl-10 pr-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-emerald-400/60"
+              />
+            </label>
+          </div>
+          {areFiltersOpen ? (
+            <div
+              id="recipe-filters"
+              className="space-y-4 rounded-xl border border-white/10 bg-white/[0.035] p-4"
+            >
+              <div className="flex flex-col gap-2 sm:max-w-xs">
+                <label
+                  htmlFor="recipe-category-filter"
+                  className="text-xs font-medium text-slate-300"
+                >
+                  {t.filterCategory}
+                </label>
+                <select
+                  id="recipe-category-filter"
+                  value={selectedCategory ?? ""}
+                  onChange={(event) =>
+                    setSelectedCategory(event.target.value || null)
+                  }
+                  className="h-10 rounded-lg border border-white/10 bg-slate-900 px-3 text-sm text-white outline-none focus:border-emerald-400/60"
+                >
+                  <option value="">{t.allRecipeCategories}</option>
+                  {recipeCategories.map((category) => (
+                    <option key={category} value={category}>
+                      {category}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {availableMainIngredientFilters.length > 0 ? (
+                <fieldset className="space-y-2">
+                  <legend className="text-xs font-medium text-slate-300">
+                    {t.mainIngredient}
+                  </legend>
+                  <div className="flex flex-wrap gap-2">
+                    {availableMainIngredientFilters.map((mainIngredient) => (
+                      <button
+                        key={mainIngredient}
+                        type="button"
+                        aria-pressed={selectedMainIngredient === mainIngredient}
+                        onClick={() =>
+                          setSelectedMainIngredient((current) =>
+                            current === mainIngredient ? null : mainIngredient,
+                          )
+                        }
+                        className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+                          selectedMainIngredient === mainIngredient
+                            ? "bg-emerald-300/15 text-emerald-200"
+                            : "bg-white/[0.06] text-slate-300 hover:bg-white/10"
+                        }`}
+                      >
+                        {mainIngredientFilterLabels[mainIngredient]}
+                      </button>
+                    ))}
+                  </div>
+                </fieldset>
+              ) : null}
+              {activeRecipeFilterCount > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedCategory(null);
+                    setSelectedMainIngredient(null);
+                  }}
+                  className="text-xs font-medium text-emerald-200 underline underline-offset-4"
+                >
+                  {t.clearRecipeFilters}
+                </button>
+              ) : null}
+            </div>
+          ) : null}
           <div className="scrollbar-hidden flex gap-2 overflow-x-auto pb-1">
             <button
               type="button"
@@ -904,6 +1044,50 @@ export function RecipeView({
           </div>
         </div>
 
+        <div className="flex items-center justify-between">
+          <div
+            role="group"
+            aria-label={t.recipeImageDisplay}
+            className="inline-flex rounded-lg border border-white/10 bg-white/[0.04] p-1"
+          >
+            {recipeImageDisplayOptions.map(({ value, label, Icon }) => (
+              <button
+                key={value}
+                type="button"
+                aria-label={label}
+                aria-pressed={recipeImageDisplay === value}
+                title={label}
+                onClick={() => setRecipeImageDisplay(value)}
+                className={`inline-flex h-9 w-9 items-center justify-center rounded-md transition ${
+                  recipeImageDisplay === value
+                    ? "bg-emerald-300/15 text-emerald-200"
+                    : "text-slate-400 hover:bg-white/10 hover:text-white"
+                }`}
+              >
+                <Icon aria-hidden="true" className="h-4 w-4" />
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            aria-label={t.filters}
+            aria-controls="recipe-filters"
+            aria-expanded={areFiltersOpen}
+            onClick={() => setAreFiltersOpen((current) => !current)}
+            className={`inline-flex h-11 shrink-0 items-center gap-2 rounded-xl border px-3 text-sm transition ${
+              areFiltersOpen || activeRecipeFilterCount > 0
+                ? "border-emerald-300/30 bg-emerald-300/10 text-emerald-200"
+                : "border-white/10 bg-white/[0.04] text-slate-300 hover:bg-white/10"
+            }`}
+          >
+            <Filter aria-hidden="true" className="h-4 w-4" />
+            <span className="hidden sm:inline">{t.filters}</span>
+            {activeRecipeFilterCount > 0 ? (
+              <span className="text-xs">{activeRecipeFilterCount}</span>
+            ) : null}
+          </button>
+        </div>
+
         {isLoading ? (
           <div className="rounded-2xl border border-white/10 bg-white/[0.035] px-5 py-12 text-center text-sm text-slate-400">
             {t.loading}
@@ -928,21 +1112,31 @@ export function RecipeView({
               {recipes.length === 0 &&
               !favoritesOnly &&
               availabilityFilter === "all" &&
-              !search
+              !search &&
+              selectedCategory === null &&
+              selectedMainIngredient === null
                 ? t.noRecipes
                 : t.noMatchingRecipes}
             </p>
             {recipes.length === 0 &&
             !favoritesOnly &&
             availabilityFilter === "all" &&
-            !search ? (
+            !search &&
+            selectedCategory === null &&
+            selectedMainIngredient === null ? (
               <p className="mt-2 text-sm text-slate-400">
                 {t.noRecipesDescription}
               </p>
             ) : null}
           </div>
         ) : (
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          <div
+            className={
+              recipeImageDisplay === "large"
+                ? "grid gap-3 sm:grid-cols-2 xl:grid-cols-3"
+                : "space-y-3"
+            }
+          >
             {filteredRecipes.map((recipe) => {
               const isOwner = recipe.user_id === userId;
               const isBusy = busyRecipeId === recipe.id;
@@ -993,9 +1187,11 @@ export function RecipeView({
               return (
                 <article
                   key={recipe.id}
-                  className="rounded-2xl border border-white/10 bg-white/[0.035] p-4"
+                  className={`rounded-2xl border border-white/10 bg-white/[0.035] p-4 ${
+                    recipeImageDisplay === "large" ? "" : "flex items-start gap-3"
+                  }`}
                 >
-                  {recipe.bild_url ? (
+                  {recipeImageDisplay === "large" && recipe.bild_url ? (
                     <Image
                       unoptimized
                       src={recipe.bild_url}
@@ -1004,12 +1200,33 @@ export function RecipeView({
                       height={360}
                       className="mb-4 aspect-video w-full rounded-xl object-cover"
                     />
-                  ) : (
+                  ) : recipeImageDisplay === "large" ? (
                     <div className="mb-4 flex aspect-video items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.025] text-sm text-slate-500">
                       <ImageIcon aria-hidden="true" className="h-4 w-4" />
                       {t.recipeImageMissing}
                     </div>
-                  )}
+                  ) : null}
+                  {recipeImageDisplay === "small" ? (
+                    recipe.bild_url ? (
+                      <Image
+                        unoptimized
+                        src={recipe.bild_url}
+                        alt={recipe.titel}
+                        width={128}
+                        height={128}
+                        className="h-16 w-16 shrink-0 rounded-lg object-cover"
+                      />
+                    ) : (
+                      <div
+                        role="img"
+                        aria-label={`${recipe.titel}: ${t.recipeImageMissing}`}
+                        className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/[0.025] text-slate-500"
+                      >
+                        <ImageIcon aria-hidden="true" className="h-4 w-4" />
+                      </div>
+                    )
+                  ) : null}
+                  <div className="min-w-0 flex-1">
                   <div className="flex items-start justify-between gap-3">
                     <button
                       type="button"
@@ -1252,6 +1469,7 @@ export function RecipeView({
                         </button>
                       </div>
                     ) : null}
+                  </div>
                   </div>
                 </article>
               );

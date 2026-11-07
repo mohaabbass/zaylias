@@ -11,7 +11,11 @@ import {
 } from "@/components/ui/drawer";
 import { PantryAddTypeTabs } from "@/features/pantry/components/PantryAddTypeTabs";
 import type { PantryTranslation } from "@/features/pantry/i18n";
-import type { Recipe, RecipeFormValues } from "@/features/pantry/types";
+import {
+  isRecipeMainIngredient,
+  type Recipe,
+  type RecipeFormValues,
+} from "@/features/pantry/types";
 
 type RecipeFormProps = {
   open: boolean;
@@ -184,6 +188,36 @@ export function RecipeForm({
               />
             </label>
           </div>
+
+          <label className="block space-y-1.5 text-sm">
+            <span className="font-medium text-slate-200">{t.mainIngredient}</span>
+            <select
+              required
+              value={form.main_ingredient}
+              onChange={(event) =>
+                setForm((current) => ({
+                  ...current,
+                  main_ingredient: isRecipeMainIngredient(event.target.value)
+                    ? event.target.value
+                    : "",
+                }))
+              }
+              className="h-11 w-full rounded-xl border border-white/10 bg-slate-900 px-3 text-white outline-none focus:border-emerald-400/60"
+            >
+              <option value="">{t.selectMainIngredient}</option>
+              <option value="chicken">{t.recipeMainIngredientChicken}</option>
+              <option value="meat">{t.recipeMainIngredientMeat}</option>
+              <option value="minced_meat">
+                {t.recipeMainIngredientMincedMeat}
+              </option>
+              <option value="shrimp">{t.recipeMainIngredientShrimp}</option>
+              <option value="fish">{t.recipeMainIngredientFish}</option>
+              <option value="vegetarian">
+                {t.recipeMainIngredientVegetarian}
+              </option>
+              <option value="other">{t.recipeMainIngredientOther}</option>
+            </select>
+          </label>
 
           <section className="space-y-3">
             <div className="flex items-center justify-between gap-3">
