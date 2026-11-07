@@ -61,6 +61,7 @@ export function DailySpendingChart({
   ]);
   const [hasLoadedSettings, setHasLoadedSettings] = useState(false);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
+  const [selectedBarKey, setSelectedBarKey] = useState<string | null>(null);
 
   useEffect(() => {
     const savedSettings: {
@@ -300,35 +301,50 @@ export function DailySpendingChart({
                 <span className="border-t border-dashed border-border/70" />
                 <span className="border-t border-border/80" />
               </div>
-              {data.map((entry) => {
+              {data.map((entry, index) => {
                 const height =
                   entry.value > 0
                     ? Math.max((entry.value / maxValue) * 100, 5)
                     : 0;
+                const tooltipAlignment =
+                  index === 0
+                    ? "left-0 translate-x-0"
+                    : index === data.length - 1
+                      ? "right-0 translate-x-0"
+                      : "left-1/2 -translate-x-1/2";
 
                 return (
                   <div
                     key={entry.key}
-                    className="relative z-10 flex min-w-0 flex-1 flex-col items-center justify-end gap-2"
+                    className={`relative flex min-w-0 flex-1 flex-col items-center justify-end gap-2 ${
+                      selectedBarKey === entry.key ? "z-30" : "z-10"
+                    }`}
                   >
                     <div className="relative flex h-28 w-full items-end justify-center px-0.5">
-                      {entry.value > 0 && range !== "year" && (
+                      {entry.value > 0 && selectedBarKey === entry.key && (
                         <span
                           aria-hidden="true"
-                          className="absolute left-1/2 z-20 max-w-full -translate-x-1/2 truncate whitespace-nowrap text-[8px] font-medium leading-none text-muted-foreground"
-                          style={{ bottom: `calc(${height}% + 4px)` }}
+                          className={`absolute z-20 whitespace-nowrap rounded-md border border-border bg-popover px-1.5 py-1 text-[10px] font-semibold leading-none text-popover-foreground shadow-md ${tooltipAlignment}`}
+                          style={{ bottom: `calc(${height}% + 6px)` }}
                         >
-                          {formatCurrency(entry.value, currencyLocale)}
+                          {formatCurrency(entry.value, currencyLocale)}{" "}
+                          {t.currency}
                         </span>
                       )}
-                      <div
+                      <button
+                        type="button"
                         aria-label={`${entry.label}: ${formatCurrency(entry.value, currencyLocale)} ${t.currency}`}
-                        role="img"
+                        aria-pressed={selectedBarKey === entry.key}
                         title={`${entry.label}: ${formatCurrency(entry.value, currencyLocale)} ${t.currency}`}
-                        className={`w-full max-w-8 rounded-t-lg transition-[height,filter] duration-300 ${
+                        onClick={() =>
+                          setSelectedBarKey((current) =>
+                            current === entry.key ? null : entry.key,
+                          )
+                        }
+                        className={`w-full max-w-8 rounded-t-xs transition-[height,filter] duration-300 ${
                           entry.value > 0
-                            ? "bg-linear-to-t from-sky-600 to-sky-400 hover:brightness-110"
-                            : "bg-transparent"
+                            ? "cursor-pointer bg-linear-to-t from-sky-600 to-sky-400 hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
+                            : "cursor-pointer bg-transparent"
                         }`}
                         style={{ height: `${height}%` }}
                       />
