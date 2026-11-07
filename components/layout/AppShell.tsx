@@ -108,7 +108,7 @@ export function AppShell() {
   const [amount, setAmount] = useState("");
   const [transactionDate, setTransactionDate] = useState("");
   const [category, setCategory] = useState<string>(() =>
-    normalizeCategoryValue(t.expenseCategories[0]?.value ?? "food"),
+    normalizeCategoryValue(t.expenseCategories[0]?.value ?? "groceries"),
   );
   const [type, setType] = useState<TransactionType>("expense");
   const [accountId, setAccountId] = useState("");
@@ -297,7 +297,7 @@ export function AppShell() {
     (nextType: TransactionType = type) =>
       nextType === "income"
         ? normalizeCategoryValue(t.incomeCategories[0]?.value ?? "salary")
-        : normalizeCategoryValue(t.expenseCategories[0]?.value ?? "food"),
+        : normalizeCategoryValue(t.expenseCategories[0]?.value ?? "groceries"),
     [t, type],
   );
 

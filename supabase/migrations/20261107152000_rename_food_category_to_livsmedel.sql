@@ -1,7 +1,7 @@
 UPDATE public.expenses
-SET category = 'Livsmedel'
-WHERE category IN ('food', 'Mat', 'Food', 'Groceries');
+SET category = 'groceries'
+WHERE category IN ('food', 'Mat', 'Livsmedel', 'Food', 'Groceries');
 
 UPDATE public.payments
-SET category = 'Livsmedel'
-WHERE category IN ('food', 'Mat', 'Food', 'Groceries');
+SET category = 'groceries'
+WHERE category IN ('food', 'Mat', 'Livsmedel', 'Food', 'Groceries');

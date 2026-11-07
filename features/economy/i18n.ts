@@ -6,11 +6,7 @@ export type CategoryOption = {
 };
 
 const legacyCategoryValueMap: Record<string, string> = {
-  Mat: "Livsmedel",
-  Livsmedel: "Livsmedel",
-  food: "Livsmedel",
-  Food: "Livsmedel",
-  Groceries: "Livsmedel",
+  Livsmedel: "groceries",
   Snabbmat: "fast-food",
   Försäkring: "insurance",
   Boende: "housing",
@@ -24,6 +20,8 @@ const legacyCategoryValueMap: Record<string, string> = {
   Lön: "salary",
   Bidrag: "benefits",
   "Övriga inkomster": "other-income",
+  food: "groceries",
+  Food: "groceries",
   "Fast food": "fast-food",
   Insurance: "insurance",
   Housing: "housing",
@@ -209,7 +207,7 @@ export const economyTranslations = {
     cashFlowForecastLoadError:
       "Obetalda betalningar kunde inte hämtas; prognosen visas inte.",
     expenseCategories: [
-      { value: "Livsmedel", label: "Livsmedel" },
+      { value: "groceries", label: "Livsmedel" },
       { value: "fast-food", label: "Snabbmat" },
       { value: "insurance", label: "Försäkring" },
       { value: "housing", label: "Boende" },
@@ -382,7 +380,7 @@ export const economyTranslations = {
     cashFlowForecastLoadError:
       "Unpaid payments could not be loaded, so the forecast is unavailable.",
     expenseCategories: [
-      { value: "Livsmedel", label: "Groceries" },
+      { value: "groceries", label: "Groceries" },
       { value: "fast-food", label: "Fast food" },
       { value: "insurance", label: "Insurance" },
       { value: "housing", label: "Housing" },
@@ -402,8 +400,8 @@ export const economyTranslations = {
   },
 } as const satisfies Record<Locale, Record<string, unknown>>;
 
-export type EconomyTranslation =
-  (typeof economyTranslations)[Locale] & SharedTranslation;
+export type EconomyTranslation = (typeof economyTranslations)[Locale] &
+  SharedTranslation;
 
 export function getCategoryLabel(locale: Locale, value: string) {
   const normalizedValue = normalizeCategoryValue(value);
