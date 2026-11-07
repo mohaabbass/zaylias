@@ -10,6 +10,9 @@ export const localeLabels: Record<Locale, string> = {
 export const sharedTranslations = {
   sv: {
     appTitle: "Zaylias",
+    homeTagline: "Gör vardagen lite enklare.",
+    homeDescription:
+      "Samla koll på ekonomin och matvarorna hemma på ett och samma ställe.",
     chooseApp: "Välj en app",
     chooseAppDescription: "Vad vill du öppna?",
     economyApp: "Ekonomi",
@@ -41,6 +44,9 @@ export const sharedTranslations = {
   },
   en: {
     appTitle: "Zaylias",
+    homeTagline: "Make everyday life a little easier.",
+    homeDescription:
+      "Keep your finances and groceries organized, all in one place.",
     chooseApp: "Choose an app",
     chooseAppDescription: "What would you like to open?",
     economyApp: "Economy",
