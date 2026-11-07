@@ -1,11 +1,16 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Image from "next/image";
 import {
   BookOpen,
+  Check,
   ChevronDown,
   Clock3,
+  CircleAlert,
+  CircleX,
   Heart,
+  ImageIcon,
   Pencil,
   Search,
   Trash2,
@@ -21,32 +26,255 @@ import type {
   Recipe,
   RecipeFormValues,
   RecipeIngredient,
+  PantryProduct,
 } from "@/features/pantry/types";
+import { compressProductImage } from "@/features/pantry/utils";
 import { supabase } from "@/lib/supabase";
 
 const recipeColumns =
-  "id, user_id, titel, beskrivning, tid, kategori, is_favorite, created_at";
+  "id, user_id, titel, beskrivning, tid, kategori, bild_url, is_favorite, created_at";
+const recipeImageBucket = "recipe-images";
+const maxRecipeImageSize = 5 * 1024 * 1024;
+const recipeImageExtensions: Record<string, string> = {
+  "image/avif": "avif",
+  "image/gif": "gif",
+  "image/jpeg": "jpg",
+  "image/png": "png",
+  "image/webp": "webp",
+};
 
-function createEmptyForm(): RecipeFormValues {
+function createEmptyForm(defaultCategory: string): RecipeFormValues {
   return {
     titel: "",
     beskrivning: "",
     tid: "",
-    kategori: "",
+    kategori: defaultCategory,
     ingredients: [{ ingrediens_namn: "", kvantitet: "", enhet: "" }],
   };
 }
 
+function getRecipeImagePath(imageUrl: string, userId: string) {
+  try {
+    const url = new URL(imageUrl);
+    const marker = `/storage/v1/object/public/${recipeImageBucket}/`;
+    const markerIndex = url.pathname.indexOf(marker);
+    if (markerIndex < 0) return null;
+
+    const path = decodeURIComponent(url.pathname.slice(markerIndex + marker.length));
+    return path.startsWith(`${userId}/`) ? path : null;
+  } catch {
+    return null;
+  }
+}
+
 type RecipeRow = Omit<Recipe, "ingredients" | "is_favorited">;
+
+type IngredientAvailability =
+  | { status: "enough" | "inPantry" | "low" | "missing" }
+  | { status: "partial"; missingQuantity: number; unitFactor: number };
+
+type RecipeAvailabilityFilter = "all" | "ready" | "partial" | "missing";
+
+function normalizeIngredientName(name: string) {
+  return name
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function getUnitInfo(unit: string | null) {
+  const normalized = (unit ?? "")
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLocaleLowerCase()
+    .replace(/[^a-z0-9]+/g, "");
+
+  if (["g", "gram", "grams"].includes(normalized)) {
+    return { dimension: "mass", factor: 1 };
+  }
+  if (["kg", "kilogram", "kilograms"].includes(normalized)) {
+    return { dimension: "mass", factor: 1000 };
+  }
+  if (["mg", "milligram", "milligrams"].includes(normalized)) {
+    return { dimension: "mass", factor: 0.001 };
+  }
+  if (
+    ["ml", "milliliter", "milliliters", "millilitre", "millilitres"].includes(
+      normalized,
+    )
+  ) {
+    return { dimension: "volume", factor: 1 };
+  }
+  if (
+    ["cl", "centiliter", "centiliters", "centilitre", "centilitres"].includes(
+      normalized,
+    )
+  ) {
+    return { dimension: "volume", factor: 10 };
+  }
+  if (
+    ["dl", "deciliter", "deciliters", "decilitre", "decilitres"].includes(
+      normalized,
+    )
+  ) {
+    return { dimension: "volume", factor: 100 };
+  }
+  if (["l", "liter", "liters", "litre", "litres"].includes(normalized)) {
+    return { dimension: "volume", factor: 1000 };
+  }
+  if (
+    [
+      "st",
+      "styck",
+      "stycken",
+      "pcs",
+      "pc",
+      "piece",
+      "pieces",
+      "unit",
+      "units",
+      "ea",
+      "stk",
+    ].includes(normalized)
+  ) {
+    return { dimension: "count", factor: 1 };
+  }
+
+  return {
+    dimension: normalized ? `custom:${normalized}` : "unitless",
+    factor: 1,
+  };
+}
+
+function getRemainingPercent(product: PantryProduct) {
+  const storedRemaining = Number(product.remaining_percent ?? 100);
+  return Number.isFinite(storedRemaining)
+    ? Math.max(0, Math.min(100, storedRemaining))
+    : 100;
+}
+
+function getAvailableProductQuantity(product: PantryProduct) {
+  if (product.kvantitet == null) return null;
+
+  const quantity = Number(product.kvantitet);
+  if (!Number.isFinite(quantity) || quantity < 0) return null;
+
+  return quantity * (getRemainingPercent(product) / 100);
+}
+
+function getIngredientAvailability(
+  ingredient: RecipeIngredient,
+  products: PantryProduct[],
+): IngredientAvailability {
+  const ingredientName = normalizeIngredientName(ingredient.ingrediens_namn);
+  const matches = products.filter(
+    (product) =>
+      product.status === "i_lager" &&
+      normalizeIngredientName(product.namn) === ingredientName,
+  );
+
+  if (matches.length === 0) return { status: "missing" };
+
+  const requiredQuantity =
+    ingredient.kvantitet == null ? null : Number(ingredient.kvantitet);
+  if (
+    requiredQuantity == null ||
+    !Number.isFinite(requiredQuantity) ||
+    requiredQuantity < 0
+  ) {
+    return matches.some((product) => {
+      const quantity = getAvailableProductQuantity(product);
+      return quantity === null || quantity > 0;
+    })
+      ? { status: "inPantry" }
+      : { status: "missing" };
+  }
+
+  const recipeUnit = getUnitInfo(ingredient.enhet);
+  let comparableProductFound = false;
+  let availableQuantity = 0;
+
+  for (const product of matches) {
+    const quantity = getAvailableProductQuantity(product);
+    if (quantity === null) {
+      continue;
+    }
+
+    const productUnit = getUnitInfo(product.enhet);
+    if (recipeUnit.dimension === productUnit.dimension) {
+      comparableProductFound = true;
+      availableQuantity += quantity * productUnit.factor;
+    }
+  }
+
+  const requiredInBaseUnits = requiredQuantity * recipeUnit.factor;
+  if (comparableProductFound) {
+    if (availableQuantity >= requiredInBaseUnits) {
+      return { status: "enough" };
+    }
+    if (availableQuantity > 0) {
+      return {
+        status: "partial",
+        missingQuantity: requiredInBaseUnits - availableQuantity,
+        unitFactor: recipeUnit.factor,
+      };
+    }
+    return { status: "missing" };
+  }
+
+  const remainingPercentages = matches.map(getRemainingPercent);
+  if (remainingPercentages.some((remaining) => remaining >= 50)) {
+    return { status: "inPantry" };
+  }
+  if (remainingPercentages.some((remaining) => remaining > 0)) {
+    return { status: "low" };
+  }
+
+  return { status: "missing" };
+}
+
+function getRecipeAvailabilitySummary(
+  recipe: Recipe,
+  products: PantryProduct[],
+) {
+  const ingredientAvailability = recipe.ingredients.map((ingredient) =>
+    getIngredientAvailability(ingredient, products),
+  );
+  const readyIngredientCount = ingredientAvailability.filter(
+    ({ status }) => status === "enough" || status === "inPantry",
+  ).length;
+  const hasAnyIngredient = ingredientAvailability.some(
+    ({ status }) => status !== "missing",
+  );
+
+  const status =
+    recipe.ingredients.length === 0
+      ? "noIngredients"
+      : readyIngredientCount === recipe.ingredients.length
+        ? "ready"
+        : hasAnyIngredient
+          ? "partial"
+          : "missing";
+
+  return { status, readyIngredientCount, hasAnyIngredient };
+}
 
 export function RecipeView({
   userId,
+  products,
+  isPantryLoading,
+  pantryLoadError,
   addRequest,
   onAddRequestHandled,
   onRecipeListChange,
   onSwitchForm,
 }: {
   userId: string;
+  products: PantryProduct[];
+  isPantryLoading: boolean;
+  pantryLoadError: boolean;
   addRequest: number;
   onAddRequestHandled: () => void;
   onRecipeListChange: () => void;
@@ -54,7 +282,9 @@ export function RecipeView({
 }) {
   const { locale } = useLocale();
   const t = pantryTranslations[locale];
+  const defaultCategory = locale === "sv" ? "Övrigt" : "Other";
   const numberLocale = locale === "sv" ? "sv-SE" : "en-US";
+  const isAvailabilityKnown = !isPantryLoading && !pantryLoadError;
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -62,13 +292,21 @@ export function RecipeView({
   const [operationError, setOperationError] = useState("");
   const [search, setSearch] = useState("");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
+  const [availabilityFilter, setAvailabilityFilter] =
+    useState<RecipeAvailabilityFilter>("all");
   const [expandedRecipeId, setExpandedRecipeId] = useState<string | null>(null);
+  const [openAvailabilityId, setOpenAvailabilityId] = useState<string | null>(
+    null,
+  );
   const [pendingDeleteRecipe, setPendingDeleteRecipe] = useState<Recipe | null>(
     null,
   );
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingRecipe, setEditingRecipe] = useState<Recipe | null>(null);
-  const [form, setForm] = useState<RecipeFormValues>(createEmptyForm);
+  const [form, setForm] = useState<RecipeFormValues>(() =>
+    createEmptyForm(defaultCategory),
+  );
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [formError, setFormError] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const [busyRecipeId, setBusyRecipeId] = useState<string | null>(null);
@@ -180,6 +418,14 @@ export function RecipeView({
 
     return recipes.filter((recipe) => {
       if (favoritesOnly && !recipe.is_favorited) return false;
+      if (
+        availabilityFilter !== "all" &&
+        isAvailabilityKnown &&
+        getRecipeAvailabilitySummary(recipe, products).status !==
+          availabilityFilter
+      ) {
+        return false;
+      }
       if (!normalizedSearch) return true;
 
       return [
@@ -193,15 +439,24 @@ export function RecipeView({
           value!.toLocaleLowerCase(numberLocale).includes(normalizedSearch),
         );
     });
-  }, [favoritesOnly, numberLocale, recipes, search]);
+  }, [
+    availabilityFilter,
+    favoritesOnly,
+    isAvailabilityKnown,
+    numberLocale,
+    products,
+    recipes,
+    search,
+  ]);
 
   const openNewRecipe = useCallback(() => {
     setEditingRecipe(null);
-    setForm(createEmptyForm());
+    setForm(createEmptyForm(defaultCategory));
+    setSelectedImage(null);
     setFormError("");
     setOperationError("");
     setIsFormOpen(true);
-  }, []);
+  }, [defaultCategory]);
 
   useEffect(() => {
     if (addRequest !== previousAddRequest.current) {
@@ -213,11 +468,12 @@ export function RecipeView({
 
   const openEditRecipe = (recipe: Recipe) => {
     setEditingRecipe(recipe);
+    setSelectedImage(null);
     setForm({
       titel: recipe.titel,
       beskrivning: recipe.beskrivning ?? "",
       tid: recipe.tid == null ? "" : String(recipe.tid),
-      kategori: recipe.kategori ?? "",
+      kategori: recipe.kategori?.trim() || defaultCategory,
       ingredients:
         recipe.ingredients.length > 0
           ? recipe.ingredients.map((ingredient) => ({
@@ -260,6 +516,18 @@ export function RecipeView({
       setFormError(t.recipeValidationError);
       return;
     }
+    if (!selectedImage && !editingRecipe?.bild_url) {
+      setFormError(t.recipeImageRequired);
+      return;
+    }
+    if (
+      selectedImage &&
+      (!recipeImageExtensions[selectedImage.type] ||
+        selectedImage.size > maxRecipeImageSize)
+    ) {
+      setFormError(t.imageInvalid);
+      return;
+    }
 
     const ingredientValues = form.ingredients
       .filter((ingredient) => ingredient.ingrediens_namn.trim())
@@ -270,14 +538,59 @@ export function RecipeView({
           : null,
         enhet: ingredient.enhet.trim() || null,
       }));
+    setIsSaving(true);
+
+    let uploadedImagePath: string | null = null;
+    let imageUrl = editingRecipe?.bild_url ?? null;
+    if (selectedImage) {
+      let uploadImage: Blob;
+      try {
+        uploadImage = await compressProductImage(selectedImage);
+      } catch (error) {
+        console.error("Failed to compress recipe image:", error);
+        setOperationError(t.imageUploadError);
+        setIsSaving(false);
+        return;
+      }
+
+      const extension = recipeImageExtensions[uploadImage.type];
+      if (!extension) {
+        console.error(
+          "Recipe image compression returned an unsupported image type:",
+          uploadImage.type,
+        );
+        setOperationError(t.imageUploadError);
+        setIsSaving(false);
+        return;
+      }
+
+      uploadedImagePath = `${userId}/${crypto.randomUUID()}.${extension}`;
+      const { error: uploadError } = await supabase.storage
+        .from(recipeImageBucket)
+        .upload(uploadedImagePath, uploadImage, {
+          contentType: uploadImage.type,
+          upsert: false,
+        });
+
+      if (uploadError) {
+        console.error("Failed to upload recipe image:", uploadError);
+        setOperationError(t.imageUploadError);
+        setIsSaving(false);
+        return;
+      }
+
+      imageUrl = supabase.storage
+        .from(recipeImageBucket)
+        .getPublicUrl(uploadedImagePath).data.publicUrl;
+    }
+
     const values = {
       titel: form.titel.trim(),
       beskrivning: form.beskrivning.trim() || null,
       tid: time,
-      kategori: form.kategori.trim() || null,
+      kategori: form.kategori.trim() || defaultCategory,
+      bild_url: imageUrl,
     };
-
-    setIsSaving(true);
 
     if (editingRecipe) {
       const { error: updateError } = await supabase
@@ -288,9 +601,32 @@ export function RecipeView({
 
       if (updateError) {
         console.error("Failed to update recipe:", updateError);
+        if (uploadedImagePath) {
+          const { error: cleanupError } = await supabase.storage
+            .from(recipeImageBucket)
+            .remove([uploadedImagePath]);
+          if (cleanupError) {
+            console.error("Failed to clean up uploaded recipe image:", cleanupError);
+          }
+        }
         setOperationError(t.recipeUpdateError);
         setIsSaving(false);
         return;
+      }
+
+      if (selectedImage && editingRecipe.bild_url) {
+        const oldImagePath = getRecipeImagePath(editingRecipe.bild_url, userId);
+        if (oldImagePath) {
+          const { error: cleanupError } = await supabase.storage
+            .from(recipeImageBucket)
+            .remove([oldImagePath]);
+          if (cleanupError) {
+            console.error(
+              "Failed to remove replaced recipe image:",
+              cleanupError,
+            );
+          }
+        }
       }
 
       const { error: deleteIngredientsError } = await supabase
@@ -338,6 +674,14 @@ export function RecipeView({
 
       if (insertError) {
         console.error("Failed to save recipe:", insertError);
+        if (uploadedImagePath) {
+          const { error: cleanupError } = await supabase.storage
+            .from(recipeImageBucket)
+            .remove([uploadedImagePath]);
+          if (cleanupError) {
+            console.error("Failed to clean up uploaded recipe image:", cleanupError);
+          }
+        }
         setOperationError(t.recipeSaveError);
         setIsSaving(false);
         return;
@@ -371,6 +715,7 @@ export function RecipeView({
 
     setIsSaving(false);
     setIsFormOpen(false);
+    setSelectedImage(null);
     setReloadToken((current) => current + 1);
   };
 
@@ -433,6 +778,15 @@ export function RecipeView({
     } else {
       setRecipes((current) => current.filter((item) => item.id !== recipe.id));
       onRecipeListChange();
+      const imagePath = getRecipeImagePath(recipe.bild_url ?? "", userId);
+      if (imagePath) {
+        const { error: imageDeleteError } = await supabase.storage
+          .from(recipeImageBucket)
+          .remove([imagePath]);
+        if (imageDeleteError) {
+          console.error("Failed to remove deleted recipe image:", imageDeleteError);
+        }
+      }
     }
     setBusyRecipeId(null);
   };
@@ -444,6 +798,28 @@ export function RecipeView({
     setPendingDeleteRecipe(null);
     void deleteRecipe(recipe);
   };
+
+  const availabilityFilters: {
+    value: Exclude<RecipeAvailabilityFilter, "all">;
+    label: string;
+    activeClass: string;
+  }[] = [
+    {
+      value: "ready",
+      label: t.recipesReadyToMake,
+      activeClass: "bg-emerald-300/15 text-emerald-200",
+    },
+    {
+      value: "partial",
+      label: t.recipesMissingParts,
+      activeClass: "bg-amber-300/15 text-amber-200",
+    },
+    {
+      value: "missing",
+      label: t.recipesMissingEverything,
+      activeClass: "bg-rose-300/15 text-rose-200",
+    },
+  ];
 
   return (
     <>
@@ -503,6 +879,28 @@ export function RecipeView({
               />
               {favoritesOnly ? t.allRecipes : t.favoriteRecipes}
             </button>
+            {availabilityFilters.map((filter) => (
+              <button
+                key={filter.value}
+                type="button"
+                aria-pressed={
+                  isAvailabilityKnown && availabilityFilter === filter.value
+                }
+                disabled={isPantryLoading || pantryLoadError}
+                onClick={() =>
+                  setAvailabilityFilter((current) =>
+                    current === filter.value ? "all" : filter.value,
+                  )
+                }
+                className={`inline-flex shrink-0 items-center rounded-full px-3.5 py-2 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${
+                  isAvailabilityKnown && availabilityFilter === filter.value
+                    ? filter.activeClass
+                    : "bg-white/[0.06] text-slate-300 hover:bg-white/10"
+                }`}
+              >
+                {filter.label}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -527,11 +925,17 @@ export function RecipeView({
         ) : filteredRecipes.length === 0 ? (
           <div className="rounded-2xl border border-white/10 bg-white/[0.035] px-5 py-12 text-center">
             <p className="font-medium text-white">
-              {recipes.length === 0 && !favoritesOnly && !search
+              {recipes.length === 0 &&
+              !favoritesOnly &&
+              availabilityFilter === "all" &&
+              !search
                 ? t.noRecipes
                 : t.noMatchingRecipes}
             </p>
-            {recipes.length === 0 && !favoritesOnly && !search ? (
+            {recipes.length === 0 &&
+            !favoritesOnly &&
+            availabilityFilter === "all" &&
+            !search ? (
               <p className="mt-2 text-sm text-slate-400">
                 {t.noRecipesDescription}
               </p>
@@ -544,12 +948,68 @@ export function RecipeView({
               const isBusy = busyRecipeId === recipe.id;
               const isExpanded = expandedRecipeId === recipe.id;
               const detailsId = `recipe-details-${recipe.id}`;
+              const availabilitySummary = getRecipeAvailabilitySummary(
+                recipe,
+                products,
+              );
+              const isRecipeReady = availabilitySummary.status === "ready";
+              const isAvailabilityPartial =
+                availabilitySummary.status === "partial";
+              const RecipeAvailabilityIcon = !isAvailabilityKnown
+                ? CircleAlert
+                : isRecipeReady
+                  ? Check
+                  : isAvailabilityPartial
+                    ? CircleAlert
+                    : CircleX;
+              const availableIngredientCount = recipe.ingredients.filter(
+                (ingredient) =>
+                  getIngredientAvailability(ingredient, products).status !==
+                  "missing",
+              ).length;
+              const availabilityLabel = isAvailabilityKnown
+                ? isRecipeReady
+                  ? t.recipeReady(
+                      availableIngredientCount,
+                      recipe.ingredients.length,
+                    )
+                  : isAvailabilityPartial
+                    ? t.recipeIngredientsIncomplete(
+                        availableIngredientCount,
+                        recipe.ingredients.length,
+                      )
+                    : t.recipeNoIngredientsAvailable(recipe.ingredients.length)
+                : pantryLoadError
+                  ? t.pantryAvailabilityError
+                  : t.checkingAvailability;
+              const availabilityClass = isAvailabilityKnown
+                ? isRecipeReady
+                  ? "text-emerald-300"
+                  : isAvailabilityPartial
+                    ? "text-amber-300"
+                    : "text-rose-300"
+                : "text-slate-400";
 
               return (
                 <article
                   key={recipe.id}
                   className="rounded-2xl border border-white/10 bg-white/[0.035] p-4"
                 >
+                  {recipe.bild_url ? (
+                    <Image
+                      unoptimized
+                      src={recipe.bild_url}
+                      alt={recipe.titel}
+                      width={640}
+                      height={360}
+                      className="mb-4 aspect-video w-full rounded-xl object-cover"
+                    />
+                  ) : (
+                    <div className="mb-4 flex aspect-video items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.025] text-sm text-slate-500">
+                      <ImageIcon aria-hidden="true" className="h-4 w-4" />
+                      {t.recipeImageMissing}
+                    </div>
+                  )}
                   <div className="flex items-start justify-between gap-3">
                     <button
                       type="button"
@@ -569,6 +1029,21 @@ export function RecipeView({
                         {recipe.kategori ? (
                           <span className="mt-1 block text-xs font-medium text-emerald-300">
                             {recipe.kategori}
+                          </span>
+                        ) : null}
+                        {recipe.ingredients.length > 0 ? (
+                          <span
+                            aria-live="polite"
+                            className={`mt-2 inline-flex max-w-full items-start gap-1.5 text-xs font-medium ${availabilityClass}`}
+                          >
+                            <RecipeAvailabilityIcon
+                              aria-hidden="true"
+                              className="mt-0.5 h-3.5 w-3.5 shrink-0"
+                              strokeWidth={2.5}
+                            />
+                            <span className="break-words">
+                              {availabilityLabel}
+                            </span>
                           </span>
                         ) : null}
                       </span>
@@ -617,15 +1092,140 @@ export function RecipeView({
                         <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                           {t.ingredients}
                         </h4>
-                        <ul className="mt-2 space-y-1.5 text-sm text-slate-200">
-                          {recipe.ingredients.map((ingredient) => (
-                            <li key={ingredient.id}>
-                              {ingredient.kvantitet != null
-                                ? `${ingredient.kvantitet}${ingredient.enhet ? ` ${ingredient.enhet}` : ""} `
-                                : ""}
-                              {ingredient.ingrediens_namn}
-                            </li>
-                          ))}
+                        {!isPantryLoading && !pantryLoadError ? (
+                          <p
+                            aria-live="polite"
+                            className="mt-2 text-xs text-slate-400"
+                          >
+                            {t.recipeIngredientsMatched(
+                              recipe.ingredients.filter(
+                                (ingredient) =>
+                                  getIngredientAvailability(
+                                    ingredient,
+                                    products,
+                                  ).status !== "missing",
+                              ).length,
+                              recipe.ingredients.length,
+                            )}
+                          </p>
+                        ) : null}
+                        {pantryLoadError ? (
+                          <p
+                            role="status"
+                            className="mt-2 text-xs text-amber-200"
+                          >
+                            {t.pantryAvailabilityError}
+                          </p>
+                        ) : null}
+                        <ul className="mt-2 space-y-2 text-sm text-slate-200">
+                          {recipe.ingredients.map((ingredient) => {
+                            const availability =
+                              isPantryLoading || pantryLoadError
+                                ? null
+                                : getIngredientAvailability(
+                                    ingredient,
+                                    products,
+                                  );
+                            const statusLabel =
+                              availability?.status === "enough"
+                                ? t.ingredientEnough
+                                : availability?.status === "inPantry"
+                                  ? t.ingredientInPantry
+                                  : availability?.status === "partial"
+                                    ? t.ingredientNotEnough
+                                    : availability?.status === "missing"
+                                      ? t.ingredientMissing
+                                      : "";
+                            const statusClass =
+                              availability?.status === "enough" ||
+                              availability?.status === "inPantry"
+                                ? "text-emerald-300"
+                                : availability?.status === "partial" ||
+                                    availability?.status === "low"
+                                  ? "text-amber-300"
+                                  : availability?.status === "missing"
+                                    ? "text-rose-300"
+                                    : "text-slate-400";
+                            const StatusIcon =
+                              availability?.status === "partial"
+                                ? CircleAlert
+                                : availability?.status === "missing"
+                                  ? CircleX
+                                  : availability?.status === "low"
+                                    ? CircleAlert
+                                    : Check;
+                            const shortage =
+                              availability?.status === "partial"
+                                ? t.ingredientNeedMore(
+                                    new Intl.NumberFormat(numberLocale, {
+                                      maximumFractionDigits: 2,
+                                    }).format(
+                                      availability.missingQuantity /
+                                        availability.unitFactor,
+                                    ),
+                                    ingredient.enhet ?? "",
+                                  )
+                                : null;
+                            const tooltip = shortage
+                              ? `${statusLabel}: ${shortage}`
+                              : availability?.status === "low"
+                                ? t.ingredientLowStock
+                                : statusLabel;
+
+                            return (
+                              <li
+                                key={ingredient.id}
+                                className="relative flex items-start justify-between gap-2"
+                              >
+                                <span className="min-w-0 break-words">
+                                  {ingredient.kvantitet != null
+                                    ? `${ingredient.kvantitet}${ingredient.enhet ? ` ${ingredient.enhet}` : ""} `
+                                    : ""}
+                                  {ingredient.ingrediens_namn}
+                                </span>
+                                {pantryLoadError || !availability ? null : (
+                                  <span className="group relative mt-0.5 inline-flex shrink-0">
+                                    <button
+                                      type="button"
+                                      aria-label={tooltip}
+                                      aria-expanded={
+                                        openAvailabilityId ===
+                                        `ingredient-${ingredient.id}`
+                                      }
+                                      aria-describedby={`ingredient-status-${ingredient.id}`}
+                                      title={tooltip}
+                                      onClick={() =>
+                                        setOpenAvailabilityId((current) =>
+                                          current ===
+                                          `ingredient-${ingredient.id}`
+                                            ? null
+                                            : `ingredient-${ingredient.id}`,
+                                        )
+                                      }
+                                      className={`inline-flex rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${statusClass}`}
+                                    >
+                                      <StatusIcon
+                                        aria-hidden="true"
+                                        className="h-4 w-4"
+                                      />
+                                    </button>
+                                    <span
+                                      id={`ingredient-status-${ingredient.id}`}
+                                      role="tooltip"
+                                      className={`absolute right-0 top-full z-20 mt-1 whitespace-nowrap rounded-md border border-white/10 bg-slate-800 px-2.5 py-1.5 text-xs text-white shadow-lg transition-opacity ${
+                                        openAvailabilityId ===
+                                        `ingredient-${ingredient.id}`
+                                          ? "visible opacity-100"
+                                          : "invisible opacity-0 group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100"
+                                      }`}
+                                    >
+                                      {tooltip}
+                                    </span>
+                                  </span>
+                                )}
+                              </li>
+                            );
+                          })}
                         </ul>
                       </div>
                     ) : null}
@@ -666,6 +1266,20 @@ export function RecipeView({
         editingRecipe={editingRecipe}
         form={form}
         setForm={setForm}
+        imageUrl={editingRecipe?.bild_url ?? null}
+        selectedImage={selectedImage}
+        onImageChange={(file) => {
+          setFormError("");
+          if (
+            file &&
+            (!recipeImageExtensions[file.type] || file.size > maxRecipeImageSize)
+          ) {
+            setSelectedImage(null);
+            setFormError(t.imageInvalid);
+            return;
+          }
+          setSelectedImage(file);
+        }}
         formError={formError}
         operationError={operationError}
         isSaving={isSaving}

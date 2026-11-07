@@ -63,6 +63,7 @@ export type Recipe = {
   beskrivning: string | null;
   tid: number | null;
   kategori: string | null;
+  bild_url: string | null;
   is_favorite: boolean;
   created_at: string;
   ingredients: RecipeIngredient[];

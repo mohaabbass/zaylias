@@ -1,4 +1,5 @@
 import type { Dispatch, FormEvent, SetStateAction } from "react";
+import Image from "next/image";
 import { Plus, X } from "lucide-react";
 
 import {
@@ -18,6 +19,9 @@ type RecipeFormProps = {
   editingRecipe: Recipe | null;
   form: RecipeFormValues;
   setForm: Dispatch<SetStateAction<RecipeFormValues>>;
+  imageUrl: string | null;
+  selectedImage: File | null;
+  onImageChange: (file: File | null) => void;
   formError: string;
   operationError: string;
   isSaving: boolean;
@@ -32,6 +36,9 @@ export function RecipeForm({
   editingRecipe,
   form,
   setForm,
+  imageUrl,
+  selectedImage,
+  onImageChange,
   formError,
   operationError,
   isSaving,
@@ -83,6 +90,36 @@ export function RecipeForm({
               {operationError}
             </p>
           ) : null}
+
+          <label className="block space-y-1.5 text-sm">
+            <span className="font-medium text-slate-200">{t.recipeImage}</span>
+            <input
+              type="file"
+              accept="image/*"
+              required={!imageUrl && !selectedImage}
+              disabled={isSaving}
+              onChange={(event) => {
+                onImageChange(event.target.files?.[0] ?? null);
+                event.currentTarget.value = "";
+              }}
+              className="block w-full text-sm text-slate-300 file:mr-3 file:rounded-lg file:border-0 file:bg-emerald-400/10 file:px-3 file:py-2 file:font-medium file:text-emerald-200 hover:file:bg-emerald-400/20"
+            />
+            {selectedImage ? (
+              <span className="block truncate text-xs text-slate-400">
+                {selectedImage.name}
+              </span>
+            ) : null}
+            {imageUrl ? (
+              <Image
+                unoptimized
+                src={imageUrl}
+                alt=""
+                width={160}
+                height={100}
+                className="h-24 w-full rounded-lg object-cover"
+              />
+            ) : null}
+          </label>
 
           <label className="block space-y-1.5 text-sm">
             <span className="font-medium text-slate-200">{t.recipeName}</span>

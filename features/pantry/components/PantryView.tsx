@@ -840,6 +840,9 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
           {activeSection === "recipes" ? (
             <RecipeView
               userId={userId}
+              products={products}
+              isPantryLoading={isLoading}
+              pantryLoadError={Boolean(loadError)}
               addRequest={recipeAddRequest}
               onAddRequestHandled={() => setRecipeAddRequest(0)}
               onRecipeListChange={() =>
