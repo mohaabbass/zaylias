@@ -7,6 +7,7 @@ export type CategoryOption = {
 
 const legacyCategoryValueMap: Record<string, string> = {
   Mat: "food",
+  Livsmedel: "food",
   Snabbmat: "fast-food",
   Försäkring: "insurance",
   Boende: "housing",
@@ -207,7 +208,7 @@ export const economyTranslations = {
     cashFlowForecastLoadError:
       "Obetalda betalningar kunde inte hämtas; prognosen visas inte.",
     expenseCategories: [
-      { value: "food", label: "Mat" },
+      { value: "food", label: "Livsmedel" },
       { value: "fast-food", label: "Snabbmat" },
       { value: "insurance", label: "Försäkring" },
       { value: "housing", label: "Boende" },
@@ -380,7 +381,7 @@ export const economyTranslations = {
     cashFlowForecastLoadError:
       "Unpaid payments could not be loaded, so the forecast is unavailable.",
     expenseCategories: [
-      { value: "food", label: "Food" },
+      { value: "food", label: "Groceries" },
       { value: "fast-food", label: "Fast food" },
       { value: "insurance", label: "Insurance" },
       { value: "housing", label: "Housing" },
