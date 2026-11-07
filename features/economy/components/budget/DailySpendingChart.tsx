@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { SlidersHorizontal, X } from "lucide-react";
 
 import {
@@ -62,6 +62,7 @@ export function DailySpendingChart({
   const [hasLoadedSettings, setHasLoadedSettings] = useState(false);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const [selectedBarKey, setSelectedBarKey] = useState<string | null>(null);
+  const chartScrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const savedSettings: {
@@ -231,6 +232,13 @@ export function DailySpendingChart({
     return entries;
   }, [budgetStartDay, excludedCategories, locale, range, transactions]);
 
+  useEffect(() => {
+    if (range !== "month") return;
+
+    const chart = chartScrollRef.current;
+    if (chart) chart.scrollLeft = chart.scrollWidth;
+  }, [data, range]);
+
   const maxValue = Math.max(...data.map((entry) => entry.value), 1);
   const total = data.reduce((sum, entry) => sum + entry.value, 0);
   const currencyLocale = locale === "en" ? "en-US" : "sv-SE";
@@ -279,7 +287,10 @@ export function DailySpendingChart({
             {t.noSpendData}
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-xl bg-muted/20 px-3 pt-4">
+          <div
+            ref={chartScrollRef}
+            className="overflow-x-auto rounded-xl bg-muted/20 px-3 pt-4"
+          >
             <div
               className={`relative flex h-36 items-end ${
                 range === "year" ? "gap-1" : "gap-2"
