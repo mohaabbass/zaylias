@@ -202,6 +202,7 @@ export const economyTranslations = {
     budgetPeriodValidationError:
       "Ange ett namn och giltiga datum. Perioder får inte överlappa.",
     budgetPeriodsSaveError: "Det gick inte att spara budgetperioden:",
+    budgetPeriodsLoadError: "Det gick inte att läsa in budgetperioderna:",
     selectBudgetPeriod: "Välj budgetperiod",
     previousBudgetPeriod: "Föregående budgetperiod",
     nextBudgetPeriod: "Nästa budgetperiod",
@@ -394,6 +395,7 @@ export const economyTranslations = {
     budgetPeriodValidationError:
       "Enter a name and valid dates. Periods cannot overlap.",
     budgetPeriodsSaveError: "Could not save the budget period:",
+    budgetPeriodsLoadError: "Could not load budget periods:",
     selectBudgetPeriod: "Select budget period",
     previousBudgetPeriod: "Previous budget period",
     nextBudgetPeriod: "Next budget period",

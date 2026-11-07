@@ -155,13 +155,14 @@ export function AppShell() {
     userId: string;
     value: StoredBudgetPeriod[];
   } | null>(null);
+  const [isLoadingBudgetPeriods, setIsLoadingBudgetPeriods] = useState(false);
   const [isSavingBudgetPeriods, setIsSavingBudgetPeriods] = useState(false);
   const [budgetPeriodsError, setBudgetPeriodsError] = useState("");
   const [budgetPeriodName, setBudgetPeriodName] = useState("");
   const [budgetPeriodStartDate, setBudgetPeriodStartDate] = useState("");
   const [budgetPeriodEndDate, setBudgetPeriodEndDate] = useState("");
   const [selectedBudgetPeriodSelection, setSelectedBudgetPeriodSelection] =
-    useState<{ userId: string; id: string } | null>(null);
+    useState<{ userId: string; id: string | null } | null>(null);
   const [today, setToday] = useState(() => new Date(2000, 0, 1));
   const selectedBudgetPeriodId =
     selectedBudgetPeriodSelection &&
@@ -227,6 +228,95 @@ export function AppShell() {
   useEffect(() => {
     queueMicrotask(() => setToday(new Date()));
   }, []);
+
+  useEffect(() => {
+    let isCurrent = true;
+    const userId = session?.user.id;
+
+    const loadBudgetPeriods = async () => {
+      if (!userId) {
+        setBudgetPeriodsOverride(null);
+        setSelectedBudgetPeriodSelection(null);
+        setBudgetPeriodsError("");
+        setIsLoadingBudgetPeriods(false);
+        return;
+      }
+
+      setIsLoadingBudgetPeriods(true);
+      setBudgetPeriodsError("");
+
+      const { data, error } = await supabase
+        .from("budget_settings")
+        .select("periods, selected_period_id")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (!isCurrent) return;
+
+      if (error) {
+        console.error("Failed to load budget periods:", error);
+        setBudgetPeriodsError(`${t.budgetPeriodsLoadError} ${error.message}`);
+        setIsLoadingBudgetPeriods(false);
+        return;
+      }
+
+      if (data) {
+        setBudgetPeriodsOverride({
+          userId,
+          value: parseStoredBudgetPeriods(data.periods),
+        });
+        setSelectedBudgetPeriodSelection({
+          userId,
+          id:
+            typeof data.selected_period_id === "string"
+              ? data.selected_period_id
+              : null,
+        });
+        setIsLoadingBudgetPeriods(false);
+        return;
+      }
+
+      const legacyPeriods = parseStoredBudgetPeriods(
+        session?.user.user_metadata?.budget_periods,
+      );
+      if (legacyPeriods.length > 0) {
+        const { error: migrationError } = await supabase
+          .from("budget_settings")
+          .upsert(
+            {
+              user_id: userId,
+              periods: legacyPeriods,
+              selected_period_id: null,
+            },
+            { onConflict: "user_id" },
+          );
+
+        if (!isCurrent) return;
+
+        if (migrationError) {
+          console.error("Failed to migrate budget periods:", migrationError);
+          setBudgetPeriodsError(
+            `${t.budgetPeriodsSaveError} ${migrationError.message}`,
+          );
+        }
+      }
+
+      setBudgetPeriodsOverride({ userId, value: legacyPeriods });
+      setSelectedBudgetPeriodSelection({ userId, id: null });
+      setIsLoadingBudgetPeriods(false);
+    };
+
+    void loadBudgetPeriods();
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [
+    session?.user.id,
+    session?.user.user_metadata,
+    t.budgetPeriodsLoadError,
+    t.budgetPeriodsSaveError,
+  ]);
 
   useEffect(() => {
     let isCurrent = true;
@@ -400,14 +490,29 @@ export function AppShell() {
     void logout();
   };
 
-  const saveBudgetPeriods = async (nextPeriods: StoredBudgetPeriod[]) => {
+  const saveBudgetPeriods = async (
+    nextPeriods: StoredBudgetPeriod[],
+    nextSelectedPeriodId: string | null = selectedBudgetPeriodId,
+  ) => {
     if (!session?.user.id) return false;
 
     setBudgetPeriodsError("");
     setIsSavingBudgetPeriods(true);
-    const { error } = await supabase.auth.updateUser({
-      data: { budget_periods: nextPeriods },
-    });
+    const selectedPeriodId = nextPeriods.some(
+      (period) => period.id === nextSelectedPeriodId,
+    )
+      ? nextSelectedPeriodId
+      : nextSelectedPeriodId?.startsWith("calendar-")
+        ? nextSelectedPeriodId
+        : null;
+    const { error } = await supabase.from("budget_settings").upsert(
+      {
+        user_id: session.user.id,
+        periods: nextPeriods,
+        selected_period_id: selectedPeriodId,
+      },
+      { onConflict: "user_id" },
+    );
     setIsSavingBudgetPeriods(false);
     if (error) {
       console.error("Failed to save budget periods:", error);
@@ -418,6 +523,10 @@ export function AppShell() {
     setBudgetPeriodsOverride({
       userId: session.user.id,
       value: nextPeriods,
+    });
+    setSelectedBudgetPeriodSelection({
+      userId: session.user.id,
+      id: selectedPeriodId,
     });
     return true;
   };
@@ -461,11 +570,9 @@ export function AppShell() {
 
   const handleRemoveBudgetPeriod = async (periodId: string) => {
     const nextPeriods = budgetPeriods.filter((period) => period.id !== periodId);
-    if (await saveBudgetPeriods(nextPeriods)) {
-      if (selectedBudgetPeriodId === periodId) {
-        setSelectedBudgetPeriodSelection(null);
-      }
-    }
+    const nextSelectedPeriodId =
+      selectedBudgetPeriodId === periodId ? null : selectedBudgetPeriodId;
+    await saveBudgetPeriods(nextPeriods, nextSelectedPeriodId);
   };
 
   const handleSelectBudgetPeriod = (periodId: string) => {
@@ -474,6 +581,7 @@ export function AppShell() {
         userId: session.user.id,
         id: periodId,
       });
+      void saveBudgetPeriods(budgetPeriods, periodId);
     }
   };
 
@@ -540,7 +648,11 @@ export function AppShell() {
       <button
         type="button"
         aria-label={t.previousBudgetPeriod}
-        disabled={!canNavigateBudgetPeriod(-1)}
+        disabled={
+          isLoadingBudgetPeriods ||
+          isSavingBudgetPeriods ||
+          !canNavigateBudgetPeriod(-1)
+        }
         onClick={() => handleBudgetPeriodNavigation(-1)}
         className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl border border-border bg-muted text-foreground transition hover:border-emerald-500/50 disabled:cursor-not-allowed disabled:opacity-40"
       >
@@ -551,6 +663,7 @@ export function AppShell() {
         <select
           aria-label={t.selectBudgetPeriod}
           value={selectedBudgetPeriod.id}
+          disabled={isLoadingBudgetPeriods || isSavingBudgetPeriods}
           onChange={(event) => handleSelectBudgetPeriod(event.target.value)}
           className="w-full truncate bg-transparent text-center text-sm font-semibold text-foreground outline-none"
         >
@@ -564,7 +677,11 @@ export function AppShell() {
       <button
         type="button"
         aria-label={t.nextBudgetPeriod}
-        disabled={!canNavigateBudgetPeriod(1)}
+        disabled={
+          isLoadingBudgetPeriods ||
+          isSavingBudgetPeriods ||
+          !canNavigateBudgetPeriod(1)
+        }
         onClick={() => handleBudgetPeriodNavigation(1)}
         className="inline-flex size-10 shrink-0 items-center justify-center rounded-xl border border-border bg-muted text-foreground transition hover:border-emerald-500/50 disabled:cursor-not-allowed disabled:opacity-40"
       >
@@ -1643,7 +1760,7 @@ export function AppShell() {
                       <button
                         type="button"
                         aria-label={`${t.removeBudgetPeriod}: ${period.name}`}
-                        disabled={isSavingBudgetPeriods}
+                        disabled={isLoadingBudgetPeriods || isSavingBudgetPeriods}
                         onClick={() =>
                           void handleRemoveBudgetPeriod(period.id)
                         }
@@ -1711,7 +1828,7 @@ export function AppShell() {
                 ) : null}
                 <button
                   type="submit"
-                  disabled={isSavingBudgetPeriods}
+                  disabled={isLoadingBudgetPeriods || isSavingBudgetPeriods}
                   className="w-full rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white transition hover:bg-emerald-500 disabled:opacity-50"
                 >
                   {isSavingBudgetPeriods ? t.loading : t.addBudgetPeriod}
