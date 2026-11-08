@@ -1,4 +1,5 @@
 import type { Dispatch, FormEvent, SetStateAction } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Plus, X } from "lucide-react";
 
@@ -13,9 +14,186 @@ import { PantryAddTypeTabs } from "@/features/pantry/components/PantryAddTypeTab
 import type { PantryTranslation } from "@/features/pantry/i18n";
 import {
   isRecipeMainIngredient,
+  type ProductCatalogEntry,
   type Recipe,
   type RecipeFormValues,
 } from "@/features/pantry/types";
+import { supabase } from "@/lib/supabase";
+
+type IngredientNameInputProps = {
+  id: string;
+  value: string;
+  placeholder: string;
+  suggestionsLabel: string;
+  loadingLabel: string;
+  errorLabel: string;
+  onChange: (value: string) => void;
+};
+
+function IngredientNameInput({
+  id,
+  value,
+  placeholder,
+  suggestionsLabel,
+  loadingLabel,
+  errorLabel,
+  onChange,
+}: IngredientNameInputProps) {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [suggestions, setSuggestions] = useState<ProductCatalogEntry[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchError, setSearchError] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const listboxId = `${id}-options`;
+  const isDropdownVisible =
+    isDropdownOpen &&
+    value.trim().length >= 2 &&
+    searchQuery === value.trim() &&
+    (isSearching || suggestions.length > 0 || Boolean(searchError));
+
+  useEffect(() => {
+    const query = value.trim();
+    if (!isDropdownOpen || query.length < 2) return;
+
+    let isCurrent = true;
+    const timeout = window.setTimeout(() => {
+      const searchCatalog = async () => {
+        setSearchQuery(query);
+        setSuggestions([]);
+        setIsSearching(true);
+        setSearchError("");
+
+        const { data, error } = await supabase
+          .from("produkt_katalog")
+          .select("catalog_id, streckkod, namn, brand, image_url, kategori")
+          .ilike("namn", `%${query}%`)
+          .order("namn")
+          .limit(8);
+
+        if (!isCurrent) return;
+
+        if (error) {
+          console.error("Failed to search product catalog for recipe ingredient:", error);
+          setSuggestions([]);
+          setSearchError(errorLabel);
+        } else {
+          setSuggestions(data ?? []);
+        }
+        setIsSearching(false);
+      };
+
+      void searchCatalog();
+    }, 250);
+
+    return () => {
+      isCurrent = false;
+      window.clearTimeout(timeout);
+    };
+  }, [errorLabel, isDropdownOpen, value]);
+
+  const selectSuggestion = (product: ProductCatalogEntry) => {
+    onChange(product.namn);
+    setIsDropdownOpen(false);
+  };
+
+  return (
+    <div className="relative min-w-0">
+      <input
+        id={id}
+        role="combobox"
+        aria-autocomplete="list"
+        aria-expanded={isDropdownVisible}
+        aria-controls={listboxId}
+        aria-activedescendant={
+          isDropdownVisible && suggestions.length > 0
+            ? `${listboxId}-${suggestions[Math.min(activeIndex, suggestions.length - 1)].catalog_id}`
+            : undefined
+        }
+        value={value}
+        onChange={(event) => {
+          setIsDropdownOpen(true);
+          setActiveIndex(0);
+          onChange(event.target.value);
+        }}
+        onFocus={() => setIsDropdownOpen(true)}
+        onBlur={() => setIsDropdownOpen(false)}
+        onKeyDown={(event) => {
+          if (!isDropdownVisible || suggestions.length === 0) {
+            if (event.key === "Escape") setIsDropdownOpen(false);
+            return;
+          }
+
+          if (event.key === "ArrowDown") {
+            event.preventDefault();
+            setActiveIndex((index) =>
+              index >= suggestions.length - 1 ? 0 : index + 1,
+            );
+          } else if (event.key === "ArrowUp") {
+            event.preventDefault();
+            setActiveIndex((index) =>
+              index <= 0 ? suggestions.length - 1 : index - 1,
+            );
+          } else if (event.key === "Enter") {
+            event.preventDefault();
+            selectSuggestion(
+              suggestions[Math.min(activeIndex, suggestions.length - 1)],
+            );
+          } else if (event.key === "Escape") {
+            event.preventDefault();
+            setIsDropdownOpen(false);
+          }
+        }}
+        placeholder={placeholder}
+        className="h-10 w-full min-w-0 rounded-lg border border-border bg-muted px-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-emerald-400/60"
+      />
+      {isDropdownVisible ? (
+        <div className="absolute inset-x-0 top-full z-30 mt-1 overflow-hidden rounded-xl border border-border bg-card shadow-xl">
+          <p className="px-3 py-2 text-xs font-medium text-muted-foreground">
+            {suggestionsLabel}
+          </p>
+          {isSearching ? (
+            <p role="status" className="px-3 pb-3 text-xs text-muted-foreground">
+              {loadingLabel}
+            </p>
+          ) : null}
+          {searchError ? (
+            <p role="alert" className="px-3 pb-3 text-xs text-amber-200">
+              {searchError}
+            </p>
+          ) : null}
+          {suggestions.length > 0 ? (
+            <ul
+              id={listboxId}
+              role="listbox"
+              aria-label={suggestionsLabel}
+              className="max-h-56 overflow-y-auto border-t border-border py-1"
+            >
+              {suggestions.map((product, index) => (
+                <li
+                  key={product.catalog_id}
+                  id={`${listboxId}-${product.catalog_id}`}
+                  role="option"
+                  aria-selected={index === activeIndex}
+                  onMouseEnter={() => setActiveIndex(index)}
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => selectSuggestion(product)}
+                  className={`cursor-pointer px-3 py-2 text-sm text-foreground ${
+                    index === activeIndex
+                      ? "bg-emerald-400/10"
+                      : "hover:bg-muted"
+                  }`}
+                >
+                  {product.namn}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
 
 type RecipeFormProps = {
   open: boolean;
@@ -210,6 +388,7 @@ export function RecipeForm({
               <option value="minced_meat">
                 {t.recipeMainIngredientMincedMeat}
               </option>
+              <option value="sausage">{t.recipeMainIngredientSausage}</option>
               <option value="shrimp">{t.recipeMainIngredientShrimp}</option>
               <option value="fish">{t.recipeMainIngredientFish}</option>
               <option value="vegetarian">
@@ -249,21 +428,23 @@ export function RecipeForm({
                 <label className="sr-only" htmlFor={`ingredient-name-${index}`}>
                   {t.ingredientName}
                 </label>
-                <input
+                <IngredientNameInput
                   id={`ingredient-name-${index}`}
                   value={ingredient.ingrediens_namn}
-                  onChange={(event) =>
+                  onChange={(value) =>
                     setForm((current) => ({
                       ...current,
                       ingredients: current.ingredients.map((item, itemIndex) =>
                         itemIndex === index
-                          ? { ...item, ingrediens_namn: event.target.value }
+                          ? { ...item, ingrediens_namn: value }
                           : item,
                       ),
                     }))
                   }
                   placeholder={t.ingredientNamePlaceholder}
-                  className="h-10 min-w-0 rounded-lg border border-border bg-muted px-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-emerald-400/60"
+                  suggestionsLabel={t.productSuggestions}
+                  loadingLabel={t.catalogSearchLoading}
+                  errorLabel={t.catalogSearchError}
                 />
                 <label className="sr-only" htmlFor={`ingredient-quantity-${index}`}>
                   {t.quantity}

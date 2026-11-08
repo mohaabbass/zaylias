@@ -60,6 +60,7 @@ export const recipeMainIngredientValues = [
   "chicken",
   "meat",
   "minced_meat",
+  "sausage",
   "shrimp",
   "fish",
   "vegetarian",

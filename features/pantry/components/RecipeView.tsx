@@ -882,6 +882,7 @@ export function RecipeView({
     chicken: t.recipeMainIngredientChicken,
     meat: t.recipeMainIngredientMeat,
     minced_meat: t.recipeMainIngredientMincedMeat,
+    sausage: t.recipeMainIngredientSausage,
     shrimp: t.recipeMainIngredientShrimp,
     fish: t.recipeMainIngredientFish,
     vegetarian: t.recipeMainIngredientVegetarian,
