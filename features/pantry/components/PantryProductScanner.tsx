@@ -118,7 +118,7 @@ export function PantryProductScanner({
   }, [cameraError, unsupportedError]);
 
   return (
-    <div className="space-y-3 rounded-xl border border-white/10 bg-white/[0.035] p-3">
+    <div className="space-y-3 rounded-xl border border-border bg-muted p-3">
       <video
         ref={videoRef}
         aria-label={instruction}
@@ -126,11 +126,11 @@ export function PantryProductScanner({
         muted
         playsInline
       />
-      <p className="text-sm text-slate-300">{instruction}</p>
+      <p className="text-sm text-muted-foreground">{instruction}</p>
       <button
         type="button"
         onClick={onClose}
-        className="rounded-lg border border-white/10 px-3 py-2 text-sm text-slate-200 hover:bg-white/5"
+        className="rounded-lg border border-border px-3 py-2 text-sm text-muted-foreground hover:bg-muted"
       >
         {cancelLabel}
       </button>

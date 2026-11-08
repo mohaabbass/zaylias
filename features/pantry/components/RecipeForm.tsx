@@ -57,15 +57,15 @@ export function RecipeForm({
         if (!isSaving) onOpenChange(nextOpen);
       }}
     >
-      <DrawerContent className="mx-auto h-[calc(100dvh-env(safe-area-inset-top))] max-h-none max-w-xl rounded-t-2xl border border-white/10 bg-slate-950 p-0 text-white shadow-2xl sm:h-auto sm:max-h-[calc(100dvh-3rem)]">
-        <DrawerHeader className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+      <DrawerContent className="mx-auto h-[calc(100dvh-env(safe-area-inset-top))] max-h-none max-w-xl rounded-t-2xl border border-border bg-background p-0 text-foreground shadow-2xl sm:h-auto sm:max-h-[calc(100dvh-3rem)]">
+        <DrawerHeader className="flex items-center justify-between border-b border-border px-5 py-4">
           <DrawerTitle className="text-lg font-semibold">
             {editingRecipe ? t.editRecipe : t.addRecipe}
           </DrawerTitle>
           <DrawerClose
             disabled={isSaving}
             aria-label={t.cancel}
-            className="rounded-lg p-2 text-slate-400 hover:bg-white/10 hover:text-white"
+            className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground"
           >
             <X aria-hidden="true" className="h-5 w-5" />
           </DrawerClose>
@@ -96,7 +96,7 @@ export function RecipeForm({
           ) : null}
 
           <label className="block space-y-1.5 text-sm">
-            <span className="font-medium text-slate-200">{t.recipeImage}</span>
+            <span className="font-medium text-muted-foreground">{t.recipeImage}</span>
             <input
               type="file"
               accept="image/*"
@@ -106,10 +106,10 @@ export function RecipeForm({
                 onImageChange(event.target.files?.[0] ?? null);
                 event.currentTarget.value = "";
               }}
-              className="block w-full text-sm text-slate-300 file:mr-3 file:rounded-lg file:border-0 file:bg-emerald-400/10 file:px-3 file:py-2 file:font-medium file:text-emerald-200 hover:file:bg-emerald-400/20"
+              className="block w-full text-sm text-muted-foreground file:mr-3 file:rounded-lg file:border-0 file:bg-emerald-400/10 file:px-3 file:py-2 file:font-medium file:text-emerald-200 hover:file:bg-emerald-400/20"
             />
             {selectedImage ? (
-              <span className="block truncate text-xs text-slate-400">
+              <span className="block truncate text-xs text-muted-foreground">
                 {selectedImage.name}
               </span>
             ) : null}
@@ -126,7 +126,7 @@ export function RecipeForm({
           </label>
 
           <label className="block space-y-1.5 text-sm">
-            <span className="font-medium text-slate-200">{t.recipeName}</span>
+            <span className="font-medium text-muted-foreground">{t.recipeName}</span>
             <input
               required
               autoFocus
@@ -135,12 +135,12 @@ export function RecipeForm({
                 setForm((current) => ({ ...current, titel: event.target.value }))
               }
               placeholder={t.recipeNamePlaceholder}
-              className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.06] px-3 text-white outline-none placeholder:text-slate-500 focus:border-emerald-400/60 focus:ring-2 focus:ring-emerald-400/15"
+              className="h-11 w-full rounded-xl border border-border bg-muted px-3 text-foreground outline-none placeholder:text-muted-foreground focus:border-emerald-400/60 focus:ring-2 focus:ring-emerald-400/15"
             />
           </label>
 
           <label className="block space-y-1.5 text-sm">
-            <span className="font-medium text-slate-200">{t.description}</span>
+            <span className="font-medium text-muted-foreground">{t.description}</span>
             <textarea
               rows={3}
               value={form.beskrivning}
@@ -151,13 +151,13 @@ export function RecipeForm({
                 }))
               }
               placeholder={t.descriptionPlaceholder}
-              className="w-full resize-y rounded-xl border border-white/10 bg-white/[0.06] px-3 py-2.5 text-white outline-none placeholder:text-slate-500 focus:border-emerald-400/60 focus:ring-2 focus:ring-emerald-400/15"
+              className="w-full resize-y rounded-xl border border-border bg-muted px-3 py-2.5 text-foreground outline-none placeholder:text-muted-foreground focus:border-emerald-400/60 focus:ring-2 focus:ring-emerald-400/15"
             />
           </label>
 
           <div className="grid grid-cols-2 gap-3">
             <label className="block space-y-1.5 text-sm">
-              <span className="font-medium text-slate-200">{t.preparationTime}</span>
+              <span className="font-medium text-muted-foreground">{t.preparationTime}</span>
               <div className="relative">
                 <input
                   type="number"
@@ -167,15 +167,15 @@ export function RecipeForm({
                   onChange={(event) =>
                     setForm((current) => ({ ...current, tid: event.target.value }))
                   }
-                  className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.06] px-3 pr-12 text-white outline-none focus:border-emerald-400/60"
+                  className="h-11 w-full rounded-xl border border-border bg-muted px-3 pr-12 text-foreground outline-none focus:border-emerald-400/60"
                 />
-                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
                   {t.minutes}
                 </span>
               </div>
             </label>
             <label className="block space-y-1.5 text-sm">
-              <span className="font-medium text-slate-200">{t.category}</span>
+              <span className="font-medium text-muted-foreground">{t.category}</span>
               <input
                 value={form.kategori}
                 onChange={(event) =>
@@ -184,13 +184,13 @@ export function RecipeForm({
                     kategori: event.target.value,
                   }))
                 }
-                className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.06] px-3 text-white outline-none focus:border-emerald-400/60"
+                className="h-11 w-full rounded-xl border border-border bg-muted px-3 text-foreground outline-none focus:border-emerald-400/60"
               />
             </label>
           </div>
 
           <label className="block space-y-1.5 text-sm">
-            <span className="font-medium text-slate-200">{t.mainIngredient}</span>
+            <span className="font-medium text-muted-foreground">{t.mainIngredient}</span>
             <select
               required
               value={form.main_ingredient}
@@ -202,7 +202,7 @@ export function RecipeForm({
                     : "",
                 }))
               }
-              className="h-11 w-full rounded-xl border border-white/10 bg-slate-900 px-3 text-white outline-none focus:border-emerald-400/60"
+              className="h-11 w-full rounded-xl border border-border bg-card px-3 text-foreground outline-none focus:border-emerald-400/60"
             >
               <option value="">{t.selectMainIngredient}</option>
               <option value="chicken">{t.recipeMainIngredientChicken}</option>
@@ -221,7 +221,7 @@ export function RecipeForm({
 
           <section className="space-y-3">
             <div className="flex items-center justify-between gap-3">
-              <h3 className="text-sm font-semibold text-slate-200">
+              <h3 className="text-sm font-semibold text-muted-foreground">
                 {t.ingredients}
               </h3>
               <button
@@ -263,7 +263,7 @@ export function RecipeForm({
                     }))
                   }
                   placeholder={t.ingredientNamePlaceholder}
-                  className="h-10 min-w-0 rounded-lg border border-white/10 bg-white/[0.06] px-2.5 text-sm text-white outline-none placeholder:text-slate-500 focus:border-emerald-400/60"
+                  className="h-10 min-w-0 rounded-lg border border-border bg-muted px-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-emerald-400/60"
                 />
                 <label className="sr-only" htmlFor={`ingredient-quantity-${index}`}>
                   {t.quantity}
@@ -285,7 +285,7 @@ export function RecipeForm({
                     }))
                   }
                   placeholder={t.quantity}
-                  className="h-10 min-w-0 rounded-lg border border-white/10 bg-white/[0.06] px-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-emerald-400/60"
+                  className="h-10 min-w-0 rounded-lg border border-border bg-muted px-2 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-emerald-400/60"
                 />
                 <label className="sr-only" htmlFor={`ingredient-unit-${index}`}>
                   {t.unit}
@@ -304,7 +304,7 @@ export function RecipeForm({
                     }))
                   }
                   placeholder={t.unit}
-                  className="h-10 min-w-0 rounded-lg border border-white/10 bg-white/[0.06] px-2 text-sm text-white outline-none placeholder:text-slate-500 focus:border-emerald-400/60"
+                  className="h-10 min-w-0 rounded-lg border border-border bg-muted px-2 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-emerald-400/60"
                 />
                 <button
                   type="button"
@@ -318,7 +318,7 @@ export function RecipeForm({
                       ),
                     }))
                   }
-                  className="flex h-10 items-center justify-center rounded-lg text-slate-400 hover:bg-white/10 hover:text-white disabled:opacity-30"
+                  className="flex h-10 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-30"
                 >
                   <X aria-hidden="true" className="h-4 w-4" />
                 </button>
@@ -326,10 +326,10 @@ export function RecipeForm({
             ))}
           </section>
 
-          <div className="flex gap-3 border-t border-white/10 pt-4">
+          <div className="flex gap-3 border-t border-border pt-4">
             <DrawerClose
               disabled={isSaving}
-              className="h-11 flex-1 rounded-xl border border-white/10 px-4 text-sm font-medium text-slate-300 transition hover:bg-white/5 disabled:opacity-50"
+              className="h-11 flex-1 rounded-xl border border-border px-4 text-sm font-medium text-muted-foreground transition hover:bg-muted disabled:opacity-50"
             >
               {t.cancel}
             </DrawerClose>

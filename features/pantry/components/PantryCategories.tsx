@@ -59,7 +59,7 @@ export function PantryCategories({
     <section aria-labelledby="pantry-categories-heading" className="space-y-3">
       <h2
         id="pantry-categories-heading"
-        className="text-sm font-semibold text-slate-200"
+        className="text-sm font-semibold text-muted-foreground"
       >
         {t.browseCategories}
       </h2>
@@ -71,12 +71,12 @@ export function PantryCategories({
           className={`flex min-w-[6.5rem] flex-col items-center gap-2 rounded-2xl border px-4 py-3 text-center transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 ${
             categoryFilter === "all"
               ? "border-emerald-300/50 bg-emerald-300/10 text-emerald-100"
-              : "border-white/10 bg-white/[0.035] text-slate-300 hover:border-white/20 hover:bg-white/[0.07]"
+              : "border-border bg-muted text-muted-foreground hover:border-border hover:bg-muted"
           }`}
         >
           <LayoutGrid aria-hidden="true" className="h-5 w-5" />
           <span className="text-xs font-medium">{t.all}</span>
-          <span className="text-[11px] text-slate-400">{totalCount}</span>
+          <span className="text-[11px] text-muted-foreground">{totalCount}</span>
         </button>
         {categories.map(({ value, count }) => {
           const Icon = getCategoryIcon(value);
@@ -91,14 +91,14 @@ export function PantryCategories({
               className={`flex min-w-[6.5rem] flex-col items-center gap-2 rounded-2xl border px-4 py-3 text-center transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300 ${
                 isSelected
                   ? "border-emerald-300/50 bg-emerald-300/10 text-emerald-100"
-                  : "border-white/10 bg-white/[0.035] text-slate-300 hover:border-white/20 hover:bg-white/[0.07]"
+                  : "border-border bg-muted text-muted-foreground hover:border-border hover:bg-muted"
               }`}
             >
               <Icon aria-hidden="true" className="h-5 w-5" />
               <span className="max-w-28 truncate text-xs font-medium">
                 {getCategoryLabel(value, locale)}
               </span>
-              <span className="text-[11px] text-slate-400">{count}</span>
+              <span className="text-[11px] text-muted-foreground">{count}</span>
             </button>
           );
         })}

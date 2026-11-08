@@ -898,10 +898,10 @@ export function RecipeView({
               <BookOpen aria-hidden="true" className="h-3.5 w-3.5" />
               {t.recipes}
             </div>
-            <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+            <h2 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
               {t.recipesTitle}
             </h2>
-            <p className="mt-2 text-sm text-slate-400">{t.recipesSubtitle}</p>
+            <p className="mt-2 text-sm text-muted-foreground">{t.recipesSubtitle}</p>
           </div>
         </header>
 
@@ -919,7 +919,7 @@ export function RecipeView({
             <label className="relative block min-w-0">
               <Search
                 aria-hidden="true"
-                className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
               />
               <span className="sr-only">{t.searchRecipes}</span>
               <input
@@ -927,19 +927,19 @@ export function RecipeView({
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
                 placeholder={t.searchRecipes}
-                className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.04] pl-10 pr-3 text-sm text-white outline-none placeholder:text-slate-500 focus:border-emerald-400/60"
+                className="h-11 w-full rounded-xl border border-border bg-muted pl-10 pr-3 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:border-emerald-400/60"
               />
             </label>
           </div>
           {areFiltersOpen ? (
             <div
               id="recipe-filters"
-              className="space-y-4 rounded-xl border border-white/10 bg-white/[0.035] p-4"
+              className="space-y-4 rounded-xl border border-border bg-muted p-4"
             >
               <div className="flex flex-col gap-2 sm:max-w-xs">
                 <label
                   htmlFor="recipe-category-filter"
-                  className="text-xs font-medium text-slate-300"
+                  className="text-xs font-medium text-muted-foreground"
                 >
                   {t.filterCategory}
                 </label>
@@ -949,7 +949,7 @@ export function RecipeView({
                   onChange={(event) =>
                     setSelectedCategory(event.target.value || null)
                   }
-                  className="h-10 rounded-lg border border-white/10 bg-slate-900 px-3 text-sm text-white outline-none focus:border-emerald-400/60"
+                  className="h-10 rounded-lg border border-border bg-card px-3 text-sm text-foreground outline-none focus:border-emerald-400/60"
                 >
                   <option value="">{t.allRecipeCategories}</option>
                   {recipeCategories.map((category) => (
@@ -961,7 +961,7 @@ export function RecipeView({
               </div>
               {availableMainIngredientFilters.length > 0 ? (
                 <fieldset className="space-y-2">
-                  <legend className="text-xs font-medium text-slate-300">
+                  <legend className="text-xs font-medium text-muted-foreground">
                     {t.mainIngredient}
                   </legend>
                   <div className="flex flex-wrap gap-2">
@@ -978,7 +978,7 @@ export function RecipeView({
                         className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
                           selectedMainIngredient === mainIngredient
                             ? "bg-emerald-300/15 text-emerald-200"
-                            : "bg-white/[0.06] text-slate-300 hover:bg-white/10"
+                            : "bg-muted text-muted-foreground hover:bg-muted"
                         }`}
                       >
                         {mainIngredientFilterLabels[mainIngredient]}
@@ -1009,7 +1009,7 @@ export function RecipeView({
               className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-xs font-medium transition ${
                 favoritesOnly
                   ? "bg-rose-300/15 text-rose-200"
-                  : "bg-white/[0.06] text-slate-300 hover:bg-white/10"
+                  : "bg-muted text-muted-foreground hover:bg-muted"
               }`}
             >
               <Heart
@@ -1035,7 +1035,7 @@ export function RecipeView({
                 className={`inline-flex shrink-0 items-center rounded-full px-3.5 py-2 text-xs font-medium transition disabled:cursor-not-allowed disabled:opacity-50 ${
                   isAvailabilityKnown && availabilityFilter === filter.value
                     ? filter.activeClass
-                    : "bg-white/[0.06] text-slate-300 hover:bg-white/10"
+                    : "bg-muted text-muted-foreground hover:bg-muted"
                 }`}
               >
                 {filter.label}
@@ -1048,7 +1048,7 @@ export function RecipeView({
           <div
             role="group"
             aria-label={t.recipeImageDisplay}
-            className="inline-flex rounded-lg border border-white/10 bg-white/[0.04] p-1"
+            className="inline-flex rounded-lg border border-border bg-muted p-1"
           >
             {recipeImageDisplayOptions.map(({ value, label, Icon }) => (
               <button
@@ -1061,7 +1061,7 @@ export function RecipeView({
                 className={`inline-flex h-9 w-9 items-center justify-center rounded-md transition ${
                   recipeImageDisplay === value
                     ? "bg-emerald-300/15 text-emerald-200"
-                    : "text-slate-400 hover:bg-white/10 hover:text-white"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
                 }`}
               >
                 <Icon aria-hidden="true" className="h-4 w-4" />
@@ -1077,7 +1077,7 @@ export function RecipeView({
             className={`inline-flex h-11 shrink-0 items-center gap-2 rounded-xl border px-3 text-sm transition ${
               areFiltersOpen || activeRecipeFilterCount > 0
                 ? "border-emerald-300/30 bg-emerald-300/10 text-emerald-200"
-                : "border-white/10 bg-white/[0.04] text-slate-300 hover:bg-white/10"
+                : "border-border bg-muted text-muted-foreground hover:bg-muted"
             }`}
           >
             <Filter aria-hidden="true" className="h-4 w-4" />
@@ -1089,7 +1089,7 @@ export function RecipeView({
         </div>
 
         {isLoading ? (
-          <div className="rounded-2xl border border-white/10 bg-white/[0.035] px-5 py-12 text-center text-sm text-slate-400">
+          <div className="rounded-2xl border border-border bg-muted px-5 py-12 text-center text-sm text-muted-foreground">
             {t.loading}
           </div>
         ) : loadError ? (
@@ -1107,8 +1107,8 @@ export function RecipeView({
             </button>
           </div>
         ) : filteredRecipes.length === 0 ? (
-          <div className="rounded-2xl border border-white/10 bg-white/[0.035] px-5 py-12 text-center">
-            <p className="font-medium text-white">
+          <div className="rounded-2xl border border-border bg-muted px-5 py-12 text-center">
+            <p className="font-medium text-foreground">
               {recipes.length === 0 &&
               !favoritesOnly &&
               availabilityFilter === "all" &&
@@ -1124,7 +1124,7 @@ export function RecipeView({
             !search &&
             selectedCategory === null &&
             selectedMainIngredient === null ? (
-              <p className="mt-2 text-sm text-slate-400">
+              <p className="mt-2 text-sm text-muted-foreground">
                 {t.noRecipesDescription}
               </p>
             ) : null}
@@ -1182,12 +1182,12 @@ export function RecipeView({
                   : isAvailabilityPartial
                     ? "text-amber-300"
                     : "text-rose-300"
-                : "text-slate-400";
+                : "text-muted-foreground";
 
               return (
                 <article
                   key={recipe.id}
-                  className={`rounded-2xl border border-white/10 bg-white/[0.035] p-4 ${
+                  className={`rounded-2xl border border-border bg-muted p-4 ${
                     recipeImageDisplay === "large" ? "" : "flex items-start gap-3"
                   }`}
                 >
@@ -1201,7 +1201,7 @@ export function RecipeView({
                       className="mb-4 aspect-video w-full rounded-xl object-cover"
                     />
                   ) : recipeImageDisplay === "large" ? (
-                    <div className="mb-4 flex aspect-video items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.025] text-sm text-slate-500">
+                    <div className="mb-4 flex aspect-video items-center justify-center gap-2 rounded-xl border border-border bg-muted text-sm text-muted-foreground">
                       <ImageIcon aria-hidden="true" className="h-4 w-4" />
                       {t.recipeImageMissing}
                     </div>
@@ -1220,7 +1220,7 @@ export function RecipeView({
                       <div
                         role="img"
                         aria-label={`${recipe.titel}: ${t.recipeImageMissing}`}
-                        className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/[0.025] text-slate-500"
+                        className="flex h-16 w-16 shrink-0 items-center justify-center rounded-lg border border-border bg-muted text-muted-foreground"
                       >
                         <ImageIcon aria-hidden="true" className="h-4 w-4" />
                       </div>
@@ -1240,7 +1240,7 @@ export function RecipeView({
                       className="group flex min-w-0 flex-1 items-start justify-between gap-2 rounded-lg text-left"
                     >
                       <span className="min-w-0">
-                        <span className="block break-words text-lg font-semibold text-white">
+                        <span className="block break-words text-lg font-semibold text-foreground">
                           {recipe.titel}
                         </span>
                         {recipe.kategori ? (
@@ -1266,7 +1266,7 @@ export function RecipeView({
                       </span>
                       <ChevronDown
                         aria-hidden="true"
-                        className={`mt-1 h-4 w-4 shrink-0 text-slate-400 transition-transform group-hover:text-white ${
+                        className={`mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:text-foreground ${
                           isExpanded ? "rotate-180" : ""
                         }`}
                       />
@@ -1292,27 +1292,27 @@ export function RecipeView({
 
                   <div id={detailsId} hidden={!isExpanded}>
                     {recipe.beskrivning ? (
-                      <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-slate-300">
+                      <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-muted-foreground">
                         {recipe.beskrivning}
                       </p>
                     ) : null}
 
                     {recipe.tid ? (
-                      <p className="mt-3 inline-flex items-center gap-1.5 text-xs text-slate-400">
+                      <p className="mt-3 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
                         <Clock3 aria-hidden="true" className="h-3.5 w-3.5" />
                         {recipe.tid} {t.minutes}
                       </p>
                     ) : null}
 
                     {recipe.ingredients.length > 0 ? (
-                      <div className="mt-4 border-t border-white/10 pt-3">
-                        <h4 className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                      <div className="mt-4 border-t border-border pt-3">
+                        <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                           {t.ingredients}
                         </h4>
                         {!isPantryLoading && !pantryLoadError ? (
                           <p
                             aria-live="polite"
-                            className="mt-2 text-xs text-slate-400"
+                            className="mt-2 text-xs text-muted-foreground"
                           >
                             {t.recipeIngredientsMatched(
                               recipe.ingredients.filter(
@@ -1334,7 +1334,7 @@ export function RecipeView({
                             {t.pantryAvailabilityError}
                           </p>
                         ) : null}
-                        <ul className="mt-2 space-y-2 text-sm text-slate-200">
+                        <ul className="mt-2 space-y-2 text-sm text-muted-foreground">
                           {recipe.ingredients.map((ingredient) => {
                             const availability =
                               isPantryLoading || pantryLoadError
@@ -1362,7 +1362,7 @@ export function RecipeView({
                                   ? "text-amber-300"
                                   : availability?.status === "missing"
                                     ? "text-rose-300"
-                                    : "text-slate-400";
+                                    : "text-muted-foreground";
                             const StatusIcon =
                               availability?.status === "partial"
                                 ? CircleAlert
@@ -1419,7 +1419,7 @@ export function RecipeView({
                                             : `ingredient-${ingredient.id}`,
                                         )
                                       }
-                                      className={`inline-flex rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white ${statusClass}`}
+                                      className={`inline-flex rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${statusClass}`}
                                     >
                                       <StatusIcon
                                         aria-hidden="true"
@@ -1429,7 +1429,7 @@ export function RecipeView({
                                     <span
                                       id={`ingredient-status-${ingredient.id}`}
                                       role="tooltip"
-                                      className={`absolute right-0 top-full z-20 mt-1 whitespace-nowrap rounded-md border border-white/10 bg-slate-800 px-2.5 py-1.5 text-xs text-white shadow-lg transition-opacity ${
+                                      className={`absolute right-0 top-full z-20 mt-1 whitespace-nowrap rounded-md border border-border bg-card px-2.5 py-1.5 text-xs text-foreground shadow-lg transition-opacity ${
                                         openAvailabilityId ===
                                         `ingredient-${ingredient.id}`
                                           ? "visible opacity-100"
@@ -1448,12 +1448,12 @@ export function RecipeView({
                     ) : null}
 
                     {isOwner ? (
-                      <div className="mt-4 flex justify-end gap-2 border-t border-white/10 pt-3">
+                      <div className="mt-4 flex justify-end gap-2 border-t border-border pt-3">
                         <button
                           type="button"
                           disabled={isBusy}
                           onClick={() => openEditRecipe(recipe)}
-                          className="inline-flex min-h-9 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-slate-300 hover:bg-white/10 disabled:opacity-50"
+                          className="inline-flex min-h-9 items-center gap-1.5 rounded-lg px-2.5 text-xs font-medium text-muted-foreground hover:bg-muted disabled:opacity-50"
                         >
                           <Pencil aria-hidden="true" className="h-3.5 w-3.5" />
                           {t.edit}

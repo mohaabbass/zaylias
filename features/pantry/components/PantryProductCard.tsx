@@ -143,7 +143,7 @@ export function PantryProductCard({
   };
 
   return (
-    <article className="flex flex-col rounded-2xl border border-white/10 bg-slate-900/70 p-4 transition hover:border-white/20">
+    <article className="flex flex-col rounded-2xl border border-border bg-card p-4 transition hover:border-border">
       <div className="flex items-start gap-3">
         {product.bild_url ? (
           <button
@@ -175,10 +175,10 @@ export function PantryProductCard({
             </span>
           ) : null}
           <span className="min-w-0 flex-1">
-            <span className="block truncate font-semibold text-white">
+            <span className="block truncate font-semibold text-foreground">
               {product.namn}
             </span>
-            <span className="mt-0.5 block text-xs text-slate-400">
+            <span className="mt-0.5 block text-xs text-muted-foreground">
               {product.varumarke ||
                 (product.kategori
                   ? getCategoryLabel(product.kategori, locale)
@@ -187,7 +187,7 @@ export function PantryProductCard({
           </span>
           <ChevronDown
             aria-hidden="true"
-            className={`mt-1 h-4 w-4 shrink-0 text-slate-400 transition-transform group-hover:text-white ${
+            className={`mt-1 h-4 w-4 shrink-0 text-muted-foreground transition-transform group-hover:text-foreground ${
               isExpanded ? "rotate-180" : ""
             }`}
           />
@@ -200,7 +200,7 @@ export function PantryProductCard({
           disabled={isBusy}
           aria-label={product.is_favorite ? t.unfavorite : t.favorite}
           aria-pressed={product.is_favorite}
-          className="rounded-lg p-2 text-slate-400 transition hover:bg-white/5 hover:text-rose-300 disabled:opacity-50"
+          className="rounded-lg p-2 text-muted-foreground transition hover:bg-muted hover:text-rose-300 disabled:opacity-50"
         >
           <Heart
             aria-hidden="true"
@@ -214,19 +214,19 @@ export function PantryProductCard({
       <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-center gap-2">
           {product.status === "i_lager" ? (
-            <div className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] p-1">
+            <div className="inline-flex items-center gap-2 rounded-xl border border-border bg-muted p-1">
               <button
                 type="button"
                 onClick={() => adjustQuantity(-1)}
                 disabled={isBusy || !hasValidQuantity || quantity <= 0}
                 aria-label={t.decreaseQuantity}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-300 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <Minus aria-hidden="true" className="h-4 w-4" />
               </button>
-              <p className="min-w-10 text-center text-lg font-semibold text-white">
+              <p className="min-w-10 text-center text-lg font-semibold text-foreground">
                 {displayedQuantity}
-                <span className="ml-1 text-xs font-normal text-slate-400">
+                <span className="ml-1 text-xs font-normal text-muted-foreground">
                   {product.enhet}
                 </span>
               </p>
@@ -235,15 +235,15 @@ export function PantryProductCard({
                 onClick={() => adjustQuantity(1)}
                 disabled={isBusy}
                 aria-label={t.increaseQuantity}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-300 transition hover:bg-white/10 hover:text-white disabled:opacity-40"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-40"
               >
                 <Plus aria-hidden="true" className="h-4 w-4" />
               </button>
             </div>
           ) : (
-            <p className="text-xl font-semibold text-white">
+            <p className="text-xl font-semibold text-foreground">
               {displayedQuantity}
-              <span className="ml-1.5 text-sm font-normal text-slate-400">
+              <span className="ml-1.5 text-sm font-normal text-muted-foreground">
                 {product.enhet}
               </span>
             </p>
@@ -253,7 +253,7 @@ export function PantryProductCard({
           className={`rounded-full px-2 py-1 text-[10px] font-medium ${
             product.status === "i_lager"
               ? "bg-emerald-300/10 text-emerald-200"
-              : "bg-slate-700 text-slate-300"
+              : "bg-slate-700 text-muted-foreground"
           }`}
         >
           {statusLabel}
@@ -261,7 +261,7 @@ export function PantryProductCard({
       </div>
 
       <div id={detailsId} hidden={!isExpanded}>
-        <div className="mt-3 min-h-10 space-y-1 text-xs text-slate-400">
+        <div className="mt-3 min-h-10 space-y-1 text-xs text-muted-foreground">
           {expiryLabel ? (
             <p
               className={`flex items-center gap-1.5 ${
@@ -305,12 +305,12 @@ export function PantryProductCard({
                 onClick={() => adjustRemaining(-10)}
                 disabled={isBusy || remainingPercent <= 0}
                 aria-label={t.decreaseRemaining}
-                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-300 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <Minus aria-hidden="true" className="h-4 w-4" />
               </button>
               <div className="min-w-0 flex-1">
-                <div className="mb-1 flex justify-between text-xs text-slate-400">
+                <div className="mb-1 flex justify-between text-xs text-muted-foreground">
                   <span>{t.remainingAmount}</span>
                   <span>{remainingPercent}%</span>
                 </div>
@@ -320,7 +320,7 @@ export function PantryProductCard({
                   aria-valuemin={0}
                   aria-valuemax={100}
                   aria-valuenow={remainingPercent}
-                  className="h-2 overflow-hidden rounded-full bg-white/10"
+                  className="h-2 overflow-hidden rounded-full bg-muted"
                 >
                   <div
                     className={`h-full rounded-full transition-all ${
@@ -339,7 +339,7 @@ export function PantryProductCard({
                 onClick={() => adjustRemaining(10)}
                 disabled={isBusy || remainingPercent >= 100}
                 aria-label={t.increaseRemaining}
-                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-slate-300 transition hover:bg-white/10 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40"
               >
                 <Plus aria-hidden="true" className="h-4 w-4" />
               </button>
@@ -355,7 +355,7 @@ export function PantryProductCard({
           ) : null}
         </div>
 
-        <div className="mt-3 border-t border-white/[0.07] pt-3">
+        <div className="mt-3 border-t border-border pt-3">
           <div className="grid grid-cols-3 gap-2">
           {product.status === "i_lager" ? (
             <button
@@ -383,7 +383,7 @@ export function PantryProductCard({
               onClick={() => onEdit(product)}
               disabled={isBusy}
               aria-label={t.edit}
-              className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg px-2 py-1 text-xs text-slate-400 transition hover:bg-white/5 hover:text-white disabled:opacity-50"
+              className="inline-flex min-h-9 items-center justify-center gap-1.5 rounded-lg px-2 py-1 text-xs text-muted-foreground transition hover:bg-muted hover:text-foreground disabled:opacity-50"
             >
               <Pencil aria-hidden="true" className="h-4 w-4" />
               {t.edit}

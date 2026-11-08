@@ -128,15 +128,15 @@ export function PantryProductForm({
         if (!isSaving) onOpenChange(nextOpen);
       }}
     >
-      <DrawerContent className="mx-auto h-[calc(100dvh-env(safe-area-inset-top))] max-h-none max-w-xl rounded-t-2xl border border-white/10 bg-slate-950 p-0 text-white shadow-2xl sm:h-auto sm:max-h-[calc(100dvh-3rem)]">
-        <DrawerHeader className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+      <DrawerContent className="mx-auto h-[calc(100dvh-env(safe-area-inset-top))] max-h-none max-w-xl rounded-t-2xl border border-border bg-background p-0 text-foreground shadow-2xl sm:h-auto sm:max-h-[calc(100dvh-3rem)]">
+        <DrawerHeader className="flex items-center justify-between border-b border-border px-5 py-4">
           <DrawerTitle className="text-lg font-semibold">
             {editingProduct ? t.editItem : t.newItem}
           </DrawerTitle>
           <DrawerClose
             disabled={isSaving}
             aria-label={t.cancel}
-            className="rounded-lg p-2 text-slate-400 hover:bg-white/10 hover:text-white"
+            className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground"
           >
             <X aria-hidden="true" className="h-5 w-5" />
           </DrawerClose>
@@ -176,7 +176,7 @@ export function PantryProductForm({
 
           <div className="space-y-2">
             <label className="block space-y-1.5 text-sm">
-              <span className="font-medium text-slate-200">{t.barcode}</span>
+              <span className="font-medium text-muted-foreground">{t.barcode}</span>
               <input
                 value={form.streckkod}
                 onChange={(event) =>
@@ -185,14 +185,14 @@ export function PantryProductForm({
                     streckkod: event.target.value,
                   }))
                 }
-                className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.06] px-3 text-white outline-none focus:border-emerald-400/60"
+                className="h-11 w-full rounded-xl border border-border bg-muted px-3 text-foreground outline-none focus:border-emerald-400/60"
               />
             </label>
             <div className="flex flex-wrap gap-2">
               <button
                 type="button"
                 onClick={onScanBarcode}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-white/10 px-3 text-sm font-medium text-slate-200 transition hover:bg-white/5"
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl border border-border px-3 text-sm font-medium text-muted-foreground transition hover:bg-muted"
               >
                 <ScanLine aria-hidden="true" className="h-4 w-4" />
                 {t.scanBarcode}
@@ -223,7 +223,7 @@ export function PantryProductForm({
           <div className="relative space-y-1.5 text-sm">
             <label
               htmlFor="pantry-product-name"
-              className="block font-medium text-slate-200"
+              className="block font-medium text-muted-foreground"
             >
               {t.name}
             </label>
@@ -249,15 +249,15 @@ export function PantryProductForm({
               onKeyDown={handleProductNameKeyDown}
               onFocus={() => setIsCatalogDropdownOpen(true)}
               placeholder={t.namePlaceholder}
-              className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.06] px-3 text-white outline-none placeholder:text-slate-500 focus:border-emerald-400/60 focus:ring-2 focus:ring-emerald-400/15"
+              className="h-11 w-full rounded-xl border border-border bg-muted px-3 text-foreground outline-none placeholder:text-muted-foreground focus:border-emerald-400/60 focus:ring-2 focus:ring-emerald-400/15"
             />
             {isCatalogDropdownVisible ? (
-              <div className="absolute inset-x-0 top-full z-30 mt-1 overflow-hidden rounded-xl border border-white/10 bg-slate-900 shadow-xl">
-                <p className="px-3 py-2 text-xs font-medium text-slate-400">
+              <div className="absolute inset-x-0 top-full z-30 mt-1 overflow-hidden rounded-xl border border-border bg-card shadow-xl">
+                <p className="px-3 py-2 text-xs font-medium text-muted-foreground">
                   {t.productSuggestions}
                 </p>
                 {isSearchingCatalog ? (
-                  <p role="status" className="px-3 pb-3 text-xs text-slate-400">
+                  <p role="status" className="px-3 pb-3 text-xs text-muted-foreground">
                     {t.catalogSearchLoading}
                   </p>
                 ) : null}
@@ -271,7 +271,7 @@ export function PantryProductForm({
                     id={catalogListboxId}
                     role="listbox"
                     aria-label={t.productSuggestions}
-                    className="max-h-56 overflow-y-auto border-t border-white/10 py-1"
+                    className="max-h-56 overflow-y-auto border-t border-border py-1"
                   >
                     {catalogProducts.map((product, index) => (
                       <li
@@ -288,15 +288,15 @@ export function PantryProductForm({
                         className={`flex cursor-pointer items-center justify-between gap-3 px-3 py-2 ${
                           index === activeCatalogIndex
                             ? "bg-emerald-400/10"
-                            : "hover:bg-white/5"
+                            : "hover:bg-muted"
                         }`}
                       >
                         <span className="min-w-0">
-                          <span className="block truncate text-sm text-white">
+                          <span className="block truncate text-sm text-foreground">
                             {product.namn}
                           </span>
                           {product.brand || product.kategori ? (
-                            <span className="block truncate text-xs text-slate-400">
+                            <span className="block truncate text-xs text-muted-foreground">
                               {[product.brand, product.kategori]
                                 .filter(Boolean)
                                 .join(" · ")}
@@ -316,7 +316,7 @@ export function PantryProductForm({
 
           <div className="grid grid-cols-2 gap-3">
             <label className="block space-y-1.5 text-sm">
-              <span className="font-medium text-slate-200">{t.category}</span>
+              <span className="font-medium text-muted-foreground">{t.category}</span>
               <select
                 value={form.kategori}
                 onChange={(event) =>
@@ -325,7 +325,7 @@ export function PantryProductForm({
                     kategori: event.target.value,
                   }))
                 }
-                className="h-11 w-full rounded-xl border border-white/10 bg-slate-900 px-3 text-white outline-none focus:border-emerald-400/60"
+                className="h-11 w-full rounded-xl border border-border bg-card px-3 text-foreground outline-none focus:border-emerald-400/60"
               >
                 {categoryOptions.map((option) => (
                   <option key={option.value} value={option.value}>
@@ -340,7 +340,7 @@ export function PantryProductForm({
               </select>
             </label>
             <label className="block space-y-1.5 text-sm">
-              <span className="font-medium text-slate-200">{t.price}</span>
+              <span className="font-medium text-muted-foreground">{t.price}</span>
               <div className="relative">
                 <input
                   type="number"
@@ -353,9 +353,9 @@ export function PantryProductForm({
                       pris: event.target.value,
                     }))
                   }
-                  className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.06] px-3 pr-10 text-white outline-none focus:border-emerald-400/60"
+                  className="h-11 w-full rounded-xl border border-border bg-muted px-3 pr-10 text-foreground outline-none focus:border-emerald-400/60"
                 />
-                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-500">
+                <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
                   {t.currency}
                 </span>
               </div>
@@ -364,7 +364,7 @@ export function PantryProductForm({
 
           <div className="grid grid-cols-[1fr_6rem] gap-3">
             <label className="block space-y-1.5 text-sm">
-              <span className="font-medium text-slate-200">{t.quantity}</span>
+              <span className="font-medium text-muted-foreground">{t.quantity}</span>
               <input
                 required
                 type="number"
@@ -377,11 +377,11 @@ export function PantryProductForm({
                     kvantitet: event.target.value,
                   }))
                 }
-                className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.06] px-3 text-white outline-none focus:border-emerald-400/60"
+                className="h-11 w-full rounded-xl border border-border bg-muted px-3 text-foreground outline-none focus:border-emerald-400/60"
               />
             </label>
             <label className="block space-y-1.5 text-sm">
-              <span className="font-medium text-slate-200">{t.unit}</span>
+              <span className="font-medium text-muted-foreground">{t.unit}</span>
               <select
                 value={form.enhet}
                 onChange={(event) =>
@@ -390,7 +390,7 @@ export function PantryProductForm({
                     enhet: event.target.value,
                   }))
                 }
-                className="h-11 w-full rounded-xl border border-white/10 bg-slate-900 px-2 text-white outline-none focus:border-emerald-400/60"
+                className="h-11 w-full rounded-xl border border-border bg-card px-2 text-foreground outline-none focus:border-emerald-400/60"
               >
                 {!t.unitOptions.some((unit) => unit === form.enhet) ? (
                   <option value={form.enhet}>{form.enhet}</option>
@@ -405,7 +405,7 @@ export function PantryProductForm({
           </div>
 
           <label className="block space-y-1.5 text-sm">
-            <span className="font-medium text-slate-200">{t.brand}</span>
+            <span className="font-medium text-muted-foreground">{t.brand}</span>
             <input
               value={form.varumarke}
               onChange={(event) =>
@@ -414,13 +414,13 @@ export function PantryProductForm({
                   varumarke: event.target.value,
                 }))
               }
-              className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.06] px-3 text-white outline-none focus:border-emerald-400/60"
+              className="h-11 w-full rounded-xl border border-border bg-muted px-3 text-foreground outline-none focus:border-emerald-400/60"
             />
           </label>
 
           <div className="grid grid-cols-2 gap-3">
             <label className="block space-y-1.5 text-sm">
-              <span className="font-medium text-slate-200">
+              <span className="font-medium text-muted-foreground">
                 {t.purchaseDate}
               </span>
               <input
@@ -432,11 +432,11 @@ export function PantryProductForm({
                     kopdatum: event.target.value,
                   }))
                 }
-                className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.06] px-3 text-white outline-none focus:border-emerald-400/60"
+                className="h-11 w-full rounded-xl border border-border bg-muted px-3 text-foreground outline-none focus:border-emerald-400/60"
               />
             </label>
             <label className="block space-y-1.5 text-sm">
-              <span className="font-medium text-slate-200">{t.expiryDate}</span>
+              <span className="font-medium text-muted-foreground">{t.expiryDate}</span>
               <input
                 type="date"
                 value={form.sista_forbrukningsdag}
@@ -446,24 +446,24 @@ export function PantryProductForm({
                     sista_forbrukningsdag: event.target.value,
                   }))
                 }
-                className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.06] px-3 text-white outline-none focus:border-emerald-400/60"
+                className="h-11 w-full rounded-xl border border-border bg-muted px-3 text-foreground outline-none focus:border-emerald-400/60"
               />
             </label>
           </div>
 
           <label className="block space-y-1.5 text-sm">
-            <span className="font-medium text-slate-200">{t.store}</span>
+            <span className="font-medium text-muted-foreground">{t.store}</span>
             <input
               value={form.butik}
               onChange={(event) =>
                 setForm((current) => ({ ...current, butik: event.target.value }))
               }
               placeholder={t.storePlaceholder}
-              className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.06] px-3 text-white outline-none placeholder:text-slate-500 focus:border-emerald-400/60"
+              className="h-11 w-full rounded-xl border border-border bg-muted px-3 text-foreground outline-none placeholder:text-muted-foreground focus:border-emerald-400/60"
             />
           </label>
           <label className="block space-y-1.5 text-sm">
-            <span className="font-medium text-slate-200">{t.productImage}</span>
+            <span className="font-medium text-muted-foreground">{t.productImage}</span>
             <input
               type="file"
               accept="image/*"
@@ -472,16 +472,16 @@ export function PantryProductForm({
                 onImageChange(event.target.files?.[0] ?? null);
                 event.currentTarget.value = "";
               }}
-              className="block w-full text-sm text-slate-300 file:mr-3 file:rounded-lg file:border-0 file:bg-emerald-400/10 file:px-3 file:py-2 file:font-medium file:text-emerald-200 hover:file:bg-emerald-400/20"
+              className="block w-full text-sm text-muted-foreground file:mr-3 file:rounded-lg file:border-0 file:bg-emerald-400/10 file:px-3 file:py-2 file:font-medium file:text-emerald-200 hover:file:bg-emerald-400/20"
             />
             {selectedImage ? (
-              <span className="block truncate text-xs text-slate-400">
+              <span className="block truncate text-xs text-muted-foreground">
                 {selectedImage.name}
               </span>
             ) : null}
           </label>
           {form.bild_url ? (
-            <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.035] p-3">
+            <div className="flex items-center gap-3 rounded-xl border border-border bg-muted p-3">
               <Image
                 unoptimized
                 src={form.bild_url}
@@ -490,12 +490,12 @@ export function PantryProductForm({
                 height={64}
                 className="h-16 w-16 rounded-lg bg-white object-contain"
               />
-              <span className="text-sm text-slate-300">{form.namn}</span>
+              <span className="text-sm text-muted-foreground">{form.namn}</span>
             </div>
           ) : null}
 
-          <div className="rounded-xl border border-white/10 bg-white/[0.035] p-3">
-            <label className="flex items-center gap-2 text-sm text-slate-200">
+          <div className="rounded-xl border border-border bg-muted p-3">
+            <label className="flex items-center gap-2 text-sm text-muted-foreground">
               <input
                 type="checkbox"
                 checked={form.ar_oppnad}
@@ -514,7 +514,7 @@ export function PantryProductForm({
             </label>
             {form.ar_oppnad ? (
               <label className="mt-3 block space-y-1.5 text-sm">
-                <span className="font-medium text-slate-300">{t.openedDate}</span>
+                <span className="font-medium text-muted-foreground">{t.openedDate}</span>
                 <input
                   type="date"
                   value={form.oppnad_datum}
@@ -524,16 +524,16 @@ export function PantryProductForm({
                       oppnad_datum: event.target.value,
                     }))
                   }
-                  className="h-11 w-full rounded-xl border border-white/10 bg-white/[0.06] px-3 text-white outline-none focus:border-emerald-400/60"
+                  className="h-11 w-full rounded-xl border border-border bg-muted px-3 text-foreground outline-none focus:border-emerald-400/60"
                 />
               </label>
             ) : null}
           </div>
 
-          <div className="flex gap-3 border-t border-white/10 pt-4">
+          <div className="flex gap-3 border-t border-border pt-4">
             <DrawerClose
               disabled={isSaving}
-              className="h-11 flex-1 rounded-xl border border-white/10 px-4 text-sm font-medium text-slate-300 transition hover:bg-white/5 disabled:opacity-50"
+              className="h-11 flex-1 rounded-xl border border-border px-4 text-sm font-medium text-muted-foreground transition hover:bg-muted disabled:opacity-50"
             >
               {t.cancel}
             </DrawerClose>

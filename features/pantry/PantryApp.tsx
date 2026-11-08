@@ -10,6 +10,8 @@ type PantryAppProps = {
   onLogout: () => void;
   onSwitchApps: () => void;
   onOpenEconomyPayments: () => void;
+  theme: "light" | "dark";
+  onThemeChange: (theme: "light" | "dark") => void;
 };
 
 export function PantryApp({
@@ -18,6 +20,8 @@ export function PantryApp({
   onLogout,
   onSwitchApps,
   onOpenEconomyPayments,
+  theme,
+  onThemeChange,
 }: PantryAppProps) {
   const { t } = useLocale();
 
@@ -31,7 +35,12 @@ export function PantryApp({
         onSwitchApps={onSwitchApps}
         onOpenPayments={onOpenEconomyPayments}
       />
-      <PantryView userId={userId} onOpenApps={onSwitchApps} />
+      <PantryView
+        userId={userId}
+        onLogout={onLogout}
+        theme={theme}
+        onThemeChange={onThemeChange}
+      />
     </>
   );
 }

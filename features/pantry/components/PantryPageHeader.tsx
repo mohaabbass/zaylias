@@ -10,10 +10,10 @@ export function PantryPageHeader({ t }: { t: PantryTranslation }) {
           <ShoppingBasket aria-hidden="true" className="h-3.5 w-3.5" />
           {t.inStockProducts}
         </div>
-        <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
+        <h2 className="text-3xl font-semibold tracking-tight text-foreground sm:text-4xl">
           {t.title}
         </h2>
-        {/* <p className="mt-2 text-sm text-slate-400">{t.subtitle}</p> */}
+        {/* <p className="mt-2 text-sm text-muted-foreground">{t.subtitle}</p> */}
       </div>
     </header>
   );

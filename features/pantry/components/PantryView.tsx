@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   BookOpen,
   House,
-  LayoutGrid,
+  Menu,
   Package,
   Plus,
   X,
@@ -25,6 +25,7 @@ import { PantryProductCard } from "@/features/pantry/components/PantryProductCar
 import { PantryProductForm } from "@/features/pantry/components/PantryProductForm";
 import { RecipeView } from "@/features/pantry/components/RecipeView";
 import { PantryStats } from "@/features/pantry/components/PantryStats";
+import { PantrySettingsDrawer } from "@/features/pantry/components/PantrySettingsDrawer";
 import { productColumns } from "@/features/pantry/constants";
 import { pantryTranslations } from "@/features/pantry/i18n";
 import type {
@@ -72,11 +73,18 @@ function getBarcodeLookupValues(barcode: string): string[] {
 
 type PantryViewProps = {
   userId: string;
-  onOpenApps: () => void;
+  onLogout: () => void;
+  theme: "light" | "dark";
+  onThemeChange: (theme: "light" | "dark") => void;
 };
 
-export function PantryView({ userId, onOpenApps }: PantryViewProps) {
-  const { locale } = useLocale();
+export function PantryView({
+  userId,
+  onLogout,
+  theme,
+  onThemeChange,
+}: PantryViewProps) {
+  const { locale, t: sharedT } = useLocale();
   const t = pantryTranslations[locale];
   const numberLocale = locale === "sv" ? "sv-SE" : "en-US";
   const [products, setProducts] = useState<PantryProduct[]>([]);
@@ -99,6 +107,7 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
   >("home");
   const [recipeAddRequest, setRecipeAddRequest] = useState(0);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isSettingsDrawerOpen, setIsSettingsDrawerOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<PantryProduct | null>(
     null,
   );
@@ -826,16 +835,16 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
       },
     },
     {
-      id: "apps",
-      label: t.apps,
-      icon: LayoutGrid,
-      onClick: onOpenApps,
+      id: "menu",
+      label: sharedT.menu,
+      icon: Menu,
+      onClick: () => setIsSettingsDrawerOpen(true),
     },
   ];
 
   return (
     <>
-      <main className="min-h-[calc(100dvh-4rem)] bg-slate-950 px-4 pb-28 pt-6 text-white sm:px-6">
+      <main className="min-h-[calc(100dvh-4rem)] bg-background px-4 pb-28 pt-6 text-foreground sm:px-6">
         <div className="mx-auto max-w-6xl space-y-6 animate-view-in">
           {activeSection === "recipes" ? (
             <RecipeView
@@ -929,12 +938,12 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
                     <div className="flex items-center justify-between gap-3">
                       <h2
                         id="pantry-products-heading"
-                        className="text-lg font-semibold text-white"
+                        className="text-lg font-semibold text-foreground"
                       >
                         {t.products}
                       </h2>
                       {!isLoading && !loadError ? (
-                        <span className="text-xs text-slate-400">
+                        <span className="text-xs text-muted-foreground">
                           {t.itemsCount(filteredProducts.length)}
                         </span>
                       ) : null}
@@ -963,7 +972,7 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
                     />
 
                     {isLoading ? (
-                      <div className="rounded-2xl border border-white/10 bg-white/[0.035] px-5 py-12 text-center text-sm text-slate-400">
+                      <div className="rounded-2xl border border-border bg-muted px-5 py-12 text-center text-sm text-muted-foreground">
                         {t.loading}
                       </div>
                     ) : loadError ? (
@@ -1099,7 +1108,7 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
         <Dialog.Portal>
           <Dialog.Backdrop className="fixed inset-0 z-50 bg-black/80 transition-opacity data-ending-style:opacity-0 data-starting-style:opacity-0" />
           <Dialog.Viewport className="fixed inset-0 z-50 grid place-items-center overflow-y-auto p-4">
-            <Dialog.Popup className="w-full max-w-[min(90vw,56rem)] rounded-2xl border border-white/10 bg-slate-900 p-4 text-white shadow-2xl outline-none sm:p-6">
+            <Dialog.Popup className="w-full max-w-[min(90vw,56rem)] rounded-2xl border border-border bg-card p-4 text-foreground shadow-2xl outline-none sm:p-6">
               {imagePreview ? (
                 <>
                   <div className="mb-4 flex items-center justify-between gap-4">
@@ -1110,7 +1119,7 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
                       type="button"
                       aria-label={t.closeImage}
                       onClick={() => setImagePreview(null)}
-                      className="shrink-0 rounded-lg p-2 text-slate-300 transition hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
+                      className="shrink-0 rounded-lg p-2 text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300"
                     >
                       <X aria-hidden="true" className="h-5 w-5" />
                     </button>
@@ -1236,6 +1245,13 @@ export function PantryView({ userId, onOpenApps }: PantryViewProps) {
       </AlertDialog.Root>
 
       <BottomNav items={navItems} />
+      <PantrySettingsDrawer
+        open={isSettingsDrawerOpen}
+        onOpenChange={setIsSettingsDrawerOpen}
+        theme={theme}
+        onThemeChange={onThemeChange}
+        onLogout={onLogout}
+      />
     </>
   );
 }

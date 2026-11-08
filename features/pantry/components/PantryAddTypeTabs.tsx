@@ -20,7 +20,7 @@ export function PantryAddTypeTabs({
     <div
       role="tablist"
       aria-label={t.addType}
-      className="grid grid-cols-2 gap-1 border-b border-white/10 px-5 py-2"
+      className="grid grid-cols-2 gap-1 border-b border-border px-5 py-2"
     >
       {tabs.map((tab) => (
         <button
@@ -32,7 +32,7 @@ export function PantryAddTypeTabs({
           className={`min-h-10 rounded-lg px-3 text-sm font-medium transition ${
             activeType === tab.type
               ? "bg-emerald-400/15 text-emerald-200"
-              : "text-slate-400 hover:bg-white/5 hover:text-white"
+              : "text-muted-foreground hover:bg-muted hover:text-foreground"
           }`}
         >
           {tab.label}

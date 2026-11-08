@@ -14,14 +14,14 @@ export function PantryEmptyState({
   onClearFilters,
 }: PantryEmptyStateProps) {
   return (
-    <div className="rounded-2xl border border-dashed border-white/15 bg-white/[0.025] px-5 py-12 text-center">
+    <div className="rounded-2xl border border-dashed border-border bg-muted px-5 py-12 text-center">
       <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-300/10 text-emerald-200">
         <ShoppingBasket aria-hidden="true" className="h-6 w-6" />
       </span>
-      <h3 className="mt-4 text-base font-semibold text-white">
+      <h3 className="mt-4 text-base font-semibold text-foreground">
         {hasProducts ? t.noResults : t.noItems}
       </h3>
-      <p className="mt-1 text-sm text-slate-400">
+      <p className="mt-1 text-sm text-muted-foreground">
         {hasProducts ? t.noResultsDescription : t.noItemsDescription}
       </p>
       {hasProducts ? (

@@ -1014,6 +1014,8 @@ export function AppShell() {
         paymentsRefreshToken={paymentsRefreshToken}
         onLogout={handleLogout}
         onSwitchApps={() => setActiveApp(null)}
+        theme={theme}
+        onThemeChange={setTheme}
         onOpenEconomyPayments={() => {
           setActiveView("payments");
           setActiveApp("economy");
