@@ -9,6 +9,11 @@ export const categoryOptions = [
   { value: "Pantry", sv: "Skafferi", en: "Pantry" },
   { value: "Freezer", sv: "Frys", en: "Freezer" },
   { value: "Drinks", sv: "Dryck", en: "Drinks" },
+  {
+    value: "Sauces & Dressings",
+    sv: "Sås & Dressing",
+    en: "Sauces & Dressings",
+  },
   { value: "Coffee & Tea", sv: "Kaffe & Te", en: "Coffee & Tea" },
   { value: "Spices", sv: "Kryddor", en: "Spices" },
   { value: "Snacks & Candy", sv: "Snacks & Godis", en: "Snacks & Candy" },
