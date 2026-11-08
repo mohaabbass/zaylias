@@ -35,6 +35,11 @@ const emptyForm: CatalogFormValues = {
 };
 
 const catalogColumns = "catalog_id, streckkod, namn, brand, image_url, kategori";
+const catalogPageSize = 30;
+
+function quotePostgrestValue(value: string) {
+  return `"${value.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`;
+}
 
 type PantryProductCatalogProps = {
   userId: string;
@@ -50,12 +55,14 @@ export function PantryProductCatalog({
   const [products, setProducts] = useState<ProductCatalogEntry[]>([]);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState<"catalog" | "favorites" | null>(
-    null,
-  );
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [page, setPage] = useState(0);
+  const [loadError, setLoadError] = useState(false);
   const [reloadToken, setReloadToken] = useState(0);
   const [operationError, setOperationError] = useState("");
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [isUpdatingFavorite, setIsUpdatingFavorite] = useState(false);
@@ -71,44 +78,109 @@ export function PantryProductCatalog({
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
-    let isCurrent = true;
+    const timeout = window.setTimeout(
+      () => setDebouncedSearch(search.trim()),
+      300,
+    );
 
+    return () => window.clearTimeout(timeout);
+  }, [search]);
+
+  useEffect(() => {
+    if (search.trim() !== debouncedSearch) return;
+
+    let isCurrent = true;
+    const start = page * catalogPageSize;
     const loadProducts = async () => {
-      const [catalogResult, favoriteResult] = await Promise.all([
-        supabase
-          .from("produkt_katalog")
-          .select(catalogColumns)
-          .order("namn", { ascending: true }),
-        supabase
-          .from("favorit_produkt_katalog")
-          .select("catalog_id")
-          .eq("user_id", userId),
-      ]);
+      if (page === 0) setIsLoading(true);
+      else setIsLoadingMore(true);
+      setLoadError(false);
+
+      const favoriteJoin = favoritesOnly ? "!inner" : "!left";
+      let query = supabase
+        .from("produkt_katalog")
+        .select(
+          `${catalogColumns},favorite:favorit_produkt_katalog${favoriteJoin}(catalog_id)`,
+        )
+        .eq("favorite.user_id", userId);
+
+      if (categoryFilter !== "all" && categoryFilter !== "uncategorized") {
+        query = query.eq("kategori", categoryFilter);
+      }
+
+      let searchFilter = "";
+      if (debouncedSearch) {
+        const pattern = quotePostgrestValue(`%${debouncedSearch}%`);
+        const matchingLocalizedCategories = categoryOptions
+          .filter((option) =>
+            option[locale]
+              .toLocaleLowerCase(locale === "sv" ? "sv-SE" : "en-US")
+              .includes(
+                debouncedSearch.toLocaleLowerCase(
+                  locale === "sv" ? "sv-SE" : "en-US",
+                ),
+              ),
+          )
+          .map((option) => `kategori.eq.${quotePostgrestValue(option.value)}`);
+        searchFilter = [
+          `namn.ilike.${pattern}`,
+          `brand.ilike.${pattern}`,
+          `streckkod.ilike.${pattern}`,
+          `kategori.ilike.${pattern}`,
+          ...matchingLocalizedCategories,
+        ].join(",");
+      }
+
+      if (categoryFilter === "uncategorized" && searchFilter) {
+        query = query.or(
+          `and(or(kategori.is.null,kategori.eq.),or(${searchFilter}))`,
+        );
+      } else if (categoryFilter === "uncategorized") {
+        query = query.or("kategori.is.null,kategori.eq.");
+      } else if (searchFilter) {
+        query = query.or(searchFilter);
+      }
+
+      const { data, error } = await query
+        .order("namn", { ascending: true })
+        .order("catalog_id", { ascending: true })
+        .range(start, start + catalogPageSize);
 
       if (!isCurrent) return;
 
-      if (catalogResult.error) {
-        console.error("Failed to load product catalog:", catalogResult.error);
-        setLoadError("catalog");
-        setProducts([]);
-      } else if (favoriteResult.error) {
-        console.error(
-          "Failed to load product catalog favorites:",
-          favoriteResult.error,
-        );
-        setLoadError("favorites");
-        setProducts([]);
+      if (error) {
+        console.error("Failed to load product catalog:", error);
+        setLoadError(true);
       } else {
-        setLoadError(null);
-        setProducts(catalogResult.data ?? []);
-        setFavoriteIds(
-          new Set(
-            (favoriteResult.data ?? []).map((favorite) => favorite.catalog_id),
-          ),
+        const rows = data ?? [];
+        const pageRows = rows.slice(0, catalogPageSize);
+        const pageProducts = pageRows.map((row) => ({
+          catalog_id: row.catalog_id,
+          streckkod: row.streckkod,
+          namn: row.namn,
+          brand: row.brand,
+          image_url: row.image_url,
+          kategori: row.kategori,
+        }));
+        const pageFavoriteIds = new Set<string>(
+          pageRows
+            .filter((row) => row.favorite?.length)
+            .map((row) => row.catalog_id),
         );
+
+        setProducts((current) =>
+          page === 0 ? pageProducts : [...current, ...pageProducts],
+        );
+        setFavoriteIds((current) =>
+          page === 0
+            ? pageFavoriteIds
+            : new Set([...current, ...pageFavoriteIds]),
+        );
+        setHasMore(rows.length > catalogPageSize);
       }
 
       setIsLoading(false);
+      setIsLoadingMore(false);
     };
 
     void loadProducts();
@@ -116,36 +188,16 @@ export function PantryProductCatalog({
     return () => {
       isCurrent = false;
     };
-  }, [reloadToken, userId]);
-
-  const filteredProducts = useMemo(() => {
-    const numberLocale = locale === "sv" ? "sv-SE" : "en-US";
-    const query = search.trim().toLocaleLowerCase(numberLocale);
-
-    return products.filter((product) => {
-      const matchesCategory =
-        categoryFilter === "all" ||
-        (categoryFilter === "uncategorized"
-          ? !product.kategori
-          : product.kategori === categoryFilter);
-      const matchesFavorite =
-        !favoritesOnly || favoriteIds.has(product.catalog_id);
-      const matchesSearch =
-        !query ||
-        [product.namn, product.brand, product.streckkod]
-          .filter(Boolean)
-          .some((value) =>
-            value!.toLocaleLowerCase(numberLocale).includes(query),
-          ) ||
-        (product.kategori
-          ? getCategoryLabel(product.kategori, locale)
-              .toLocaleLowerCase(numberLocale)
-              .includes(query)
-          : false);
-
-      return matchesCategory && matchesFavorite && matchesSearch;
-    });
-  }, [categoryFilter, favoriteIds, favoritesOnly, locale, products, search]);
+  }, [
+    categoryFilter,
+    debouncedSearch,
+    favoritesOnly,
+    locale,
+    page,
+    reloadToken,
+    search,
+    userId,
+  ]);
 
   const catalogCategories = useMemo(() => {
     const knownCategories = new Set<string>(
@@ -164,12 +216,30 @@ export function PantryProductCatalog({
       ),
     ].sort((a, b) => a.localeCompare(b, locale));
 
-    return [...categoryOptions, ...additionalCategories.map((value) => ({
+    const categories = [...categoryOptions, ...additionalCategories.map((value) => ({
       value,
       sv: value,
       en: value,
     }))];
-  }, [locale, products]);
+    if (
+      categoryFilter !== "all" &&
+      categoryFilter !== "uncategorized" &&
+      !categories.some((category) => category.value === categoryFilter)
+    ) {
+      categories.push({ value: categoryFilter, sv: categoryFilter, en: categoryFilter });
+    }
+
+    return categories;
+  }, [categoryFilter, locale, products]);
+
+  const refreshCatalog = () => {
+    setProducts([]);
+    setFavoriteIds(new Set());
+    setPage(0);
+    setLoadError(false);
+    setIsLoading(true);
+    setReloadToken((current) => current + 1);
+  };
 
   const openNewForm = () => {
     setEditingProduct(null);
@@ -279,17 +349,10 @@ export function PantryProductCatalog({
       return;
     }
 
-    setProducts((current) =>
-      [
-        ...current.filter(
-          (product) => product.catalog_id !== result.data.catalog_id,
-        ),
-        result.data,
-      ].sort((a, b) => a.namn.localeCompare(b.namn)),
-    );
     setSelectedImage(null);
     setIsFormOpen(false);
     setIsSaving(false);
+    refreshCatalog();
   };
 
   const selectCatalogImage = (file: File | null) => {
@@ -319,18 +382,9 @@ export function PantryProductCatalog({
       return;
     }
 
-    setProducts((current) =>
-      current.filter(
-        (product) => product.catalog_id !== pendingDeleteProduct.catalog_id,
-      ),
-    );
-    setFavoriteIds((current) => {
-      const next = new Set(current);
-      next.delete(pendingDeleteProduct.catalog_id);
-      return next;
-    });
     setPendingDeleteProduct(null);
     setIsDeleting(false);
+    refreshCatalog();
   };
 
   const toggleFavorite = async (product: ProductCatalogEntry) => {
@@ -351,6 +405,8 @@ export function PantryProductCatalog({
     if (result.error) {
       console.error("Failed to update product catalog favorite:", result.error);
       setOperationError(t.catalogFavoriteError);
+    } else if (favoritesOnly) {
+      refreshCatalog();
     } else {
       setFavoriteIds((current) => {
         const next = new Set(current);
@@ -411,7 +467,13 @@ export function PantryProductCatalog({
               <Input
                 type="search"
                 value={search}
-                onChange={(event) => setSearch(event.target.value)}
+                onChange={(event) => {
+                  setSearch(event.target.value);
+                  setProducts([]);
+                  setPage(0);
+                  setLoadError(false);
+                  setIsLoading(true);
+                }}
                 placeholder={t.searchCatalog}
                 className="h-11 rounded-xl bg-background pl-9"
               />
@@ -420,7 +482,13 @@ export function PantryProductCatalog({
               <span className="sr-only">{t.category}</span>
               <select
                 value={categoryFilter}
-                onChange={(event) => setCategoryFilter(event.target.value)}
+                onChange={(event) => {
+                  setCategoryFilter(event.target.value);
+                  setProducts([]);
+                  setPage(0);
+                  setLoadError(false);
+                  setIsLoading(true);
+                }}
                 className="h-11 w-full rounded-xl border border-input bg-background px-3 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
               >
                 <option value="all">{t.all}</option>
@@ -429,9 +497,7 @@ export function PantryProductCatalog({
                     {option[locale]}
                   </option>
                 ))}
-                {products.some((product) => !product.kategori) ? (
-                  <option value="uncategorized">{t.uncategorized}</option>
-                ) : null}
+                <option value="uncategorized">{t.uncategorized}</option>
               </select>
             </label>
           </div>
@@ -439,7 +505,13 @@ export function PantryProductCatalog({
             <button
               type="button"
               aria-pressed={favoritesOnly}
-              onClick={() => setFavoritesOnly((current) => !current)}
+              onClick={() => {
+                setFavoritesOnly((current) => !current);
+                setProducts([]);
+                setPage(0);
+                setLoadError(false);
+                setIsLoading(true);
+              }}
               className={`inline-flex h-9 items-center gap-2 rounded-xl border px-3 text-sm font-medium transition focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 ${
                 favoritesOnly
                   ? "border-rose-300/30 bg-rose-300/15 text-rose-200"
@@ -460,21 +532,18 @@ export function PantryProductCatalog({
           <div className="rounded-2xl border border-border bg-muted px-5 py-12 text-center text-sm text-muted-foreground">
             {t.catalogLoading}
           </div>
-        ) : loadError ? (
+        ) : loadError && products.length === 0 ? (
           <div
             role="alert"
             className="rounded-2xl border border-red-400/30 bg-red-500/10 px-5 py-8 text-center"
           >
-            <p className="text-sm text-red-200">
-              {loadError === "catalog"
-                ? t.catalogLoadError
-                : t.catalogFavoriteLoadError}
-            </p>
+            <p className="text-sm text-red-200">{t.catalogLoadError}</p>
             <button
               type="button"
               onClick={() => {
-                setIsLoading(true);
-                setLoadError(null);
+                if (page === 0) setIsLoading(true);
+                else setIsLoadingMore(true);
+                setLoadError(false);
                 setReloadToken((current) => current + 1);
               }}
               className="mt-3 text-sm font-semibold text-red-100 underline underline-offset-4"
@@ -482,7 +551,7 @@ export function PantryProductCatalog({
               {t.retry}
             </button>
           </div>
-        ) : filteredProducts.length === 0 ? (
+        ) : products.length === 0 ? (
           <div className="rounded-2xl border border-border bg-muted px-5 py-12 text-center">
             <Package
               aria-hidden="true"
@@ -498,7 +567,7 @@ export function PantryProductCatalog({
           </div>
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {filteredProducts.map((product) => (
+            {products.map((product) => (
               <article
                 key={product.catalog_id}
                 className="grid min-w-0 grid-cols-[4rem_minmax(0,1fr)] gap-x-3 gap-y-3 rounded-2xl border border-border bg-card p-3 text-card-foreground shadow-sm"
@@ -581,6 +650,41 @@ export function PantryProductCatalog({
             ))}
           </div>
         )}
+        {!isLoading && products.length > 0 && loadError ? (
+          <div
+            role="alert"
+            className="rounded-xl border border-red-400/30 bg-red-500/10 px-4 py-3 text-center text-sm text-red-200"
+          >
+            <p>{t.catalogLoadError}</p>
+            <button
+              type="button"
+              onClick={() => {
+                setIsLoadingMore(true);
+                setLoadError(false);
+                setReloadToken((current) => current + 1);
+              }}
+              className="mt-2 font-semibold underline underline-offset-4"
+            >
+              {t.retry}
+            </button>
+          </div>
+        ) : null}
+        {!isLoading && hasMore && !loadError ? (
+          <div className="flex justify-center">
+            <Button
+              type="button"
+              variant="outline"
+              disabled={isLoadingMore}
+              onClick={() => {
+                setLoadError(false);
+                setIsLoadingMore(true);
+                setPage((current) => current + 1);
+              }}
+            >
+              {isLoadingMore ? t.catalogLoadingMore : t.catalogLoadMore}
+            </Button>
+          </div>
+        ) : null}
       </section>
 
       <Dialog.Root
