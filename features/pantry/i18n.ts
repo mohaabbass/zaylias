@@ -64,18 +64,23 @@ export const pantryTranslations = {
     saveCatalogProduct: "Spara produkt",
     catalogDeleteTitle: "Ta bort katalogprodukt?",
     catalogDeleteConfirm: "Vill du ta bort produkten från produktkatalogen?",
-    catalogDeleteError: "Produkten kunde inte tas bort från katalogen. Försök igen.",
+    catalogDeleteError:
+      "Produkten kunde inte tas bort från katalogen. Försök igen.",
     productImageUrl: "Bildadress",
     replaceCatalogImage: "Ladda upp eller byt bild",
     selectedImage: "Vald bild",
     select: "Välj",
     scanningBarcode: "Rikta kameran mot produktens streckkod.",
     cancelScan: "Avbryt skanning",
-    scannerUnsupported: "Streckkodsskanning stöds inte i den här webbläsaren. Ange streckkoden manuellt.",
-    cameraError: "Kunde inte starta kameran. Kontrollera kamerabehörigheten och försök igen.",
-    productNotFound: "Produkten hittades inte. Fyll i uppgifterna manuellt och spara varan för att lägga till den i produktkatalogen.",
+    scannerUnsupported:
+      "Streckkodsskanning stöds inte i den här webbläsaren. Ange streckkoden manuellt.",
+    cameraError:
+      "Kunde inte starta kameran. Kontrollera kamerabehörigheten och försök igen.",
+    productNotFound:
+      "Produkten hittades inte. Fyll i uppgifterna manuellt och spara varan för att lägga till den i produktkatalogen.",
     productLookupError: "Produktinformationen kunde inte hämtas. Försök igen.",
-    catalogSaveError: "Produkten kunde inte sparas i produktkatalogen. Försök igen.",
+    catalogSaveError:
+      "Produkten kunde inte sparas i produktkatalogen. Försök igen.",
     productImage: "Produktbild",
     viewProductImage: "Visa produktbild",
     closeImage: "Stäng bild",
@@ -139,13 +144,15 @@ export const pantryTranslations = {
     listsEmptyDescription: "Skapa en lista och lägg till varor eller recept.",
     listsCatalogProducts: "Katalogprodukter",
     listsRecipes: "Recept",
+    listsCustomItems: "Inköpsvara",
     listsAddTo: "Lägg till i lista",
     listsAdded: "Tillagd",
     listsAddError: "Objektet kunde inte läggas till. Försök igen.",
     listsContents: "Listans innehåll",
     listsItemsLoadError: "Listans innehåll kunde inte hämtas. Försök igen.",
     listsItemNamesError: "Namnen på listans innehåll kunde inte hämtas.",
-    listsItemsEmpty: "Listan är tom. Använd + på en katalogprodukt eller ett recept för att lägga till.",
+    listsItemsEmpty:
+      "Listan är tom. Använd + på en katalogprodukt eller ett recept för att lägga till.",
     listsRemove: "Ta bort",
     listsRemoveError: "Objektet kunde inte tas bort. Försök igen.",
     listsDelete: "Ta bort lista",
@@ -156,6 +163,33 @@ export const pantryTranslations = {
     recipes: "Recept",
     recipesTitle: "Recept",
     recipesSubtitle: "Hitta inspiration och spara dina favoritrecept.",
+    homeRecipeEyebrow: "Från ditt skafferi",
+    homeRecipeHeading: "Vad ska vi laga?",
+    homeRecipeDescription: "Recept som passar det du har hemma just nu.",
+    homeRecipeFilters: "Receptfilter",
+    homeFilterAll: "Alla",
+    homeFilterReady: "Kan lagas nu",
+    homeFilterUseSoon: "Använd snart",
+    homeFilterQuick: "Snabba måltider",
+    homeAllRecipes: "Alla recept",
+    homeNoFilteredRecipes: "Inga recept passar det här filtret ännu.",
+    homeMatchAll: "100 % hemma",
+    homeMatchPartial: (available: number, total: number) =>
+      `${available}/${total} ingredienser`,
+    homeUseSoon: (days: number) =>
+      days === 0 ? "Går ut idag" : `Går ut om ${days} d`,
+    homeMissingCount: (count: number) =>
+      count === 1 ? "1 saknas" : `${count} saknas`,
+    homeQuantityUnknownCount: (count: number) =>
+      count === 1 ? "1 mängd ej verifierad" : `${count} mängder ej verifierade`,
+    homeTimeUnknown: "Tid saknas",
+    homeDifficultyEasy: "Enkel",
+    homeDifficultyMedium: "Medel",
+    homeDifficultyHard: "Avancerad",
+    homeCookNow: "Laga nu",
+    homeAddMissingItems: "Lägg till det som saknas",
+    homeViewRecipe: "Visa recept",
+    homeAddMissingHeading: "Lägg till saknade ingredienser",
     backToRecipes: "Tillbaka till recepten",
     addRecipe: "Nytt recept",
     searchRecipes: "Sök recept",
@@ -189,7 +223,8 @@ export const pantryTranslations = {
     recipeImageDisplaySmall: "Liten bild till vänster",
     recipeImageDisplayNone: "Ingen bild",
     recipeImageRequired: "Välj en bild för receptet.",
-    recipeImageMissing: "Ingen bild ännu. Redigera receptet för att lägga till en.",
+    recipeImageMissing:
+      "Ingen bild ännu. Redigera receptet för att lägga till en.",
     description: "Beskrivning",
     descriptionPlaceholder: "Skriv några rader om receptet",
     preparationTime: "Tillagningstid",
@@ -204,6 +239,7 @@ export const pantryTranslations = {
     checkingAvailability: "Kontrollerar skafferiet...",
     ingredientEnough: "Tillräckligt",
     ingredientInPantry: "Finns i skafferiet",
+    ingredientQuantityUnknown: "Mängd ej verifierad",
     ingredientNotEnough: "För lite",
     ingredientMissing: "Saknas",
     ingredientLowStock: "Mindre än hälften kvar",
@@ -212,6 +248,10 @@ export const pantryTranslations = {
     recipeReady: (available: number, total: number) =>
       `${available} av ${total} tillgängliga`,
     pantryAvailabilityError: "Skafferiet kunde inte kontrolleras.",
+    recipeCookError:
+      "Ingredienserna kunde inte dras från skafferiet. Lagerlistan har uppdaterats; kontrollera mängderna innan du försöker igen.",
+    recipeCookUnavailable:
+      "Lägg till mängd och jämförbar enhet för ingredienserna för att kunna dra av dem automatiskt.",
     addIngredient: "Lägg till ingrediens",
     ingredientName: "Ingrediens",
     ingredientNamePlaceholder: "t.ex. Tomater",
@@ -227,8 +267,10 @@ export const pantryTranslations = {
     recipeUpdateError: "Receptet kunde inte uppdateras. Försök igen.",
     recipeDeleteError: "Receptet kunde inte tas bort. Försök igen.",
     recipeFavoriteError: "Favoriten kunde inte uppdateras. Försök igen.",
-    ingredientSaveError: "Receptet sparades, men ingredienserna kunde inte sparas.",
-    recipeValidationError: "Ange ett namn och giltiga mängder för ingredienserna.",
+    ingredientSaveError:
+      "Receptet sparades, men ingredienserna kunde inte sparas.",
+    recipeValidationError:
+      "Ange ett namn och giltiga mängder för ingredienserna.",
   },
   en: {
     title: "My pantry",
@@ -281,7 +323,8 @@ export const pantryTranslations = {
     uncategorized: "Uncategorized",
     catalogLoading: "Loading the product catalog...",
     catalogLoadError: "Could not load the product catalog. Please try again.",
-    catalogFavoriteLoadError: "Could not load your favorites. Please try again.",
+    catalogFavoriteLoadError:
+      "Could not load your favorites. Please try again.",
     catalogFavoriteError: "Could not update this favorite. Please try again.",
     catalogEmpty: "The product catalog is empty.",
     catalogNoResults: "No products found.",
@@ -293,18 +336,23 @@ export const pantryTranslations = {
     saveCatalogProduct: "Save product",
     catalogDeleteTitle: "Remove catalog product?",
     catalogDeleteConfirm: "Remove this product from the product catalog?",
-    catalogDeleteError: "Could not remove the product from the catalog. Please try again.",
+    catalogDeleteError:
+      "Could not remove the product from the catalog. Please try again.",
     productImageUrl: "Image URL",
     replaceCatalogImage: "Upload or replace image",
     selectedImage: "Selected image",
     select: "Select",
     scanningBarcode: "Point the camera at the product barcode.",
     cancelScan: "Cancel scan",
-    scannerUnsupported: "Barcode scanning is not supported in this browser. Enter the barcode manually.",
-    cameraError: "Could not start the camera. Check camera permissions and try again.",
-    productNotFound: "Product not found. Enter the details manually and save the item to add it to the product catalog.",
+    scannerUnsupported:
+      "Barcode scanning is not supported in this browser. Enter the barcode manually.",
+    cameraError:
+      "Could not start the camera. Check camera permissions and try again.",
+    productNotFound:
+      "Product not found. Enter the details manually and save the item to add it to the product catalog.",
     productLookupError: "Could not retrieve product details. Please try again.",
-    catalogSaveError: "Could not save the product to the product catalog. Please try again.",
+    catalogSaveError:
+      "Could not save the product to the product catalog. Please try again.",
     productImage: "Product image",
     viewProductImage: "View product image",
     closeImage: "Close image",
@@ -368,23 +416,54 @@ export const pantryTranslations = {
     listsEmptyDescription: "Create a list, then add products or recipes.",
     listsCatalogProducts: "Catalog products",
     listsRecipes: "Recipes",
+    listsCustomItems: "Shopping item",
     listsAddTo: "Add to list",
     listsAdded: "Added",
     listsAddError: "Could not add this item. Please try again.",
     listsContents: "List contents",
     listsItemsLoadError: "Could not load this list. Please try again.",
     listsItemNamesError: "Could not load the names of this list's items.",
-    listsItemsEmpty: "This list is empty. Use + on a catalog product or recipe to add it.",
+    listsItemsEmpty:
+      "This list is empty. Use + on a catalog product or recipe to add it.",
     listsRemove: "Remove",
     listsRemoveError: "Could not remove this item. Please try again.",
     listsDelete: "Delete list",
     listsDeleteTitle: "Delete this list?",
-    listsDeleteConfirm: "The list and all its contents will be permanently deleted.",
+    listsDeleteConfirm:
+      "The list and all its contents will be permanently deleted.",
     listsDeleteError: "Could not delete the list. Please try again.",
     inventory: "Inventory",
     recipes: "Recipes",
     recipesTitle: "Recipes",
     recipesSubtitle: "Find inspiration and keep your favorite recipes.",
+    homeRecipeEyebrow: "From your pantry",
+    homeRecipeHeading: "What shall we cook?",
+    homeRecipeDescription:
+      "Recipes matched to what you have at home right now.",
+    homeRecipeFilters: "Recipe filters",
+    homeFilterAll: "All",
+    homeFilterReady: "Can cook now",
+    homeFilterUseSoon: "Use soon",
+    homeFilterQuick: "Quick meals",
+    homeAllRecipes: "All recipes",
+    homeNoFilteredRecipes: "No recipes match this filter yet.",
+    homeMatchAll: "100% in stock",
+    homeMatchPartial: (available: number, total: number) =>
+      `${available}/${total} ingredients`,
+    homeUseSoon: (days: number) =>
+      days === 0 ? "Expires today" : `Expires in ${days}d`,
+    homeMissingCount: (count: number) =>
+      count === 1 ? "1 missing" : `${count} missing`,
+    homeQuantityUnknownCount: (count: number) =>
+      count === 1 ? "1 quantity unverified" : `${count} quantities unverified`,
+    homeTimeUnknown: "Time unknown",
+    homeDifficultyEasy: "Easy",
+    homeDifficultyMedium: "Medium",
+    homeDifficultyHard: "Advanced",
+    homeCookNow: "Cook now",
+    homeAddMissingItems: "Add missing items",
+    homeViewRecipe: "View recipe",
+    homeAddMissingHeading: "Add missing ingredients",
     backToRecipes: "Back to recipes",
     addRecipe: "New recipe",
     searchRecipes: "Search recipes",
@@ -428,11 +507,11 @@ export const pantryTranslations = {
       `${matched} of ${total} available`,
     recipeIngredientsIncomplete: (available: number, total: number) =>
       `${available} of ${total} available`,
-    recipeNoIngredientsAvailable: (total: number) =>
-      `0 of ${total} available`,
+    recipeNoIngredientsAvailable: (total: number) => `0 of ${total} available`,
     checkingAvailability: "Checking your pantry...",
     ingredientEnough: "Enough",
     ingredientInPantry: "In pantry",
+    ingredientQuantityUnknown: "Quantity not verified",
     ingredientNotEnough: "Not enough",
     ingredientMissing: "Missing",
     ingredientLowStock: "Less than half left",
@@ -441,6 +520,10 @@ export const pantryTranslations = {
     recipeReady: (available: number, total: number) =>
       `${available} of ${total} available`,
     pantryAvailabilityError: "Could not check your pantry.",
+    recipeCookError:
+      "Could not deduct ingredients from your pantry. Your inventory was refreshed; check quantities before trying again.",
+    recipeCookUnavailable:
+      "Add a quantity and a comparable unit to each ingredient to deduct them automatically.",
     addIngredient: "Add ingredient",
     ingredientName: "Ingredient",
     ingredientNamePlaceholder: "e.g. Tomatoes",
@@ -456,7 +539,8 @@ export const pantryTranslations = {
     recipeUpdateError: "Could not update this recipe. Please try again.",
     recipeDeleteError: "Could not remove this recipe. Please try again.",
     recipeFavoriteError: "Could not update this favorite. Please try again.",
-    ingredientSaveError: "The recipe was saved, but its ingredients could not be saved.",
+    ingredientSaveError:
+      "The recipe was saved, but its ingredients could not be saved.",
     recipeValidationError: "Enter a name and valid ingredient quantities.",
   },
 } as const satisfies Record<Locale, Record<string, unknown>>;

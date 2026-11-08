@@ -21,9 +21,12 @@ type ListItem = {
   list_id: string;
   catalog_product_id: string | null;
   recipe_id: string | null;
+  item_name: string | null;
+  item_quantity: number | string | null;
+  item_unit: string | null;
 };
 
-type SourceType = "catalog" | "recipe";
+type SourceType = "catalog" | "recipe" | "custom";
 
 type ListsViewProps = {
   userId: string;
@@ -95,7 +98,9 @@ export function ListsView({ userId, t }: ListsViewProps) {
       setIsLoadingItems(true);
       const { data, error } = await supabase
         .from("pantry_list_items")
-        .select("id, list_id, catalog_product_id, recipe_id")
+        .select(
+          "id, list_id, catalog_product_id, recipe_id, item_name, item_quantity, item_unit",
+        )
         .eq("list_id", selectedListId)
         .order("created_at", { ascending: true });
 
@@ -235,11 +240,18 @@ export function ListsView({ userId, t }: ListsViewProps) {
     if (item.catalog_product_id) {
       return { type: "catalog" as const, id: item.catalog_product_id };
     }
-    return { type: "recipe" as const, id: item.recipe_id ?? "" };
+    if (item.recipe_id) {
+      return { type: "recipe" as const, id: item.recipe_id };
+    }
+    return { type: "custom" as const, id: "" };
   };
 
   const sourceLabel = (type: SourceType) =>
-    type === "catalog" ? t.listsCatalogProducts : t.listsRecipes;
+    type === "catalog"
+      ? t.listsCatalogProducts
+      : type === "recipe"
+        ? t.listsRecipes
+        : t.listsCustomItems;
 
   return (
     <section className="mx-auto max-w-4xl space-y-6">
@@ -368,6 +380,7 @@ export function ListsView({ userId, t }: ListsViewProps) {
                     {items.map((item) => {
                       const source = getItemSource(item);
                       const name =
+                        item.item_name ??
                         itemNames[`${source.type}:${source.id}`] ??
                         `${sourceLabel(source.type)} (${source.id.slice(0, 8)})`;
                       return (
@@ -380,7 +393,9 @@ export function ListsView({ userId, t }: ListsViewProps) {
                               {name}
                             </p>
                             <p className="text-xs text-muted-foreground">
-                              {sourceLabel(source.type)}
+                              {source.type === "custom" && item.item_quantity != null
+                                ? `${item.item_quantity}${item.item_unit ? ` ${item.item_unit}` : ""} · ${sourceLabel(source.type)}`
+                                : sourceLabel(source.type)}
                             </p>
                           </div>
                           <Button

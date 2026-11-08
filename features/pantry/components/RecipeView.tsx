@@ -35,6 +35,10 @@ import type {
   PantryProduct,
 } from "@/features/pantry/types";
 import { recipeMainIngredientValues } from "@/features/pantry/types";
+import {
+  getIngredientAvailability,
+  getRecipeAvailabilitySummary,
+} from "@/features/pantry/recipe-matching";
 import { compressProductImage } from "@/features/pantry/utils";
 import { supabase } from "@/lib/supabase";
 
@@ -77,198 +81,8 @@ function getRecipeImagePath(imageUrl: string, userId: string) {
 
 type RecipeRow = Omit<Recipe, "ingredients" | "is_favorited">;
 
-type IngredientAvailability =
-  | { status: "enough" | "inPantry" | "low" | "missing" }
-  | { status: "partial"; missingQuantity: number; unitFactor: number };
-
 type RecipeAvailabilityFilter = "all" | "ready" | "partial" | "missing";
 type RecipeImageDisplay = "large" | "small" | "none";
-
-function normalizeIngredientName(name: string) {
-  return name
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLocaleLowerCase()
-    .replace(/[^a-z0-9]+/g, " ")
-    .trim();
-}
-
-function getUnitInfo(unit: string | null) {
-  const normalized = (unit ?? "")
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLocaleLowerCase()
-    .replace(/[^a-z0-9]+/g, "");
-
-  if (["g", "gram", "grams"].includes(normalized)) {
-    return { dimension: "mass", factor: 1 };
-  }
-  if (["kg", "kilogram", "kilograms"].includes(normalized)) {
-    return { dimension: "mass", factor: 1000 };
-  }
-  if (["mg", "milligram", "milligrams"].includes(normalized)) {
-    return { dimension: "mass", factor: 0.001 };
-  }
-  if (
-    ["ml", "milliliter", "milliliters", "millilitre", "millilitres"].includes(
-      normalized,
-    )
-  ) {
-    return { dimension: "volume", factor: 1 };
-  }
-  if (
-    ["cl", "centiliter", "centiliters", "centilitre", "centilitres"].includes(
-      normalized,
-    )
-  ) {
-    return { dimension: "volume", factor: 10 };
-  }
-  if (
-    ["dl", "deciliter", "deciliters", "decilitre", "decilitres"].includes(
-      normalized,
-    )
-  ) {
-    return { dimension: "volume", factor: 100 };
-  }
-  if (["l", "liter", "liters", "litre", "litres"].includes(normalized)) {
-    return { dimension: "volume", factor: 1000 };
-  }
-  if (
-    [
-      "st",
-      "styck",
-      "stycken",
-      "pcs",
-      "pc",
-      "piece",
-      "pieces",
-      "unit",
-      "units",
-      "ea",
-      "stk",
-    ].includes(normalized)
-  ) {
-    return { dimension: "count", factor: 1 };
-  }
-
-  return {
-    dimension: normalized ? `custom:${normalized}` : "unitless",
-    factor: 1,
-  };
-}
-
-function getRemainingPercent(product: PantryProduct) {
-  const storedRemaining = Number(product.remaining_percent ?? 100);
-  return Number.isFinite(storedRemaining)
-    ? Math.max(0, Math.min(100, storedRemaining))
-    : 100;
-}
-
-function getAvailableProductQuantity(product: PantryProduct) {
-  if (product.kvantitet == null) return null;
-
-  const quantity = Number(product.kvantitet);
-  if (!Number.isFinite(quantity) || quantity < 0) return null;
-
-  return quantity * (getRemainingPercent(product) / 100);
-}
-
-function getIngredientAvailability(
-  ingredient: RecipeIngredient,
-  products: PantryProduct[],
-): IngredientAvailability {
-  const ingredientName = normalizeIngredientName(ingredient.ingrediens_namn);
-  const matches = products.filter(
-    (product) =>
-      product.status === "i_lager" &&
-      normalizeIngredientName(product.namn) === ingredientName,
-  );
-
-  if (matches.length === 0) return { status: "missing" };
-
-  const requiredQuantity =
-    ingredient.kvantitet == null ? null : Number(ingredient.kvantitet);
-  if (
-    requiredQuantity == null ||
-    !Number.isFinite(requiredQuantity) ||
-    requiredQuantity < 0
-  ) {
-    return matches.some((product) => {
-      const quantity = getAvailableProductQuantity(product);
-      return quantity === null || quantity > 0;
-    })
-      ? { status: "inPantry" }
-      : { status: "missing" };
-  }
-
-  const recipeUnit = getUnitInfo(ingredient.enhet);
-  let comparableProductFound = false;
-  let availableQuantity = 0;
-
-  for (const product of matches) {
-    const quantity = getAvailableProductQuantity(product);
-    if (quantity === null) {
-      continue;
-    }
-
-    const productUnit = getUnitInfo(product.enhet);
-    if (recipeUnit.dimension === productUnit.dimension) {
-      comparableProductFound = true;
-      availableQuantity += quantity * productUnit.factor;
-    }
-  }
-
-  const requiredInBaseUnits = requiredQuantity * recipeUnit.factor;
-  if (comparableProductFound) {
-    if (availableQuantity >= requiredInBaseUnits) {
-      return { status: "enough" };
-    }
-    if (availableQuantity > 0) {
-      return {
-        status: "partial",
-        missingQuantity: requiredInBaseUnits - availableQuantity,
-        unitFactor: recipeUnit.factor,
-      };
-    }
-    return { status: "missing" };
-  }
-
-  const remainingPercentages = matches.map(getRemainingPercent);
-  if (remainingPercentages.some((remaining) => remaining >= 50)) {
-    return { status: "inPantry" };
-  }
-  if (remainingPercentages.some((remaining) => remaining > 0)) {
-    return { status: "low" };
-  }
-
-  return { status: "missing" };
-}
-
-function getRecipeAvailabilitySummary(
-  recipe: Recipe,
-  products: PantryProduct[],
-) {
-  const ingredientAvailability = recipe.ingredients.map((ingredient) =>
-    getIngredientAvailability(ingredient, products),
-  );
-  const readyIngredientCount = ingredientAvailability.filter(
-    ({ status }) => status === "enough" || status === "inPantry",
-  ).length;
-  const hasAnyIngredient = ingredientAvailability.some(
-    ({ status }) => status !== "missing",
-  );
-
-  const status =
-    recipe.ingredients.length === 0
-      ? "noIngredients"
-      : readyIngredientCount === recipe.ingredients.length
-        ? "ready"
-        : hasAnyIngredient
-          ? "partial"
-          : "missing";
-
-  return { status, readyIngredientCount, hasAnyIngredient };
-}
 
 export function RecipeView({
   userId,
@@ -1186,9 +1000,13 @@ export function RecipeView({
                     ? CircleAlert
                     : CircleX;
               const availableIngredientCount = recipe.ingredients.filter(
-                (ingredient) =>
-                  getIngredientAvailability(ingredient, products).status !==
-                  "missing",
+                (ingredient) => {
+                  const status = getIngredientAvailability(
+                    ingredient,
+                    products,
+                  ).status;
+                  return status === "enough" || status === "inPantry";
+                },
               ).length;
               const availabilityLabel = isAvailabilityKnown
                 ? isRecipeReady
@@ -1414,11 +1232,15 @@ export function RecipeView({
                           >
                             {t.recipeIngredientsMatched(
                               recipe.ingredients.filter(
-                                (ingredient) =>
-                                  getIngredientAvailability(
+                                (ingredient) => {
+                                  const status = getIngredientAvailability(
                                     ingredient,
                                     products,
-                                  ).status !== "missing",
+                                  ).status;
+                                  return (
+                                    status === "enough" || status === "inPantry"
+                                  );
+                                },
                               ).length,
                               recipe.ingredients.length,
                             )}
@@ -1450,13 +1272,16 @@ export function RecipeView({
                                     ? t.ingredientNotEnough
                                     : availability?.status === "missing"
                                       ? t.ingredientMissing
-                                      : "";
+                                      : availability?.status === "unknown"
+                                        ? t.ingredientQuantityUnknown
+                                        : "";
                             const statusClass =
                               availability?.status === "enough" ||
                               availability?.status === "inPantry"
                                 ? "text-emerald-300"
                                 : availability?.status === "partial" ||
-                                    availability?.status === "low"
+                                    availability?.status === "low" ||
+                                    availability?.status === "unknown"
                                   ? "text-amber-300"
                                   : availability?.status === "missing"
                                     ? "text-rose-300"
@@ -1466,7 +1291,8 @@ export function RecipeView({
                                 ? CircleAlert
                                 : availability?.status === "missing"
                                   ? CircleX
-                                  : availability?.status === "low"
+                                  : availability?.status === "low" ||
+                                      availability?.status === "unknown"
                                     ? CircleAlert
                                     : Check;
                             const shortage =

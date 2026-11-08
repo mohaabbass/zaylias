@@ -24,6 +24,7 @@ import { PantryPageHeader } from "@/features/pantry/components/PantryPageHeader"
 import { PantryProductCard } from "@/features/pantry/components/PantryProductCard";
 import { PantryProductForm } from "@/features/pantry/components/PantryProductForm";
 import { PantryProductCatalog } from "@/features/pantry/components/PantryProductCatalog";
+import { RecipeCarousel } from "@/features/pantry/components/RecipeCarousel";
 import { RecipeView } from "@/features/pantry/components/RecipeView";
 import { PantryStats } from "@/features/pantry/components/PantryStats";
 import { PantrySettingsDrawer } from "@/features/pantry/components/PantrySettingsDrawer";
@@ -883,6 +884,17 @@ export function PantryView({
                         </button>
                       </div>
                     ) : null}
+                    <RecipeCarousel
+                      userId={userId}
+                      products={products}
+                      isPantryLoading={isLoading}
+                      pantryLoadError={Boolean(loadError)}
+                      onPantryChange={() =>
+                        setReloadToken((current) => current + 1)
+                      }
+                      onOpenRecipes={() => setActiveSection("recipes")}
+                      onOpenLists={() => setActiveSection("lists")}
+                    />
                   </>
                 )
               ) : (
