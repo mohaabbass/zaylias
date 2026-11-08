@@ -9,6 +9,7 @@ import type { FormEvent } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { AddToListButton } from "@/features/pantry/components/AddToListButton";
 import {
   categoryOptions,
   getCategoryLabel,
@@ -45,12 +46,14 @@ type PantryProductCatalogProps = {
   userId: string;
   t: PantryTranslation;
   locale: "sv" | "en";
+  onOpenLists: () => void;
 };
 
 export function PantryProductCatalog({
   userId,
   t,
   locale,
+  onOpenLists,
 }: PantryProductCatalogProps) {
   const [products, setProducts] = useState<ProductCatalogEntry[]>([]);
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
@@ -594,23 +597,33 @@ export function PantryProductCatalog({
                     <h2 className="min-w-0 truncate font-semibold">
                       {product.namn}
                     </h2>
-                    <button
-                      type="button"
-                      aria-label={`${favoriteIds.has(product.catalog_id) ? t.unfavorite : t.favorite} ${product.namn}`}
-                      aria-pressed={favoriteIds.has(product.catalog_id)}
-                      disabled={isUpdatingFavorite}
-                      onClick={() => void toggleFavorite(product)}
-                      className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-rose-300 transition hover:bg-rose-400/10 disabled:opacity-50"
-                    >
-                      <Heart
-                        aria-hidden="true"
-                        className={`h-4 w-4 ${
-                          favoriteIds.has(product.catalog_id)
-                            ? "fill-current"
-                            : ""
-                        }`}
+                    <div className="flex shrink-0 items-center gap-1">
+                      <AddToListButton
+                        userId={userId}
+                        itemId={product.catalog_id}
+                        itemName={product.namn}
+                        source="catalog_product_id"
+                        t={t}
+                        onOpenLists={onOpenLists}
                       />
-                    </button>
+                      <button
+                        type="button"
+                        aria-label={`${favoriteIds.has(product.catalog_id) ? t.unfavorite : t.favorite} ${product.namn}`}
+                        aria-pressed={favoriteIds.has(product.catalog_id)}
+                        disabled={isUpdatingFavorite}
+                        onClick={() => void toggleFavorite(product)}
+                        className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-rose-300 transition hover:bg-rose-400/10 disabled:opacity-50"
+                      >
+                        <Heart
+                          aria-hidden="true"
+                          className={`h-4 w-4 ${
+                            favoriteIds.has(product.catalog_id)
+                              ? "fill-current"
+                              : ""
+                          }`}
+                        />
+                      </button>
+                    </div>
                   </div>
                   {product.kategori ? (
                     <p className="mt-1 truncate text-xs text-muted-foreground">

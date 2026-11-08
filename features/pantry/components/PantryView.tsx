@@ -27,6 +27,7 @@ import { PantryProductCatalog } from "@/features/pantry/components/PantryProduct
 import { RecipeView } from "@/features/pantry/components/RecipeView";
 import { PantryStats } from "@/features/pantry/components/PantryStats";
 import { PantrySettingsDrawer } from "@/features/pantry/components/PantrySettingsDrawer";
+import { ListsView } from "@/features/pantry/components/ListsView";
 import { productColumns } from "@/features/pantry/constants";
 import { pantryTranslations } from "@/features/pantry/i18n";
 import type {
@@ -92,7 +93,7 @@ export function PantryView({
   const [belowHalfOnly, setBelowHalfOnly] = useState(false);
   const [expiringOnly, setExpiringOnly] = useState(false);
   const [activeSection, setActiveSection] = useState<
-    "home" | "products" | "recipes" | "catalog"
+    "home" | "products" | "recipes" | "catalog" | "lists"
   >("home");
   const [recipeAddRequest, setRecipeAddRequest] = useState(0);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -800,7 +801,9 @@ export function PantryView({
     <>
       <main className="min-h-[calc(100dvh-4rem)] bg-background px-4 pb-28 pt-6 text-foreground sm:px-6">
         <div className="mx-auto max-w-6xl space-y-6 animate-view-in">
-          {activeSection === "recipes" ? (
+          {activeSection === "lists" ? (
+            <ListsView userId={userId} t={t} />
+          ) : activeSection === "recipes" ? (
             <RecipeView
               userId={userId}
               products={products}
@@ -811,10 +814,16 @@ export function PantryView({
               onRecipeListChange={() =>
                 setRecipeCountReloadToken((current) => current + 1)
               }
+              onOpenLists={() => setActiveSection("lists")}
               onSwitchForm={switchAddForm}
             />
           ) : activeSection === "catalog" ? (
-            <PantryProductCatalog userId={userId} t={t} locale={locale} />
+            <PantryProductCatalog
+              userId={userId}
+              t={t}
+              locale={locale}
+              onOpenLists={() => setActiveSection("lists")}
+            />
           ) : (
             <>
               <PantryPageHeader t={t} />
@@ -1205,6 +1214,11 @@ export function PantryView({
         open={isSettingsDrawerOpen}
         onOpenChange={setIsSettingsDrawerOpen}
         productCatalogLabel={t.productCatalog}
+        listsLabel={t.listsTitle}
+        onOpenLists={() => {
+          setActiveSection("lists");
+          setIsSettingsDrawerOpen(false);
+        }}
         onOpenProductCatalog={() => {
           setActiveSection("catalog");
           setIsSettingsDrawerOpen(false);

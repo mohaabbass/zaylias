@@ -1,6 +1,6 @@
 "use client";
 
-import { MoonStar, Package, SunMedium, X } from "lucide-react";
+import { List, MoonStar, Package, SunMedium, X } from "lucide-react";
 
 import { useLocale } from "@/components/providers/LocaleProvider";
 import {
@@ -14,6 +14,8 @@ import {
 type PantrySettingsDrawerProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  listsLabel: string;
+  onOpenLists: () => void;
   productCatalogLabel: string;
   onOpenProductCatalog: () => void;
   theme: "light" | "dark";
@@ -24,6 +26,8 @@ type PantrySettingsDrawerProps = {
 export function PantrySettingsDrawer({
   open,
   onOpenChange,
+  listsLabel,
+  onOpenLists,
   productCatalogLabel,
   onOpenProductCatalog,
   theme,
@@ -51,6 +55,15 @@ export function PantrySettingsDrawer({
         </DrawerHeader>
 
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-4 text-sm text-foreground">
+          <button
+            type="button"
+            onClick={onOpenLists}
+            className="flex w-full items-center gap-3 rounded-xl border border-border bg-background px-3 py-3 text-left font-medium transition hover:border-ring hover:bg-muted"
+          >
+            <List aria-hidden="true" className="h-5 w-5 text-emerald-600" />
+            <span>{listsLabel}</span>
+          </button>
+
           <button
             type="button"
             onClick={onOpenProductCatalog}
