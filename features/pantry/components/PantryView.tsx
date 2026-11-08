@@ -60,18 +60,6 @@ function createEmptyForm(locale: "sv" | "en"): ProductFormValues {
   };
 }
 
-function getBarcodeLookupValues(barcode: string): string[] {
-  const values = [barcode];
-
-  if (/^\d{13}$/.test(barcode) && barcode.startsWith("0")) {
-    values.push(barcode.slice(1));
-  } else if (/^\d{12}$/.test(barcode)) {
-    values.push(`0${barcode}`);
-  }
-
-  return values;
-}
-
 type PantryViewProps = {
   userId: string;
   onLogout: () => void;
@@ -409,11 +397,10 @@ export function PantryView({
     setForm((current) => ({ ...current, streckkod: normalizedBarcode }));
 
     try {
-      const barcodeLookupValues = getBarcodeLookupValues(normalizedBarcode);
       const { data: catalogProduct, error: catalogError } = await supabase
         .from("produkt_katalog")
         .select("streckkod, namn, brand, image_url, kategori")
-        .in("streckkod", barcodeLookupValues)
+        .eq("streckkod", normalizedBarcode)
         .maybeSingle();
 
       if (catalogError) {
@@ -432,41 +419,7 @@ export function PantryView({
         return;
       }
 
-      const response = await fetch(
-        `https://world.openfoodfacts.org/api/v2/product/${encodeURIComponent(normalizedBarcode)}.json`,
-      );
-      if (!response.ok) {
-        throw new Error(`Open Food Facts returned ${response.status}.`);
-      }
-
-      const result = (await response.json()) as {
-        status?: number;
-        product?: {
-          product_name?: string;
-          brands?: string;
-          image_front_url?: string;
-          image_url?: string;
-        };
-      };
-
-      if (result.status !== 1 || !result.product) {
-        setLookupError(t.productNotFound);
-        return;
-      }
-
-      const productName = result.product.product_name?.trim();
-      const brand = result.product.brands?.trim();
-      const imageUrl =
-        result.product.image_front_url?.trim() ||
-        result.product.image_url?.trim();
-
-      setForm((current) => ({
-        ...current,
-        streckkod: normalizedBarcode,
-        namn: productName || current.namn,
-        varumarke: brand || current.varumarke,
-        bild_url: imageUrl || current.bild_url,
-      }));
+      setLookupError(t.productNotFound);
     } catch (error) {
       console.error("Failed to look up product barcode:", error);
       setLookupError(t.productLookupError);
