@@ -23,6 +23,7 @@ import { PantryFilters } from "@/features/pantry/components/PantryFilters";
 import { PantryPageHeader } from "@/features/pantry/components/PantryPageHeader";
 import { PantryProductCard } from "@/features/pantry/components/PantryProductCard";
 import { PantryProductForm } from "@/features/pantry/components/PantryProductForm";
+import { PantryProductCatalog } from "@/features/pantry/components/PantryProductCatalog";
 import { RecipeView } from "@/features/pantry/components/RecipeView";
 import { PantryStats } from "@/features/pantry/components/PantryStats";
 import { PantrySettingsDrawer } from "@/features/pantry/components/PantrySettingsDrawer";
@@ -44,7 +45,7 @@ import { supabase } from "@/lib/supabase";
 function createEmptyForm(locale: "sv" | "en"): ProductFormValues {
   return {
     namn: "",
-    kategori: "Pantry",
+    kategori: "Other",
     kvantitet: "1",
     enhet: locale === "sv" ? "st" : "pcs",
     pris: "",
@@ -103,7 +104,7 @@ export function PantryView({
   const [belowHalfOnly, setBelowHalfOnly] = useState(false);
   const [expiringOnly, setExpiringOnly] = useState(false);
   const [activeSection, setActiveSection] = useState<
-    "home" | "products" | "recipes"
+    "home" | "products" | "recipes" | "catalog"
   >("home");
   const [recipeAddRequest, setRecipeAddRequest] = useState(0);
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -859,6 +860,8 @@ export function PantryView({
               }
               onSwitchForm={switchAddForm}
             />
+          ) : activeSection === "catalog" ? (
+            <PantryProductCatalog userId={userId} t={t} locale={locale} />
           ) : (
             <>
               <PantryPageHeader t={t} />
@@ -1248,6 +1251,11 @@ export function PantryView({
       <PantrySettingsDrawer
         open={isSettingsDrawerOpen}
         onOpenChange={setIsSettingsDrawerOpen}
+        productCatalogLabel={t.productCatalog}
+        onOpenProductCatalog={() => {
+          setActiveSection("catalog");
+          setIsSettingsDrawerOpen(false);
+        }}
         theme={theme}
         onThemeChange={onThemeChange}
         onLogout={onLogout}

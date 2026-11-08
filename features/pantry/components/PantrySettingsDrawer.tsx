@@ -1,6 +1,6 @@
 "use client";
 
-import { MoonStar, SunMedium, X } from "lucide-react";
+import { MoonStar, Package, SunMedium, X } from "lucide-react";
 
 import { useLocale } from "@/components/providers/LocaleProvider";
 import {
@@ -14,6 +14,8 @@ import {
 type PantrySettingsDrawerProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  productCatalogLabel: string;
+  onOpenProductCatalog: () => void;
   theme: "light" | "dark";
   onThemeChange: (theme: "light" | "dark") => void;
   onLogout: () => void;
@@ -22,6 +24,8 @@ type PantrySettingsDrawerProps = {
 export function PantrySettingsDrawer({
   open,
   onOpenChange,
+  productCatalogLabel,
+  onOpenProductCatalog,
   theme,
   onThemeChange,
   onLogout,
@@ -47,6 +51,15 @@ export function PantrySettingsDrawer({
         </DrawerHeader>
 
         <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-4 pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-4 text-sm text-foreground">
+          <button
+            type="button"
+            onClick={onOpenProductCatalog}
+            className="flex w-full items-center gap-3 rounded-xl border border-border bg-background px-3 py-3 text-left font-medium transition hover:border-ring hover:bg-muted"
+          >
+            <Package aria-hidden="true" className="h-5 w-5 text-emerald-600" />
+            <span>{productCatalogLabel}</span>
+          </button>
+
           <section className="rounded-xl border border-border bg-muted/50 p-3">
             <p className="mb-3 text-xs uppercase tracking-[0.2em] text-muted-foreground">
               {t.language}
