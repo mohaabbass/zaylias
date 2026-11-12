@@ -89,6 +89,7 @@ export type Recipe = {
   beskrivning: string | null;
   tid: number | null;
   kategori: string | null;
+  tags: string[];
   main_ingredient: RecipeMainIngredient;
   bild_url: string | null;
   is_favorite: boolean;
@@ -108,6 +109,7 @@ export type RecipeFormValues = {
   beskrivning: string;
   tid: string;
   kategori: string;
+  tags: string[];
   main_ingredient: RecipeMainIngredient | "";
   ingredients: RecipeIngredientFormValues[];
 };

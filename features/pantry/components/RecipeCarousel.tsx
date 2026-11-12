@@ -40,7 +40,7 @@ type RecipeFilter = "all" | "ready" | "useSoon" | "quick";
 type PantryList = { id: string; name: string };
 
 const recipeColumns =
-  "id, user_id, titel, beskrivning, tid, kategori, main_ingredient, bild_url, is_favorite, created_at";
+  "id, user_id, titel, beskrivning, tid, kategori, tags, main_ingredient, bild_url, is_favorite, created_at";
 
 export function RecipeCarousel({
   userId,
@@ -639,6 +639,18 @@ export function RecipeCarousel({
                       <h3 className="line-clamp-2 text-base font-semibold leading-snug text-foreground">
                         {recipe.titel}
                       </h3>
+                      {recipe.tags.length > 0 ? (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {recipe.tags.map((tag) => (
+                            <span
+                              key={tag}
+                              className="rounded-full bg-emerald-300/10 px-2 py-0.5 text-xs font-medium text-emerald-200"
+                            >
+                              #{tag}
+                            </span>
+                          ))}
+                        </div>
+                      ) : null}
                       <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                         <span className="inline-flex items-center gap-1">
                           <Clock3 aria-hidden="true" className="h-3.5 w-3.5" />

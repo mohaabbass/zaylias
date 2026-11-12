@@ -228,11 +228,42 @@ export function RecipeForm({
   onSubmit,
   onSwitchForm,
 }: RecipeFormProps) {
+  const [tagDraft, setTagDraft] = useState("");
+
+  const addTags = (value: string) => {
+    const newTags = value
+      .split(",")
+      .map((tag) => tag.trim().replace(/^#+/, ""))
+      .filter(Boolean);
+
+    if (newTags.length > 0) {
+      setForm((current) => {
+        const existingTags = new Set(
+          current.tags.map((tag) => tag.toLocaleLowerCase()),
+        );
+        const tagsToAdd = newTags.filter((tag) => {
+          const normalizedTag = tag.toLocaleLowerCase();
+          if (existingTags.has(normalizedTag)) return false;
+          existingTags.add(normalizedTag);
+          return true;
+        });
+        return tagsToAdd.length > 0
+          ? { ...current, tags: [...current.tags, ...tagsToAdd] }
+          : current;
+      });
+    }
+
+    setTagDraft("");
+  };
+
   return (
     <Drawer
       open={open}
       onOpenChange={(nextOpen) => {
-        if (!isSaving) onOpenChange(nextOpen);
+        if (!isSaving) {
+          if (!nextOpen) setTagDraft("");
+          onOpenChange(nextOpen);
+        }
       }}
     >
       <DrawerContent className="mx-auto h-[calc(100dvh-env(safe-area-inset-top))] max-h-none max-w-xl rounded-t-2xl border border-border bg-background p-0 text-foreground shadow-2xl sm:h-auto sm:max-h-[calc(100dvh-3rem)]">
@@ -397,6 +428,65 @@ export function RecipeForm({
               <option value="other">{t.recipeMainIngredientOther}</option>
             </select>
           </label>
+
+          <div className="space-y-1.5 text-sm">
+            <label htmlFor="recipe-tags" className="block font-medium text-muted-foreground">
+              {t.recipeTags}
+            </label>
+            <input
+              id="recipe-tags"
+              value={tagDraft}
+              onChange={(event) => {
+                const value = event.target.value;
+                const lastComma = value.lastIndexOf(",");
+                if (lastComma >= 0) {
+                  addTags(value.slice(0, lastComma));
+                  setTagDraft(value.slice(lastComma + 1).trimStart());
+                } else {
+                  setTagDraft(value);
+                }
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && tagDraft.trim()) {
+                  event.preventDefault();
+                  addTags(tagDraft);
+                }
+              }}
+              onBlur={() => {
+                if (tagDraft.trim()) addTags(tagDraft);
+              }}
+              placeholder={t.recipeTagsPlaceholder}
+              disabled={isSaving}
+              className="h-11 w-full rounded-xl border border-border bg-muted px-3 text-foreground outline-none placeholder:text-muted-foreground focus:border-emerald-400/60 focus:ring-2 focus:ring-emerald-400/15"
+            />
+            <p className="text-xs text-muted-foreground">{t.recipeTagsHint}</p>
+            {form.tags.length > 0 ? (
+              <ul className="flex flex-wrap gap-2 pt-1">
+                {form.tags.map((tag) => (
+                  <li
+                    key={tag}
+                    className="inline-flex items-center gap-1 rounded-full bg-emerald-300/10 px-2.5 py-1 text-xs font-medium text-emerald-200"
+                  >
+                    <span>#{tag}</span>
+                    <button
+                      type="button"
+                      disabled={isSaving}
+                      aria-label={`${t.removeRecipeTag} ${tag}`}
+                      onClick={() =>
+                        setForm((current) => ({
+                          ...current,
+                          tags: current.tags.filter((item) => item !== tag),
+                        }))
+                      }
+                      className="rounded-full p-0.5 hover:bg-emerald-300/15 disabled:opacity-50"
+                    >
+                      <X aria-hidden="true" className="h-3 w-3" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
 
           <section className="space-y-3">
             <div className="flex items-center justify-between gap-3">

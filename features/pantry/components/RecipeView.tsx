@@ -43,7 +43,7 @@ import { compressProductImage } from "@/features/pantry/utils";
 import { supabase } from "@/lib/supabase";
 
 const recipeColumns =
-  "id, user_id, titel, beskrivning, tid, kategori, main_ingredient, bild_url, is_favorite, created_at";
+  "id, user_id, titel, beskrivning, tid, kategori, tags, main_ingredient, bild_url, is_favorite, created_at";
 const recipeImageBucket = "recipe-images";
 const maxRecipeImageSize = 5 * 1024 * 1024;
 const recipeImageExtensions: Record<string, string> = {
@@ -60,6 +60,7 @@ function createEmptyForm(defaultCategory: string): RecipeFormValues {
     beskrivning: "",
     tid: "",
     kategori: defaultCategory,
+    tags: [],
     main_ingredient: "",
     ingredients: [{ ingrediens_namn: "", kvantitet: "", enhet: "" }],
   };
@@ -120,6 +121,7 @@ export function RecipeView({
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedMainIngredient, setSelectedMainIngredient] =
     useState<RecipeMainIngredientFilter | null>(null);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [availabilityFilter, setAvailabilityFilter] =
     useState<RecipeAvailabilityFilter>("all");
@@ -255,6 +257,20 @@ export function RecipeView({
       ].sort((a, b) => a.localeCompare(b, numberLocale)),
     [numberLocale, recipes],
   );
+  const availableRecipeTags = useMemo(() => {
+    const tagsByNormalizedValue = new Map<string, string>();
+    for (const recipe of recipes) {
+      for (const tag of recipe.tags ?? []) {
+        const normalizedTag = tag.toLocaleLowerCase(numberLocale);
+        if (!tagsByNormalizedValue.has(normalizedTag)) {
+          tagsByNormalizedValue.set(normalizedTag, tag);
+        }
+      }
+    }
+    return [...tagsByNormalizedValue.entries()]
+      .sort((a, b) => a[1].localeCompare(b[1], numberLocale))
+      .map(([normalizedTag, tag]) => ({ normalizedTag, tag }));
+  }, [numberLocale, recipes]);
   const availableMainIngredientFilters = useMemo(
     () =>
       recipeMainIngredientValues.filter((value) =>
@@ -273,6 +289,14 @@ export function RecipeView({
       if (selectedMainIngredient && recipe.main_ingredient !== selectedMainIngredient) {
         return false;
       }
+      if (
+        selectedTags.length > 0 &&
+        !(recipe.tags ?? []).some((tag) =>
+          selectedTags.includes(tag.toLocaleLowerCase(numberLocale)),
+        )
+      ) {
+        return false;
+      }
       if (favoritesOnly && !recipe.is_favorited) return false;
       if (
         availabilityFilter !== "all" &&
@@ -288,6 +312,7 @@ export function RecipeView({
         recipe.titel,
         recipe.beskrivning,
         recipe.kategori,
+        ...recipe.tags,
         ...recipe.ingredients.map((ingredient) => ingredient.ingrediens_namn),
       ]
         .filter(Boolean)
@@ -305,6 +330,7 @@ export function RecipeView({
     search,
     selectedCategory,
     selectedMainIngredient,
+    selectedTags,
   ]);
   const selectedRecipe =
     recipes.find((recipe) => recipe.id === selectedRecipeId) ?? null;
@@ -335,6 +361,7 @@ export function RecipeView({
       beskrivning: recipe.beskrivning ?? "",
       tid: recipe.tid == null ? "" : String(recipe.tid),
       kategori: recipe.kategori?.trim() || defaultCategory,
+      tags: recipe.tags ?? [],
       main_ingredient: recipe.main_ingredient,
       ingredients:
         recipe.ingredients.length > 0
@@ -456,6 +483,7 @@ export function RecipeView({
       beskrivning: form.beskrivning.trim() || null,
       tid: time,
       kategori: form.kategori.trim() || defaultCategory,
+      tags: form.tags,
       main_ingredient: mainIngredient,
       bild_url: imageUrl,
     };
@@ -704,7 +732,8 @@ export function RecipeView({
   };
   const activeRecipeFilterCount =
     Number(selectedCategory !== null) +
-    Number(selectedMainIngredient !== null);
+    Number(selectedMainIngredient !== null) +
+    selectedTags.length;
   const recipeImageDisplayOptions = [
     { value: "large", label: t.recipeImageDisplayLarge, Icon: LayoutGrid },
     { value: "small", label: t.recipeImageDisplaySmall, Icon: Rows3 },
@@ -826,12 +855,43 @@ export function RecipeView({
                   </div>
                 </fieldset>
               ) : null}
+              {availableRecipeTags.length > 0 ? (
+                <fieldset className="space-y-2">
+                  <legend className="text-xs font-medium text-muted-foreground">
+                    {t.filterTags}
+                  </legend>
+                  <div className="flex flex-wrap gap-2">
+                    {availableRecipeTags.map(({ normalizedTag, tag }) => (
+                      <button
+                        key={normalizedTag}
+                        type="button"
+                        aria-pressed={selectedTags.includes(normalizedTag)}
+                        onClick={() =>
+                          setSelectedTags((current) =>
+                            current.includes(normalizedTag)
+                              ? current.filter((value) => value !== normalizedTag)
+                              : [...current, normalizedTag],
+                          )
+                        }
+                        className={`rounded-full px-3 py-1.5 text-xs font-medium transition ${
+                          selectedTags.includes(normalizedTag)
+                            ? "bg-emerald-300/15 text-emerald-200"
+                            : "bg-muted text-muted-foreground hover:bg-muted"
+                        }`}
+                      >
+                        #{tag}
+                      </button>
+                    ))}
+                  </div>
+                </fieldset>
+              ) : null}
               {activeRecipeFilterCount > 0 ? (
                 <button
                   type="button"
                   onClick={() => {
                     setSelectedCategory(null);
                     setSelectedMainIngredient(null);
+                    setSelectedTags([]);
                   }}
                   className="text-xs font-medium text-emerald-200 underline underline-offset-4"
                 >
@@ -1128,6 +1188,18 @@ export function RecipeView({
                             {recipe.kategori}
                           </span>
                         ) : null}
+                        {recipe.tags.length > 0 ? (
+                          <span className="mt-2 flex flex-wrap gap-1.5">
+                            {recipe.tags.map((tag) => (
+                              <span
+                                key={tag}
+                                className="rounded-full bg-emerald-300/10 px-2 py-0.5 text-xs font-medium text-emerald-200"
+                              >
+                                #{tag}
+                              </span>
+                            ))}
+                          </span>
+                        ) : null}
                         {recipe.ingredients.length > 0 ? (
                           <span
                             aria-live="polite"
@@ -1157,6 +1229,18 @@ export function RecipeView({
                         {recipe.kategori ? (
                           <span className="mt-1 block text-xs font-medium text-emerald-300">
                             {recipe.kategori}
+                          </span>
+                        ) : null}
+                        {recipe.tags.length > 0 ? (
+                          <span className="mt-2 flex flex-wrap gap-1.5">
+                            {recipe.tags.map((tag) => (
+                              <span
+                                key={tag}
+                                className="rounded-full bg-emerald-300/10 px-2 py-0.5 text-xs font-medium text-emerald-200"
+                              >
+                                #{tag}
+                              </span>
+                            ))}
                           </span>
                         ) : null}
                         {recipe.ingredients.length > 0 ? (
