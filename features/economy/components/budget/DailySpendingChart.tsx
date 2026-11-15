@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { SlidersHorizontal, X } from "lucide-react";
+import { ArrowLeftRight, SlidersHorizontal, X } from "lucide-react";
 
 import {
   getCategoryLabel,
@@ -61,6 +61,7 @@ export function DailySpendingChart({
   ]);
   const [hasLoadedSettings, setHasLoadedSettings] = useState(false);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
+  const [isComparingMonths, setIsComparingMonths] = useState(false);
   const [selectedBarKey, setSelectedBarKey] = useState<string | null>(null);
   const chartScrollRef = useRef<HTMLDivElement>(null);
 
@@ -150,6 +151,7 @@ export function DailySpendingChart({
                 hour: "numeric",
               }).format(date),
               value: 0,
+              comparisonValue: 0,
             };
           })
         : range === "year"
@@ -166,6 +168,7 @@ export function DailySpendingChart({
                   month: "short",
                 }).format(date),
                 value: 0,
+                comparisonValue: 0,
               };
             })
           : range === "month"
@@ -184,6 +187,7 @@ export function DailySpendingChart({
                     day: "numeric",
                   }).format(date),
                   value: 0,
+                  comparisonValue: 0,
                 }));
               })()
             : Array.from({ length: 7 }, (_, index) => {
@@ -196,8 +200,21 @@ export function DailySpendingChart({
                     weekday: "short",
                   }).format(date),
                   value: 0,
+                  comparisonValue: 0,
                 };
               });
+
+    const comparisonEntriesByDate = new Map(
+      entries.flatMap((entry) => {
+        if (range !== "month") return [];
+
+        const [year, month, day] = entry.key.split("-").map(Number);
+        const comparisonDate = new Date(year, month - 2, day);
+        if (comparisonDate.getDate() !== day) return [];
+
+        return [[getLocalDateKey(comparisonDate), entry] as const];
+      }),
+    );
 
     for (const transaction of transactions) {
       if (transaction.type !== "expense") continue;
@@ -223,17 +240,58 @@ export function DailySpendingChart({
             : getLocalDateKey(transactionDate);
       const match = entries.find((entry) => entry.key === key);
 
-      if (!match) continue;
+      if (match) {
+        match.value += Number(transaction.amount || 0);
+        continue;
+      }
 
-      match.value += Number(transaction.amount || 0);
+      const comparisonMatch = comparisonEntriesByDate.get(
+        getLocalDateKey(transactionDate),
+      );
+      if (comparisonMatch) {
+        comparisonMatch.comparisonValue += Number(transaction.amount || 0);
+      }
     }
 
     return entries;
   }, [budgetPeriod, excludedCategories, locale, range, transactions]);
 
-  const maxValue = Math.max(...data.map((entry) => entry.value), 1);
+  const isMonthComparisonVisible = range === "month" && isComparingMonths;
+  const maxValue = Math.max(
+    ...data.flatMap((entry) =>
+      isMonthComparisonVisible
+        ? [entry.value, entry.comparisonValue]
+        : [entry.value],
+    ),
+    1,
+  );
   const total = data.reduce((sum, entry) => sum + entry.value, 0);
-  const hasSpendingData = data.some((entry) => entry.value !== 0);
+  const todayKey = getLocalDateKey(new Date());
+  const currentPeriodToDate = data.reduce(
+    (sum, entry) => (entry.key <= todayKey ? sum + entry.value : sum),
+    0,
+  );
+  const comparisonPeriodToDate = data.reduce(
+    (sum, entry) => (entry.key <= todayKey ? sum + entry.comparisonValue : sum),
+    0,
+  );
+  const comparisonChange =
+    comparisonPeriodToDate > 0
+      ? (currentPeriodToDate - comparisonPeriodToDate) / comparisonPeriodToDate
+      : null;
+  const percentageFormatter = new Intl.NumberFormat(
+    locale === "en" ? "en-US" : "sv-SE",
+    {
+      style: "percent",
+      maximumFractionDigits: 0,
+      signDisplay: "always",
+    },
+  );
+  const hasSpendingData = data.some(
+    (entry) =>
+      entry.value !== 0 ||
+      (isMonthComparisonVisible && entry.comparisonValue !== 0),
+  );
   const budgetPeriodStart = budgetPeriod.start.getTime();
   const budgetPeriodEnd = budgetPeriod.endExclusive.getTime();
   const currencyLocale = locale === "en" ? "en-US" : "sv-SE";
@@ -261,26 +319,54 @@ export function DailySpendingChart({
   return (
     <Drawer open={isCategoryDialogOpen} onOpenChange={setIsCategoryDialogOpen}>
       <section className="rounded-2xl border border-border bg-card p-5 shadow-sm sm:p-5">
-        <h3 className="mb-4 text-sm font-semibold tracking-wide text-foreground">
-          {t.dailySpending}
-        </h3>
-        <div className="mb-5 flex w-full items-center gap-2 sm:gap-3">
-          <div className="flex min-w-0 items-center gap-2">
-            <select
-              aria-label={t.spendingRange}
-              value={range}
-              onChange={(event) => {
-                if (isSpendingRange(event.target.value)) {
-                  setRange(event.target.value);
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h3 className="min-w-0 text-sm font-semibold tracking-wide text-foreground">
+            {t.dailySpending}
+          </h3>
+          <div className="shrink-0 whitespace-nowrap rounded-xl border border-sky-500/20 bg-sky-500/10 px-2.5 py-1.5 text-xs font-semibold tabular-nums text-sky-700 dark:text-sky-300 sm:px-3 sm:text-sm">
+            {formatCurrency(total, currencyLocale)} {t.currency}
+          </div>
+        </div>
+        <div className="mb-5 flex w-full items-center justify-between gap-2 sm:gap-3">
+          <select
+            aria-label={t.spendingRange}
+            value={range}
+            onChange={(event) => {
+              if (isSpendingRange(event.target.value)) {
+                setRange(event.target.value);
+              }
+            }}
+            className="h-9 min-w-0 max-w-40 cursor-pointer rounded-xl border border-border bg-muted/60 px-2.5 text-sm font-medium text-foreground shadow-sm outline-none transition-colors hover:bg-muted focus-visible:border-emerald-500 focus-visible:ring-2 focus-visible:ring-emerald-500/20 sm:px-3"
+          >
+            <option value="day">{t.spendingRangeOneDay}</option>
+            <option value="week">{t.spendingRangeOneWeek}</option>
+            <option value="month">{t.spendingRangeOneMonth}</option>
+            <option value="year">{t.spendingRangeOneYear}</option>
+          </select>
+          <div className="flex shrink-0 items-center gap-2">
+            {range === "month" && (
+              <button
+                type="button"
+                aria-label={
+                  isComparingMonths ? t.hideMonthComparison : t.compareMonths
                 }
-              }}
-              className="h-9 min-w-0 max-w-40 cursor-pointer rounded-xl border border-border bg-muted/60 px-2.5 text-sm font-medium text-foreground shadow-sm outline-none transition-colors hover:bg-muted focus-visible:border-emerald-500 focus-visible:ring-2 focus-visible:ring-emerald-500/20 sm:px-3"
-            >
-              <option value="day">{t.spendingRangeOneDay}</option>
-              <option value="week">{t.spendingRangeOneWeek}</option>
-              <option value="month">{t.spendingRangeOneMonth}</option>
-              <option value="year">{t.spendingRangeOneYear}</option>
-            </select>
+                aria-pressed={isComparingMonths}
+                title={
+                  isComparingMonths ? t.hideMonthComparison : t.compareMonths
+                }
+                onClick={() => {
+                  setIsComparingMonths((current) => !current);
+                  setSelectedBarKey(null);
+                }}
+                className={`inline-flex size-9 shrink-0 items-center justify-center rounded-xl border shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30 ${
+                  isComparingMonths
+                    ? "border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300"
+                    : "border-border bg-muted/60 text-foreground hover:bg-muted"
+                }`}
+              >
+                <ArrowLeftRight aria-hidden="true" className="size-4" />
+              </button>
+            )}
             <button
               type="button"
               aria-label={t.spendingCategories}
@@ -292,10 +378,29 @@ export function DailySpendingChart({
               <SlidersHorizontal aria-hidden="true" className="size-4" />
             </button>
           </div>
-          <div className="ml-auto shrink-0 whitespace-nowrap rounded-xl border border-sky-500/20 bg-sky-500/10 px-2.5 py-1.5 text-xs font-semibold tabular-nums text-sky-700 dark:text-sky-300 sm:px-3 sm:text-sm">
-            {formatCurrency(total, currencyLocale)} {t.currency}
-          </div>
         </div>
+
+        {isMonthComparisonVisible && (
+          <div className="mb-4 -mt-2 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5">
+              <span className="size-2.5 rounded-sm bg-sky-500" />
+              {t.currentBudgetPeriod}:{" "}
+              {formatCurrency(currentPeriodToDate, currencyLocale)} {t.currency}
+            </span>
+            <span className="inline-flex items-center gap-1.5">
+              <span className="size-2.5 rounded-sm bg-slate-400" />
+              {t.comparisonBudgetPeriod}:{" "}
+              {formatCurrency(comparisonPeriodToDate, currencyLocale)}{" "}
+              {t.currency}
+            </span>
+            <span>
+              {t.spendingChangeFromComparison}:{" "}
+              {comparisonChange === null
+                ? "—"
+                : percentageFormatter.format(comparisonChange)}
+            </span>
+          </div>
+        )}
 
         {!hasSpendingData ? (
           <div className="flex h-40 items-center justify-center rounded-xl border border-dashed border-border bg-muted/30 px-4 text-center text-sm text-muted-foreground">
@@ -332,6 +437,10 @@ export function DailySpendingChart({
                   entry.value > 0
                     ? Math.max((entry.value / maxValue) * 100, 5)
                     : 0;
+                const comparisonHeight =
+                  entry.comparisonValue > 0
+                    ? Math.max((entry.comparisonValue / maxValue) * 100, 5)
+                    : 0;
                 const tooltipAlignment =
                   index === 0
                     ? "left-0 translate-x-0"
@@ -348,33 +457,88 @@ export function DailySpendingChart({
                     }`}
                   >
                     <div className="relative flex h-28 w-full items-end justify-center px-0.5">
-                      {entry.value > 0 && selectedBarKey === entry.key && (
-                        <span
-                          aria-hidden="true"
-                          className={`absolute z-20 whitespace-nowrap rounded-md border border-border bg-popover px-1.5 py-1 text-[10px] font-semibold leading-none text-popover-foreground shadow-md ${tooltipAlignment}`}
-                          style={{ bottom: `calc(${height}% + 6px)` }}
-                        >
-                          {formatCurrency(entry.value, currencyLocale)}{" "}
-                          {t.currency}
-                        </span>
+                      {selectedBarKey === entry.key &&
+                        (entry.value > 0 || entry.comparisonValue > 0) && (
+                          <span
+                            aria-hidden="true"
+                            className={`absolute z-20 whitespace-nowrap rounded-md border border-border bg-popover px-1.5 py-1 text-[10px] font-semibold leading-none text-popover-foreground shadow-md ${tooltipAlignment}`}
+                            style={{
+                              bottom: `calc(${Math.max(height, comparisonHeight)}% + 6px)`,
+                            }}
+                          >
+                            {isMonthComparisonVisible ? (
+                              <>
+                                {formatCurrency(entry.value, currencyLocale)} /{" "}
+                                {formatCurrency(
+                                  entry.comparisonValue,
+                                  currencyLocale,
+                                )}{" "}
+                                {t.currency}
+                              </>
+                            ) : (
+                              <>
+                                {formatCurrency(entry.value, currencyLocale)}{" "}
+                                {t.currency}
+                              </>
+                            )}
+                          </span>
+                        )}
+                      {isMonthComparisonVisible ? (
+                        <div className="flex h-full w-full items-end justify-center gap-0.5">
+                          <button
+                            type="button"
+                            aria-label={`${entry.label}, ${t.currentBudgetPeriod}: ${formatCurrency(entry.value, currencyLocale)} ${t.currency}`}
+                            aria-pressed={selectedBarKey === entry.key}
+                            title={`${entry.label}, ${t.currentBudgetPeriod}: ${formatCurrency(entry.value, currencyLocale)} ${t.currency}`}
+                            onClick={() =>
+                              setSelectedBarKey((current) =>
+                                current === entry.key ? null : entry.key,
+                              )
+                            }
+                            className={`w-1/2 max-w-4 rounded-t-xs transition-[height,filter] duration-300 ${
+                              entry.value > 0
+                                ? "cursor-pointer bg-linear-to-t from-sky-600 to-sky-400 hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
+                                : "cursor-pointer bg-transparent"
+                            }`}
+                            style={{ height: `${height}%` }}
+                          />
+                          <button
+                            type="button"
+                            aria-label={`${entry.label}, ${t.comparisonBudgetPeriod}: ${formatCurrency(entry.comparisonValue, currencyLocale)} ${t.currency}`}
+                            aria-pressed={selectedBarKey === entry.key}
+                            title={`${entry.label}, ${t.comparisonBudgetPeriod}: ${formatCurrency(entry.comparisonValue, currencyLocale)} ${t.currency}`}
+                            onClick={() =>
+                              setSelectedBarKey((current) =>
+                                current === entry.key ? null : entry.key,
+                              )
+                            }
+                            className={`w-1/2 max-w-4 rounded-t-xs transition-[height,filter] duration-300 ${
+                              entry.comparisonValue > 0
+                                ? "cursor-pointer bg-slate-400 hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-slate-500"
+                                : "cursor-pointer bg-transparent"
+                            }`}
+                            style={{ height: `${comparisonHeight}%` }}
+                          />
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          aria-label={`${entry.label}: ${formatCurrency(entry.value, currencyLocale)} ${t.currency}`}
+                          aria-pressed={selectedBarKey === entry.key}
+                          title={`${entry.label}: ${formatCurrency(entry.value, currencyLocale)} ${t.currency}`}
+                          onClick={() =>
+                            setSelectedBarKey((current) =>
+                              current === entry.key ? null : entry.key,
+                            )
+                          }
+                          className={`w-full max-w-8 rounded-t-xs transition-[height,filter] duration-300 ${
+                            entry.value > 0
+                              ? "cursor-pointer bg-linear-to-t from-sky-600 to-sky-400 hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
+                              : "cursor-pointer bg-transparent"
+                          }`}
+                          style={{ height: `${height}%` }}
+                        />
                       )}
-                      <button
-                        type="button"
-                        aria-label={`${entry.label}: ${formatCurrency(entry.value, currencyLocale)} ${t.currency}`}
-                        aria-pressed={selectedBarKey === entry.key}
-                        title={`${entry.label}: ${formatCurrency(entry.value, currencyLocale)} ${t.currency}`}
-                        onClick={() =>
-                          setSelectedBarKey((current) =>
-                            current === entry.key ? null : entry.key,
-                          )
-                        }
-                        className={`w-full max-w-8 rounded-t-xs transition-[height,filter] duration-300 ${
-                          entry.value > 0
-                            ? "cursor-pointer bg-linear-to-t from-sky-600 to-sky-400 hover:brightness-110 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
-                            : "cursor-pointer bg-transparent"
-                        }`}
-                        style={{ height: `${height}%` }}
-                      />
                     </div>
                     <span
                       className={`font-medium text-muted-foreground ${

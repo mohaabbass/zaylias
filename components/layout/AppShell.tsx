@@ -22,7 +22,6 @@ import {
 import {
   AccountsView,
   BalanceCard,
-  CashFlowForecast,
   DailySpendingChart,
   LoansView,
   PaymentsView,
@@ -31,7 +30,6 @@ import {
   TransactionList,
   useBudget,
   type Account,
-  type ScheduledForecastPayment,
   type TransactionType,
 } from "@/features/economy";
 import { PantryApp } from "@/features/pantry";
@@ -101,7 +99,6 @@ export function AppShell() {
     session,
     loading,
     authError,
-    totalBalance,
     transactions,
     signIn,
     signUp,
@@ -148,17 +145,12 @@ export function AppShell() {
   const [activeView, setActiveView] = useState<AppView>("home");
   const [activeApp, setActiveApp] = useState<AppSection>(null);
   const [isAddDrawerOpen, setIsAddDrawerOpen] = useState(false);
-  const [isCashFlowDrawerOpen, setIsCashFlowDrawerOpen] = useState(false);
+  const [isFavoritesDrawerOpen, setIsFavoritesDrawerOpen] = useState(false);
   const [paymentsRefreshToken, setPaymentsRefreshToken] = useState(0);
   const [accountsRefreshToken, setAccountsRefreshToken] = useState(0);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [accountsLoading, setAccountsLoading] = useState(true);
   const [accountsError, setAccountsError] = useState("");
-  const [forecastPayments, setForecastPayments] = useState<
-    ScheduledForecastPayment[]
-  >([]);
-  const [forecastPaymentsLoading, setForecastPaymentsLoading] = useState(true);
-  const [forecastPaymentsError, setForecastPaymentsError] = useState("");
   const [isMenuDrawerOpen, setIsMenuDrawerOpen] = useState(false);
   const [theme, setTheme] = useState<ThemeMode>("dark");
   const [hasHydratedTheme, setHasHydratedTheme] = useState(false);
@@ -382,52 +374,6 @@ export function AppShell() {
       isCurrent = false;
     };
   }, [session?.user.id, accountsRefreshToken]);
-
-  useEffect(() => {
-    let isCurrent = true;
-    const userId = session?.user.id;
-
-    const loadForecastPayments = async () => {
-      if (!userId) {
-        setForecastPayments([]);
-        setForecastPaymentsError("");
-        setForecastPaymentsLoading(false);
-        return;
-      }
-
-      setForecastPaymentsLoading(true);
-      setForecastPaymentsError("");
-
-      const { data, error } = await supabase
-        .from("payments")
-        .select("amount, due_date")
-        .eq("user_id", userId)
-        .gte("due_date", selectedPeriodStartKey)
-        .lt("due_date", selectedPeriodEndKey);
-
-      if (!isCurrent) return;
-
-      if (error) {
-        console.error("Failed to load forecast payments:", error);
-        setForecastPayments([]);
-        setForecastPaymentsError(error.message);
-      } else {
-        setForecastPayments(data ?? []);
-      }
-      setForecastPaymentsLoading(false);
-    };
-
-    void loadForecastPayments();
-
-    return () => {
-      isCurrent = false;
-    };
-  }, [
-    selectedPeriodEndKey,
-    selectedPeriodStartKey,
-    session?.user.id,
-    paymentsRefreshToken,
-  ]);
 
   useEffect(() => {
     const stored = window.localStorage.getItem("zaylias-theme");
@@ -1143,7 +1089,7 @@ export function AppShell() {
               transactions={selectedPeriodTransactions}
               locale={locale}
               t={t}
-              onOpenCashFlow={() => setIsCashFlowDrawerOpen(true)}
+              onOpenFavorites={() => setIsFavoritesDrawerOpen(true)}
             />
             <DailySpendingChart
               transactions={selectedPeriodTransactions}
@@ -1679,15 +1625,15 @@ export function AppShell() {
       </Drawer>
 
       <Drawer
-        open={isCashFlowDrawerOpen}
+        open={isFavoritesDrawerOpen}
         modal={true}
-        onOpenChange={setIsCashFlowDrawerOpen}
+        onOpenChange={setIsFavoritesDrawerOpen}
       >
         <DrawerContent className="mx-auto max-h-[90dvh] max-w-md overflow-y-auto rounded-t-2xl border border-border bg-popover p-0 text-popover-foreground shadow-2xl">
           <DrawerHeader className="border-b border-border px-4 pb-3 pt-4">
             <div className="flex items-center justify-between gap-3">
               <DrawerTitle className="text-lg font-semibold text-foreground">
-                {t.monthlyCashFlowForecast}
+                {t.favoriteAccounts}
               </DrawerTitle>
               <DrawerClose
                 type="button"
@@ -1699,16 +1645,52 @@ export function AppShell() {
             </div>
           </DrawerHeader>
           <div className="px-4 pb-6 pt-4">
-            <CashFlowForecast
-              transactions={transactions}
-              payments={forecastPayments}
-              totalBalance={totalBalance}
-              loading={forecastPaymentsLoading}
-              error={forecastPaymentsError}
-              locale={locale}
-              t={t}
-              budgetPeriod={selectedBudgetPeriod}
-            />
+            {accountsLoading ? (
+              <p className="text-sm text-muted-foreground">{t.loading}</p>
+            ) : accountsError ? (
+              <p role="alert" className="text-sm text-red-600 dark:text-red-300">
+                {t.accountsLoadError} {accountsError}
+              </p>
+            ) : favoriteAccounts.length > 0 ? (
+              <ul className="space-y-2">
+                {favoriteAccounts.map((account) => (
+                  <li
+                    key={account.id}
+                    className="flex items-center justify-between gap-3 rounded-xl border border-border bg-muted/50 p-3"
+                  >
+                    <span className="flex min-w-0 items-center gap-2 font-medium text-foreground">
+                      <Landmark
+                        aria-hidden="true"
+                        className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400"
+                      />
+                      <span className="truncate">{account.name}</span>
+                    </span>
+                    <span className="shrink-0 text-sm font-semibold tabular-nums text-foreground">
+                      {formatCurrency(
+                        Number(account.balance),
+                        localeMap[locale],
+                      )}{" "}
+                      {t.currency}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                {t.noFavoriteAccounts}
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                setActiveView("accounts");
+                setIsFavoritesDrawerOpen(false);
+              }}
+              className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-medium text-white transition hover:bg-emerald-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            >
+              <Landmark aria-hidden="true" className="h-4 w-4" />
+              {t.accounts}
+            </button>
           </div>
         </DrawerContent>
       </Drawer>

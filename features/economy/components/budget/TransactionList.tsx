@@ -197,7 +197,12 @@ export function TransactionList({
   return (
     <div className="rounded-xl border border-border bg-card p-4">
       <div className="mb-4 flex items-center justify-between gap-3">
-        <h2 className="text-lg font-semibold text-foreground">{t.history}</h2>
+        <h2 className="flex items-center gap-2 text-lg font-semibold text-foreground">
+          <span>{t.history}</span>
+          <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground">
+            {transactions.length}
+          </span>
+        </h2>
         <TransactionListFilter
           value={filter}
           dateFrom={dateFromFilter}

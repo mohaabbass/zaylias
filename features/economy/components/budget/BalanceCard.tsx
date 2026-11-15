@@ -1,4 +1,4 @@
-import { ArrowDownRight, ArrowUpRight, Coins } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Landmark } from "lucide-react";
 
 import type { EconomyTranslation } from "@/features/economy/i18n";
 import { formatCurrency } from "@/lib/utils";
@@ -9,7 +9,7 @@ type BalanceCardProps = {
   transactions: Transaction[];
   locale?: string;
   t: EconomyTranslation;
-  onOpenCashFlow: () => void;
+  onOpenFavorites: () => void;
 };
 
 export function BalanceCard({
@@ -17,7 +17,7 @@ export function BalanceCard({
   transactions,
   locale = "sv",
   t,
-  onOpenCashFlow,
+  onOpenFavorites,
 }: BalanceCardProps) {
   const totals = transactions.reduce(
     (result, transaction) => {
@@ -79,12 +79,12 @@ export function BalanceCard({
         </div>
         <button
           type="button"
-          onClick={onOpenCashFlow}
-          aria-label={t.monthlyCashFlowForecast}
-          title={t.monthlyCashFlowForecast}
+          onClick={onOpenFavorites}
+          aria-label={t.favoriteAccounts}
+          title={t.favoriteAccounts}
           className="rounded-full border border-border bg-muted p-2 text-muted-foreground transition hover:border-emerald-500/50 hover:text-emerald-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 focus-visible:ring-offset-background dark:hover:text-emerald-400"
         >
-          <Coins aria-hidden="true" className="h-5 w-5 " />
+          <Landmark aria-hidden="true" className="h-5 w-5" />
         </button>
       </div>
 
